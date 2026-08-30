@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
 
 function corsHeaders() {
   return {
@@ -146,36 +147,85 @@ export async function POST(request: NextRequest) {
       </html>
     `;
 
-    // Attempt real email dispatch via Resend API if API Key is present
-    let resendDispatched = false;
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (resendApiKey) {
+    let emailDelivered = false;
+    let deliveryMethod = 'none';
+    let deliveryError = null;
+
+    // 1. Try Nodemailer SMTP (Gmail, Brevo, SendGrid, Amazon SES, Custom SMTP)
+    const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_SERVER_HOST;
+    const smtpUser = process.env.SMTP_USER || process.env.EMAIL_SERVER_USER || process.env.GMAIL_USER;
+    const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_SERVER_PASSWORD || process.env.GMAIL_APP_PASSWORD;
+    const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_SERVER_PORT || 587);
+    const smtpFrom = process.env.SMTP_FROM || process.env.EMAIL_FROM || (smtpUser ? `"Mavenco Platform" <${smtpUser}>` : '"Mavenco Platform" <no-reply@mavenco.com>');
+
+    if (smtpUser && smtpPass) {
       try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
+        const transporter = nodemailer.createTransport({
+          host: smtpHost || 'smtp.gmail.com',
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
           },
-          body: JSON.stringify({
-            from: 'Mavenco Platform <onboarding@resend.dev>',
-            to: ownerEmail,
-            subject: emailSubject,
-            html: emailHtml,
-          }),
         });
-        if (res.ok) {
-          resendDispatched = true;
+
+        await transporter.sendMail({
+          from: smtpFrom,
+          to: ownerEmail,
+          subject: emailSubject,
+          html: emailHtml,
+        });
+
+        emailDelivered = true;
+        deliveryMethod = 'nodemailer_smtp';
+      } catch (err: any) {
+        console.error('SMTP delivery error:', err);
+        deliveryError = err.message;
+      }
+    }
+
+    // 2. Try Resend API if SMTP was not used or failed
+    if (!emailDelivered) {
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (resendApiKey) {
+        try {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: 'Mavenco Platform <onboarding@resend.dev>',
+              to: ownerEmail,
+              subject: emailSubject,
+              html: emailHtml,
+            }),
+          });
+          if (res.ok) {
+            emailDelivered = true;
+            deliveryMethod = 'resend_api';
+          } else {
+            const errJson = await res.json();
+            deliveryError = errJson.message || 'Resend API failed';
+          }
+        } catch (e: any) {
+          console.warn('Resend dispatch error:', e);
+          deliveryError = e.message;
         }
-      } catch (e) {
-        console.warn('Resend dispatch error:', e);
       }
     }
 
     return NextResponse.json(
       {
         success: true,
-        message: `Activation email formatted and dispatched to ${ownerEmail}`,
+        delivered: emailDelivered,
+        deliveryMethod,
+        deliveryError,
+        message: emailDelivered
+          ? `Activation email successfully sent to ${ownerEmail} via ${deliveryMethod}`
+          : `Activation email formatted. Please configure SMTP credentials (SMTP_USER & SMTP_PASS) or RESEND_API_KEY to send directly to inboxes.`,
         emailDetails: {
           recipient: ownerEmail,
           storeName,
@@ -185,7 +235,6 @@ export async function POST(request: NextRequest) {
           temporaryPassword,
           adminLoginUrl,
           storefrontUrl,
-          resendDispatched,
           dispatchedAt: new Date().toISOString(),
         },
       },
