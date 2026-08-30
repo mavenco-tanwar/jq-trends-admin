@@ -87,9 +87,17 @@ export default function GeneralSettingsPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('Permanent password updated in database!', 'success');
+        showToast('Password updated in database! Signing out...', 'success');
         setNewPassword('');
         setConfirmPassword('');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('jq_admin_token');
+          localStorage.removeItem('jq_admin_user');
+          localStorage.removeItem('jq_saas_impersonation_state');
+          setTimeout(() => {
+            window.location.href = `/login?email=${encodeURIComponent(userEmail)}&updated=true`;
+          }, 800);
+        }
       } else {
         showToast(data.error || 'Failed to update password', 'error');
       }

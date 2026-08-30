@@ -23,10 +23,18 @@ export default function LoginPage() {
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [passwordUpdatedNotice, setPasswordUpdatedNotice] = useState(false);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.title = 'Merchant Sign In | Mavenco Commerce';
+    }
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get('email');
+      const updatedParam = params.get('updated');
+      if (emailParam) setEmail(emailParam);
+      if (updatedParam === 'true') setPasswordUpdatedNotice(true);
     }
   }, []);
 
@@ -123,6 +131,13 @@ export default function LoginPage() {
               Manage product catalogs, visual CMS sections, and customer orders.
             </p>
           </div>
+
+          {passwordUpdatedNotice && (
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-xs text-emerald-400">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Password updated in database! Please sign in with your new password.</span>
+            </div>
+          )}
 
           {error && (
             <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2.5 text-xs text-rose-400">
