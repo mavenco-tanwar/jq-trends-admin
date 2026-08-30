@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { PlatformService, TenantStore } from '@/services/platform';
+import { getTenantStorefrontUrl } from '@/services/api';
 
 export function AdminHeader({
   onOpenMobileSidebar,
@@ -240,7 +241,7 @@ export function AdminHeader({
 
           {/* View Live Storefront */}
           <a
-            href={`http://localhost:3005?tenant=${activeTenant.slug}`}
+            href={getTenantStorefrontUrl(activeTenant.slug)}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161822] hover:bg-[#1C1F2C] border border-slate-700/80 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all"

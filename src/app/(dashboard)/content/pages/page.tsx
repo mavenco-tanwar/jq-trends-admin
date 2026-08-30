@@ -14,6 +14,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { ContentService } from '@/services/content';
+import { PlatformService } from '@/services/platform';
+import { getTenantStorefrontUrl } from '@/services/api';
 import { useToast } from '@/lib/toast-context';
 import { Modal } from '@/components/ui/Modal';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -201,7 +203,7 @@ export default function PagesManagerPage() {
 
               <div className="flex items-center gap-2">
                 <a
-                  href={`http://localhost:3005/${p.slug}`}
+                  href={getTenantStorefrontUrl(PlatformService.getActiveTenant().slug, p.slug)}
                   target="_blank"
                   rel="noreferrer"
                   className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-semibold flex items-center gap-1"

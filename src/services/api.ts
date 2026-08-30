@@ -1,9 +1,9 @@
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   let raw =
     process.env.NEXT_PUBLIC_CMS_API_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
-      ? 'https://jq-trends.vercel.app'
+    (typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:')
+      ? 'https://mavenco-storefront.vercel.app'
       : 'http://localhost:4000');
 
   raw = raw.trim().replace(/\/+$/, '');
@@ -11,6 +11,31 @@ function getApiBaseUrl(): string {
     raw = `https://${raw}`;
   }
   return raw;
+}
+
+export function getStorefrontBaseUrl(): string {
+  let raw = process.env.NEXT_PUBLIC_STOREFRONT_URL || '';
+  if (!raw) {
+    if (
+      typeof window !== 'undefined' &&
+      (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:')
+    ) {
+      raw = 'https://mavenco-storefront.vercel.app';
+    } else {
+      raw = 'http://localhost:3005';
+    }
+  }
+  raw = raw.trim().replace(/\/+$/, '');
+  if (raw && !raw.startsWith('http://') && !raw.startsWith('https://')) {
+    raw = `https://${raw}`;
+  }
+  return raw;
+}
+
+export function getTenantStorefrontUrl(tenantSlug: string = 'jqtrends', subPath: string = ''): string {
+  const base = getStorefrontBaseUrl();
+  const cleanPath = subPath ? (subPath.startsWith('/') ? subPath : `/${subPath}`) : '';
+  return `${base}/stores/${tenantSlug}${cleanPath}`;
 }
 
 const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID || 'store_jq_trends';

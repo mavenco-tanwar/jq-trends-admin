@@ -14,6 +14,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { NavigationService } from '@/services/navigation';
+import { PlatformService } from '@/services/platform';
+import { getTenantStorefrontUrl } from '@/services/api';
 import { useToast } from '@/lib/toast-context';
 import type { NavigationMenu, NavigationItem } from '@/types';
 
@@ -93,7 +95,7 @@ export default function NavigationPage() {
         </div>
 
         <a
-          href="http://localhost:3005"
+          href={getTenantStorefrontUrl(PlatformService.getActiveTenant().slug)}
           target="_blank"
           rel="noreferrer"
           className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#10121A] hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 text-xs font-semibold transition-all shrink-0"

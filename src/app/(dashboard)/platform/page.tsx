@@ -552,11 +552,11 @@ export default function SuperadminPlatformPage() {
                         <div className="min-w-0 pr-2">
                           <div className="text-[10px] font-bold text-slate-400">Path-Based Store URL</div>
                           <div className="font-mono text-emerald-400 text-[11px] truncate">
-                            https://jq-trends.vercel.app/stores/{t.slug}
+                            https://mavenco-storefront.vercel.app/stores/{t.slug}
                           </div>
                         </div>
                         <a
-                          href={`http://localhost:3005?tenant=${t.slug}`}
+                          href={`https://mavenco-storefront.vercel.app/stores/${t.slug}`}
                           target="_blank"
                           rel="noreferrer"
                           className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px] font-bold shrink-0 flex items-center gap-1"
@@ -607,7 +607,7 @@ export default function SuperadminPlatformPage() {
                         <div className="min-w-0 pr-2">
                           <div className="text-[10px] font-bold text-slate-400">Direct Store Admin URL</div>
                           <div className="font-mono text-sky-400 text-[11px] truncate">
-                            https://jq-trends-admin.vercel.app/stores/{t.slug}
+                            https://mavenco-admin.vercel.app/stores/{t.slug}
                           </div>
                         </div>
                         <button
