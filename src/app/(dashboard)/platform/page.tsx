@@ -44,6 +44,7 @@ import {
 import {
   PlatformService,
   TenantStore,
+  TenantDomain,
   TenantPlan,
   PlatformMetrics,
   PlatformActivityLog,
@@ -120,6 +121,87 @@ function PlatformContent() {
 
   // Delete Tenant Confirmation State
   const [deletingTenant, setDeletingTenant] = useState<TenantStore | null>(null);
+
+  // Edit Custom Domain Modal State
+  const [editingDomainTenant, setEditingDomainTenant] = useState<TenantStore | null>(null);
+  const [customDomainInput, setCustomDomainInput] = useState('');
+  const [domainSslStatus, setDomainSslStatus] = useState<'connected' | 'verifying' | 'pending'>('connected');
+  const [isSavingDomain, setIsSavingDomain] = useState(false);
+
+  const handleOpenDomainModal = (tenant: TenantStore) => {
+    setEditingDomainTenant(tenant);
+    setCustomDomainInput(tenant.primaryDomain || `${tenant.slug}.com`);
+    setDomainSslStatus('connected');
+  };
+
+  const handleSaveDomain = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDomainTenant) return;
+
+    setIsSavingDomain(true);
+    const cleanDomain = customDomainInput
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '')
+      .trim();
+
+    if (!cleanDomain) {
+      showToast('Custom domain cannot be empty', 'error');
+      setIsSavingDomain(false);
+      return;
+    }
+
+    try {
+      const updatedDomains: TenantDomain[] = [
+        {
+          id: `dom_${Date.now()}`,
+          domain: cleanDomain,
+          type: 'custom',
+          isPrimary: true,
+          status: domainSslStatus,
+          sslActive: domainSslStatus === 'connected',
+          createdAt: new Date().toISOString(),
+        },
+      ];
+
+      // Update in MongoDB Atlas
+      await fetch('/api/v1/platform/tenants', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingDomainTenant.id,
+          slug: editingDomainTenant.slug,
+          primaryDomain: cleanDomain,
+          domains: updatedDomains,
+        }),
+      });
+
+      // Record activity in MongoDB
+      await PlatformService.logActivity({
+        event: `Custom domain for store ${editingDomainTenant.name} updated to ${cleanDomain}`,
+        actor: 'superadmin@platform.com',
+        tenantId: editingDomainTenant.id,
+        tenantName: editingDomainTenant.name,
+        severity: 'info',
+      });
+
+      // Update local state
+      setTenants((prev) =>
+        prev.map((t) =>
+          t.id === editingDomainTenant.id
+            ? { ...t, primaryDomain: cleanDomain, domains: updatedDomains }
+            : t
+        )
+      );
+
+      showToast(`Custom domain updated to ${cleanDomain} with Auto SSL!`, 'success');
+      setEditingDomainTenant(null);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update custom domain', 'error');
+    } finally {
+      setIsSavingDomain(false);
+    }
+  };
 
   const loadPlatformData = async () => {
     const [m, tList, pList, actList] = await Promise.all([
@@ -1013,6 +1095,13 @@ function PlatformContent() {
                     <span className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" /> SSL Active
                     </span>
+                    <button
+                      onClick={() => handleOpenDomainModal(t)}
+                      className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all"
+                    >
+                      <Edit className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Edit Domain</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1053,9 +1142,19 @@ function PlatformContent() {
                             https://{t.primaryDomain}
                           </div>
                         </div>
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
-                          Primary
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                            Primary
+                          </span>
+                          <button
+                            onClick={() => handleOpenDomainModal(t)}
+                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-[11px] font-bold border border-slate-700 flex items-center gap-1"
+                            title="Configure DNS & Custom Domain"
+                          >
+                            <Edit className="w-3 h-3 text-rose-400" />
+                            <span>Edit</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1788,6 +1887,105 @@ function PlatformContent() {
                   className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg"
                 >
                   Save Store Settings
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* EDIT CUSTOM DOMAIN & ROUTING MODAL */}
+      {/* ========================================================================= */}
+      {editingDomainTenant && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#161822] border border-slate-700 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-rose-400" />
+                <h3 className="text-lg font-bold text-white">Edit Custom Domain &amp; Routing</h3>
+              </div>
+              <button
+                onClick={() => setEditingDomainTenant(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDomain} className="space-y-4">
+              <div className="p-3.5 bg-[#10121A] rounded-xl border border-slate-800 space-y-1">
+                <div className="text-xs font-bold text-white">{editingDomainTenant.name}</div>
+                <div className="text-[11px] font-mono text-slate-400">
+                  Store ID: {editingDomainTenant.id} • Slug: {editingDomainTenant.slug}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-300 font-bold">Custom Brand Domain *</label>
+                <div className="relative mt-1">
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. shopreset.in or resetbrand.com"
+                    value={customDomainInput}
+                    onChange={(e) => setCustomDomainInput(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white font-mono"
+                  />
+                  <Globe className="w-4 h-4 text-slate-500 absolute left-2.5 top-3" />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Enter without &quot;https://&quot; (e.g. <code>brandname.com</code> or <code>shop.brand.in</code>)
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-300 font-bold">SSL Certificate Status</label>
+                <select
+                  value={domainSslStatus}
+                  onChange={(e) => setDomainSslStatus(e.target.value as any)}
+                  className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
+                >
+                  <option value="connected">🟢 SSL Active (Auto TLS 1.3 - Verified)</option>
+                  <option value="verifying">🟡 Verifying DNS Propagation</option>
+                  <option value="pending">⚪ Pending DNS Configuration</option>
+                </select>
+              </div>
+
+              {/* DNS Instructions Box */}
+              <div className="p-3.5 bg-[#0C0E15] rounded-xl border border-slate-800 space-y-2 text-xs">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Required DNS CNAME Record
+                </div>
+                <div className="flex items-center justify-between p-2 bg-[#12141F] rounded-lg border border-slate-800 text-[11px] font-mono">
+                  <span className="text-slate-300">CNAME &rarr; cname.mavenco-commerce.com</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText('cname.mavenco-commerce.com');
+                      showToast('CNAME copied to clipboard!', 'success');
+                    }}
+                    className="text-rose-400 hover:text-rose-300 font-sans font-bold text-[10px]"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingDomainTenant(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingDomain}
+                  className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isSavingDomain ? 'Saving...' : 'Save & Update Domain'}
                 </button>
               </div>
             </form>
