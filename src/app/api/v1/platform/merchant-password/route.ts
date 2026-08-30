@@ -70,16 +70,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminLoginUrl = `https://mavenco-admin.vercel.app/login?tenant=${targetSlug}&email=${encodeURIComponent(targetEmail)}`;
+    const adminBaseUrl = process.env.NEXT_PUBLIC_ADMIN_URL || process.env.ADMIN_URL || 'https://mavenco-admin.vercel.app';
+    const adminLoginUrl = `${adminBaseUrl}/login?tenant=${targetSlug}&email=${encodeURIComponent(targetEmail)}`;
 
     // Dispatch Email via Gmail SMTP / Resend
     let emailDelivered = false;
     let deliveryMethod = 'none';
 
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpUser = process.env.SMTP_USER || 'ammar.tanwar.dev@gmail.com';
-    const smtpPass = process.env.SMTP_PASS || 'ubup gwkg sbeo bldb';
-    const smtpPort = Number(process.env.SMTP_PORT || 465);
+    const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_SERVER_HOST || 'smtp.gmail.com';
+    const smtpUser = process.env.SMTP_USER || process.env.EMAIL_SERVER_USER;
+    const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_SERVER_PASSWORD;
+    const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_SERVER_PORT || 465);
 
     const emailSubject = `🔐 Password Reset & Temporary Credentials: ${storeName}`;
     const emailHtml = `
@@ -112,25 +113,27 @@ export async function POST(request: NextRequest) {
       </div>
     `;
 
-    try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPass },
-      });
+    if (smtpUser && smtpPass) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: smtpUser, pass: smtpPass },
+        });
 
-      await transporter.sendMail({
-        from: `"Mavenco Security" <${smtpUser}>`,
-        to: targetEmail,
-        subject: emailSubject,
-        html: emailHtml,
-      });
+        await transporter.sendMail({
+          from: `"Mavenco Security" <${smtpUser}>`,
+          to: targetEmail,
+          subject: emailSubject,
+          html: emailHtml,
+        });
 
-      emailDelivered = true;
-      deliveryMethod = 'nodemailer_smtp';
-    } catch (err: any) {
-      console.error('Password reset email error:', err);
+        emailDelivered = true;
+        deliveryMethod = 'nodemailer_smtp';
+      } catch (err: any) {
+        console.error('Password reset email error:', err);
+      }
     }
 
     return NextResponse.json(

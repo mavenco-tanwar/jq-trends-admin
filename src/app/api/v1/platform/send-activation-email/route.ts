@@ -34,8 +34,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminLoginUrl = `https://mavenco-admin.vercel.app/login?tenant=${slug}&email=${encodeURIComponent(ownerEmail)}`;
-    const storefrontUrl = `https://mavenco-storefront.vercel.app/stores/${slug}`;
+    const adminBaseUrl = process.env.NEXT_PUBLIC_ADMIN_URL || process.env.ADMIN_URL || 'https://mavenco-admin.vercel.app';
+    const storefrontBaseUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || process.env.STOREFRONT_URL || 'https://mavenco-storefront.vercel.app';
+    const adminLoginUrl = `${adminBaseUrl}/login?tenant=${slug}&email=${encodeURIComponent(ownerEmail)}`;
+    const storefrontUrl = `${storefrontBaseUrl}/stores/${slug}`;
     const statusBadge =
       status === 'active'
         ? '🟢 Active (Production)'

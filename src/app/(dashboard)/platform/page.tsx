@@ -51,6 +51,9 @@ import {
 import { useToast } from '@/lib/toast-context';
 import { Modal } from '@/components/ui/Modal';
 
+const STOREFRONT_BASE_URL = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'https://mavenco-storefront.vercel.app';
+const ADMIN_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_URL || 'https://mavenco-admin.vercel.app';
+
 function PlatformContent() {
   const { showToast } = useToast();
   const router = useRouter();
@@ -163,8 +166,8 @@ function PlatformContent() {
 
     const tempPassword = `Mavenco@2026!${storeSlug}`;
     const planObj = plans.find((p) => p.id === selectedPlanId) || plans[1];
-    const adminUrl = `https://mavenco-admin.vercel.app/login?tenant=${storeSlug}&email=${encodeURIComponent(ownerEmail)}`;
-    const storeUrl = `https://mavenco-storefront.vercel.app/stores/${storeSlug}`;
+    const adminUrl = `${ADMIN_BASE_URL}/login?tenant=${storeSlug}&email=${encodeURIComponent(ownerEmail)}`;
+    const storeUrl = `${STOREFRONT_BASE_URL}/stores/${storeSlug}`;
 
     setTimeout(() => {
       setProvisionProgress(30);
@@ -603,7 +606,7 @@ function PlatformContent() {
                           </button>
 
                           <a
-                            href={`https://mavenco-storefront.vercel.app/stores/${t.slug}`}
+                            href={`${STOREFRONT_BASE_URL}/stores/${t.slug}`}
                             target="_blank"
                             rel="noreferrer"
                             className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors border border-slate-800"
@@ -899,7 +902,7 @@ function PlatformContent() {
                   </button>
 
                   <a
-                    href={`https://mavenco-storefront.vercel.app/stores/${tenant.slug}`}
+                    href={`${STOREFRONT_BASE_URL}/stores/${tenant.slug}`}
                     target="_blank"
                     rel="noreferrer"
                     className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 rounded-lg transition-all flex items-center justify-center"
@@ -1024,12 +1027,12 @@ function PlatformContent() {
                       <div className="flex items-center justify-between p-2.5 bg-slate-900/60 rounded-lg border border-slate-800">
                         <div className="min-w-0 pr-2">
                           <div className="text-[10px] font-bold text-slate-400">Platform Subdomain Route</div>
-                          <div className="font-mono text-rose-400 text-[11px] truncate">
-                            https://mavenco-storefront.vercel.app/stores/{t.slug}
+                          <div className="text-[11px] text-slate-500 font-mono">
+                            {STOREFRONT_BASE_URL}/stores/{t.slug}
                           </div>
                         </div>
                         <a
-                          href={`https://mavenco-storefront.vercel.app/stores/${t.slug}`}
+                          href={`${STOREFRONT_BASE_URL}/stores/${t.slug}`}
                           target="_blank"
                           rel="noreferrer"
                           className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[11px] font-bold shrink-0 flex items-center gap-1"
@@ -1067,8 +1070,8 @@ function PlatformContent() {
                       <div className="flex items-center justify-between p-2.5 bg-slate-900/60 rounded-lg border border-slate-800">
                         <div className="min-w-0 pr-2">
                           <div className="text-[10px] font-bold text-slate-400">Direct Store Admin Workspace</div>
-                          <div className="font-mono text-sky-400 text-[11px] truncate">
-                            https://mavenco-admin.vercel.app/stores/{t.slug}
+                          <div className="text-[11px] text-slate-500 font-mono">
+                            {ADMIN_BASE_URL}/stores/{t.slug}
                           </div>
                         </div>
                         <button
