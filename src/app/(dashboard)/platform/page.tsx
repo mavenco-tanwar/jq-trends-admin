@@ -124,13 +124,15 @@ function PlatformContent() {
 
   // Edit Custom Domain Modal State
   const [editingDomainTenant, setEditingDomainTenant] = useState<TenantStore | null>(null);
-  const [customDomainInput, setCustomDomainInput] = useState('');
+  const [storefrontDomainInput, setStorefrontDomainInput] = useState('');
+  const [adminDomainInput, setAdminDomainInput] = useState('');
   const [domainSslStatus, setDomainSslStatus] = useState<'connected' | 'verifying' | 'pending'>('connected');
   const [isSavingDomain, setIsSavingDomain] = useState(false);
 
   const handleOpenDomainModal = (tenant: TenantStore) => {
     setEditingDomainTenant(tenant);
-    setCustomDomainInput(tenant.primaryDomain || `${tenant.slug}.com`);
+    setStorefrontDomainInput(tenant.primaryDomain || `${tenant.slug}.com`);
+    setAdminDomainInput(tenant.adminCustomDomain || `admin.${tenant.primaryDomain || tenant.slug + '.com'}`);
     setDomainSslStatus('connected');
   };
 
@@ -139,14 +141,20 @@ function PlatformContent() {
     if (!editingDomainTenant) return;
 
     setIsSavingDomain(true);
-    const cleanDomain = customDomainInput
+    const cleanStorefrontDomain = storefrontDomainInput
       .toLowerCase()
       .replace(/^https?:\/\//, '')
       .replace(/\/$/, '')
       .trim();
 
-    if (!cleanDomain) {
-      showToast('Custom domain cannot be empty', 'error');
+    const cleanAdminDomain = adminDomainInput
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '')
+      .trim();
+
+    if (!cleanStorefrontDomain) {
+      showToast('Storefront domain cannot be empty', 'error');
       setIsSavingDomain(false);
       return;
     }
@@ -154,14 +162,27 @@ function PlatformContent() {
     try {
       const updatedDomains: TenantDomain[] = [
         {
-          id: `dom_${Date.now()}`,
-          domain: cleanDomain,
-          type: 'custom',
+          id: `dom_sf_${Date.now()}`,
+          domain: cleanStorefrontDomain,
+          type: 'storefront',
           isPrimary: true,
           status: domainSslStatus,
           sslActive: domainSslStatus === 'connected',
           createdAt: new Date().toISOString(),
         },
+        ...(cleanAdminDomain
+          ? [
+              {
+                id: `dom_adm_${Date.now()}`,
+                domain: cleanAdminDomain,
+                type: 'admin' as const,
+                isPrimary: false,
+                status: domainSslStatus,
+                sslActive: domainSslStatus === 'connected',
+                createdAt: new Date().toISOString(),
+              },
+            ]
+          : []),
       ];
 
       // Update in MongoDB Atlas
@@ -171,14 +192,15 @@ function PlatformContent() {
         body: JSON.stringify({
           id: editingDomainTenant.id,
           slug: editingDomainTenant.slug,
-          primaryDomain: cleanDomain,
+          primaryDomain: cleanStorefrontDomain,
+          adminCustomDomain: cleanAdminDomain,
           domains: updatedDomains,
         }),
       });
 
       // Record activity in MongoDB
       await PlatformService.logActivity({
-        event: `Custom domain for store ${editingDomainTenant.name} updated to ${cleanDomain}`,
+        event: `Updated domains for store ${editingDomainTenant.name}: Storefront (${cleanStorefrontDomain}), Admin (${cleanAdminDomain})`,
         actor: 'superadmin@platform.com',
         tenantId: editingDomainTenant.id,
         tenantName: editingDomainTenant.name,
@@ -189,15 +211,15 @@ function PlatformContent() {
       setTenants((prev) =>
         prev.map((t) =>
           t.id === editingDomainTenant.id
-            ? { ...t, primaryDomain: cleanDomain, domains: updatedDomains }
+            ? { ...t, primaryDomain: cleanStorefrontDomain, adminCustomDomain: cleanAdminDomain, domains: updatedDomains }
             : t
         )
       );
 
-      showToast(`Custom domain updated to ${cleanDomain} with Auto SSL!`, 'success');
+      showToast(`Custom domains updated: ${cleanStorefrontDomain} & ${cleanAdminDomain}!`, 'success');
       setEditingDomainTenant(null);
     } catch (err: any) {
-      showToast(err.message || 'Failed to update custom domain', 'error');
+      showToast(err.message || 'Failed to update custom domains', 'error');
     } finally {
       setIsSavingDomain(false);
     }
@@ -1172,7 +1194,7 @@ function PlatformContent() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-2.5 bg-slate-900/60 rounded-lg border border-slate-800">
                         <div className="min-w-0 pr-2">
-                          <div className="text-[10px] font-bold text-slate-400">Direct Store Admin Workspace</div>
+                          <div className="text-[10px] font-bold text-slate-400">Platform Subdomain Route</div>
                           <div className="text-[11px] text-slate-500 font-mono">
                             {ADMIN_BASE_URL}/stores/{t.slug}
                           </div>
@@ -1184,6 +1206,28 @@ function PlatformContent() {
                           <Eye className="w-3 h-3" />
                           <span>Admin</span>
                         </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2.5 bg-slate-900/60 rounded-lg border border-slate-800">
+                        <div className="min-w-0 pr-2">
+                          <div className="text-[10px] font-bold text-slate-400">Custom Admin Domain</div>
+                          <div className="font-mono text-white font-bold text-[11px] truncate">
+                            https://{t.adminCustomDomain || `admin.${t.primaryDomain || t.slug + '.com'}`}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] text-sky-400 font-bold bg-sky-500/15 px-2 py-0.5 rounded border border-sky-500/30">
+                            Admin Portal
+                          </span>
+                          <button
+                            onClick={() => handleOpenDomainModal(t)}
+                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-[11px] font-bold border border-slate-700 flex items-center gap-1"
+                            title="Configure Admin Domain"
+                          >
+                            <Edit className="w-3 h-3 text-sky-400" />
+                            <span>Edit</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div className="p-2.5 bg-slate-900/40 rounded-lg border border-slate-800/60 text-[11px] text-slate-400 flex items-center gap-2">
@@ -1899,11 +1943,11 @@ function PlatformContent() {
       {/* ========================================================================= */}
       {editingDomainTenant && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#161822] border border-slate-700 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6">
+          <div className="bg-[#161822] border border-slate-700 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Globe className="w-5 h-5 text-rose-400" />
-                <h3 className="text-lg font-bold text-white">Edit Custom Domain &amp; Routing</h3>
+                <h3 className="text-lg font-bold text-white">Edit Storefront &amp; Admin Custom Domains</h3>
               </div>
               <button
                 onClick={() => setEditingDomainTenant(null)}
@@ -1913,34 +1957,85 @@ function PlatformContent() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveDomain} className="space-y-4">
+            <form onSubmit={handleSaveDomain} className="space-y-5">
               <div className="p-3.5 bg-[#10121A] rounded-xl border border-slate-800 space-y-1">
                 <div className="text-xs font-bold text-white">{editingDomainTenant.name}</div>
                 <div className="text-[11px] font-mono text-slate-400">
-                  Store ID: {editingDomainTenant.id} • Slug: {editingDomainTenant.slug}
+                  Store ID: {editingDomainTenant.id} • Slug: {editingDomainTenant.slug} • DB: {editingDomainTenant.databaseName}
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs text-slate-300 font-bold">Custom Brand Domain *</label>
-                <div className="relative mt-1">
+              {/* 1. Customer Storefront Domain */}
+              <div className="p-4 bg-[#10121A] rounded-2xl border border-rose-500/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-rose-300 font-bold flex items-center gap-1.5">
+                    <Store className="w-3.5 h-3.5" />
+                    <span>Customer Storefront Domain *</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400">Where buyers shop</span>
+                </div>
+                <div className="relative">
                   <input
                     type="text"
                     required
-                    placeholder="e.g. shopreset.in or resetbrand.com"
-                    value={customDomainInput}
-                    onChange={(e) => setCustomDomainInput(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white font-mono"
+                    placeholder="e.g. resests.com or shopreset.in"
+                    value={storefrontDomainInput}
+                    onChange={(e) => setStorefrontDomainInput(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2.5 bg-[#0A0C10] border border-slate-700 rounded-xl text-xs text-white font-mono"
                   />
                   <Globe className="w-4 h-4 text-slate-500 absolute left-2.5 top-3" />
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Enter without &quot;https://&quot; (e.g. <code>brandname.com</code> or <code>shop.brand.in</code>)
-                </p>
+                <div className="flex items-center justify-between p-2 bg-[#0C0E15] rounded-lg border border-slate-800 text-[11px] font-mono">
+                  <span className="text-slate-400">CNAME &rarr; cname.mavenco-commerce.com</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText('cname.mavenco-commerce.com');
+                      showToast('Storefront CNAME copied to clipboard!', 'success');
+                    }}
+                    className="text-rose-400 hover:text-rose-300 font-sans font-bold text-[10px]"
+                  >
+                    Copy CNAME
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Merchant Admin Custom Domain */}
+              <div className="p-4 bg-[#10121A] rounded-2xl border border-sky-500/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-sky-300 font-bold flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Merchant Admin Custom Domain</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400">Where store staff login</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="e.g. admin.resests.com or reset-admin.com"
+                    value={adminDomainInput}
+                    onChange={(e) => setAdminDomainInput(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2.5 bg-[#0A0C10] border border-slate-700 rounded-xl text-xs text-white font-mono"
+                  />
+                  <Shield className="w-4 h-4 text-slate-500 absolute left-2.5 top-3" />
+                </div>
+                <div className="flex items-center justify-between p-2 bg-[#0C0E15] rounded-lg border border-slate-800 text-[11px] font-mono">
+                  <span className="text-slate-400">CNAME &rarr; cname.mavenco-admin.com</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText('cname.mavenco-admin.com');
+                      showToast('Admin CNAME copied to clipboard!', 'success');
+                    }}
+                    className="text-sky-400 hover:text-sky-300 font-sans font-bold text-[10px]"
+                  >
+                    Copy CNAME
+                  </button>
+                </div>
               </div>
 
               <div>
-                <label className="text-xs text-slate-300 font-bold">SSL Certificate Status</label>
+                <label className="text-xs text-slate-300 font-bold">SSL Certificate &amp; Routing Status</label>
                 <select
                   value={domainSslStatus}
                   onChange={(e) => setDomainSslStatus(e.target.value as any)}
@@ -1950,26 +2045,6 @@ function PlatformContent() {
                   <option value="verifying">🟡 Verifying DNS Propagation</option>
                   <option value="pending">⚪ Pending DNS Configuration</option>
                 </select>
-              </div>
-
-              {/* DNS Instructions Box */}
-              <div className="p-3.5 bg-[#0C0E15] rounded-xl border border-slate-800 space-y-2 text-xs">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Required DNS CNAME Record
-                </div>
-                <div className="flex items-center justify-between p-2 bg-[#12141F] rounded-lg border border-slate-800 text-[11px] font-mono">
-                  <span className="text-slate-300">CNAME &rarr; cname.mavenco-commerce.com</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText('cname.mavenco-commerce.com');
-                      showToast('CNAME copied to clipboard!', 'success');
-                    }}
-                    className="text-rose-400 hover:text-rose-300 font-sans font-bold text-[10px]"
-                  >
-                    Copy
-                  </button>
-                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
@@ -1985,7 +2060,7 @@ function PlatformContent() {
                   disabled={isSavingDomain}
                   className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {isSavingDomain ? 'Saving...' : 'Save & Update Domain'}
+                  {isSavingDomain ? 'Saving...' : 'Save & Update Both Domains'}
                 </button>
               </div>
             </form>

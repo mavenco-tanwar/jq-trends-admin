@@ -34,7 +34,7 @@ export interface TenantPlan {
 export interface TenantDomain {
   id: string;
   domain: string;
-  type: 'subdomain' | 'custom';
+  type: 'subdomain' | 'custom' | 'storefront' | 'admin';
   isPrimary: boolean;
   status: 'connected' | 'verifying' | 'pending' | 'failed';
   sslActive: boolean;
@@ -55,6 +55,7 @@ export interface TenantStore {
   ownerEmail: string;
   ownerName: string;
   primaryDomain: string;
+  adminCustomDomain?: string;
   domains: TenantDomain[];
   theme: {
     logoUrl?: string;
