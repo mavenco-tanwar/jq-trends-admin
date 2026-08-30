@@ -1167,6 +1167,19 @@ function PlatformContent() {
                     </p>
                   </div>
 
+                  {p.code === 'starter' && (
+                    <div className="p-3 bg-gradient-to-br from-amber-950/30 via-[#10121A] to-[#12141F] rounded-xl border border-amber-500/30 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between font-bold text-amber-300 text-[11px]">
+                        <span>14-Day Evaluation Sandbox</span>
+                        <span className="bg-amber-500/20 px-2 py-0.5 rounded text-amber-300 font-mono">₹2,000 Deposit</span>
+                      </div>
+                      <div className="text-[10px] text-slate-300 space-y-1">
+                        <div>• <strong>100% Deducted:</strong> ₹2,000 credited on license payment.</div>
+                        <div>• <strong>Refund Guarantee:</strong> ₹1,000 refunded if client drops trial.</div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Maintenance & Recurring Cost */}
                   <div className="p-3.5 bg-gradient-to-br from-[#10121A] to-[#141724] rounded-xl border border-slate-800 space-y-2 text-xs">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
