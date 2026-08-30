@@ -742,17 +742,29 @@ function PlatformContent() {
                       </div>
                     </div>
 
-                    <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        tenant.status === 'active'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : tenant.status === 'suspended'
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      }`}
-                    >
-                      {tenant.status}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                          tenant.status === 'active'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : tenant.status === 'suspended'
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        }`}
+                      >
+                        {tenant.status}
+                      </span>
+
+                      <a
+                        href={`https://mavenco-storefront.vercel.app/stores/${tenant.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
+                        title="View Frontend Storefront"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
 
                   {/* Details Matrix */}
@@ -783,10 +795,22 @@ function PlatformContent() {
                   <button
                     onClick={() => handleImpersonate(tenant)}
                     className="flex-1 py-1.5 px-3 bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 text-xs font-bold rounded-lg border border-rose-500/30 flex items-center justify-center gap-1.5 transition-all"
+                    title="Impersonate Store Admin"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>Impersonate</span>
                   </button>
+
+                  <a
+                    href={`https://mavenco-storefront.vercel.app/stores/${tenant.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 rounded-lg transition-all flex items-center justify-center gap-1 text-xs font-semibold"
+                    title="View Frontend Storefront"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Storefront</span>
+                  </a>
 
                   <div className="flex items-center gap-1">
                     <button
@@ -811,6 +835,7 @@ function PlatformContent() {
                     <button
                       onClick={() => setDeletingTenant(tenant)}
                       className="p-1.5 text-red-400 hover:text-white hover:bg-red-950/30 rounded-lg transition-all"
+                      title="Delete Store"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
