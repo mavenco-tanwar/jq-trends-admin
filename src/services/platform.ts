@@ -627,6 +627,87 @@ export class PlatformService {
     });
   }
 
+  public static async updateTenantDetails(
+    id: string,
+    updates: Partial<Pick<TenantStore, 'name' | 'slug' | 'tagline' | 'currency' | 'ownerEmail' | 'ownerName' | 'planId' | 'status' | 'theme'>>
+  ): Promise<TenantStore | null> {
+    const list = this.loadTenants();
+    const plan = updates.planId ? this.plans.find((p) => p.id === updates.planId) : null;
+
+    let updatedStore: TenantStore | null = null;
+    const updated = list.map((t) => {
+      if (t.id === id || t.slug === id) {
+        updatedStore = {
+          ...t,
+          ...updates,
+          planName: plan ? plan.name : t.planName,
+          theme: updates.theme ? { ...t.theme, ...updates.theme } : t.theme,
+          updatedAt: new Date().toISOString(),
+        };
+        return updatedStore;
+      }
+      return t;
+    });
+
+    if (updatedStore) {
+      this.saveTenants(updated);
+      this.logActivity({
+        id: `act_${Date.now()}`,
+        event: `Tenant ${(updatedStore as TenantStore).name} configuration updated by Superadmin`,
+        actor: 'superadmin@mavenco.com',
+        tenantId: id,
+        tenantName: (updatedStore as TenantStore).name,
+        ipAddress: '127.0.0.1',
+        severity: 'info',
+        timestamp: 'Just now',
+      });
+    }
+
+    return updatedStore;
+  }
+
+  public static async deleteTenant(id: string): Promise<boolean> {
+    const list = this.loadTenants();
+    const tenant = list.find((t) => t.id === id || t.slug === id);
+    if (!tenant) return false;
+
+    const filtered = list.filter((t) => t.id !== id && t.slug !== id);
+    this.saveTenants(filtered);
+
+    this.logActivity({
+      id: `act_${Date.now()}`,
+      event: `Tenant ${tenant.name} (${tenant.databaseName}) was deleted/archived by Superadmin`,
+      actor: 'superadmin@mavenco.com',
+      tenantId: id,
+      tenantName: tenant.name,
+      ipAddress: '127.0.0.1',
+      severity: 'critical',
+      timestamp: 'Just now',
+    });
+
+    return true;
+  }
+
+  public static async updatePlanFeatures(
+    planId: string,
+    features: Partial<TenantPlan['features']>
+  ): Promise<void> {
+    const plan = this.plans.find((p) => p.id === planId);
+    if (!plan) return;
+
+    plan.features = { ...plan.features, ...features };
+
+    this.logActivity({
+      id: `act_${Date.now()}`,
+      event: `Plan ${plan.name} features updated by Superadmin`,
+      actor: 'superadmin@mavenco.com',
+      tenantId: 'platform',
+      ipAddress: '127.0.0.1',
+      severity: 'info',
+      timestamp: 'Just now',
+    });
+  }
+
   public static async listPlans(): Promise<TenantPlan[]> {
     return this.plans;
   }

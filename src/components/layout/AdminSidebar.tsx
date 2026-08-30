@@ -63,18 +63,34 @@ export function AdminSidebar({
   const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getActiveTenant());
+  const [isSuperadminAuthority, setIsSuperadminAuthority] = useState(false);
 
   useEffect(() => {
     setActiveTenant(PlatformService.getActiveTenant());
-  }, []);
+    const isSuper =
+      user?.email?.toLowerCase().includes('superadmin') ||
+      pathname?.startsWith('/platform') ||
+      PlatformService.getImpersonationState().isImpersonating;
+    setIsSuperadminAuthority(Boolean(isSuper));
+  }, [user, pathname]);
 
   const navSections: NavSection[] = [
-    {
-      title: 'SUPERADMIN PLATFORM',
-      items: [
-        { label: 'Platform Control Plane', href: '/platform', icon: Shield, badge: 'SaaS', badgeColor: 'bg-rose-600/30 text-rose-300 font-bold border border-rose-500/40' },
-      ],
-    },
+    ...(isSuperadminAuthority
+      ? [
+          {
+            title: 'SUPERADMIN PLATFORM',
+            items: [
+              {
+                label: 'Platform Control Plane',
+                href: '/platform',
+                icon: Shield,
+                badge: 'SaaS',
+                badgeColor: 'bg-rose-600/30 text-rose-300 font-bold border border-rose-500/40',
+              },
+            ],
+          },
+        ]
+      : []),
     {
       title: 'DASHBOARD',
       items: [
