@@ -1,4 +1,9 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_CMS_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
+    ? 'https://jq-trends.vercel.app'
+    : 'http://localhost:4000');
 const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID || 'store_jq_trends';
 
 export interface ApiResponse<T> {
