@@ -291,110 +291,14 @@ function PlatformContent() {
 
   return (
     <div className="space-y-6 pb-20 select-none max-w-7xl mx-auto">
-      {/* Superadmin Header Banner */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-[#12141D] via-[#161822] to-[#1A1D2B] p-6 rounded-2xl border border-rose-900/40 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="space-y-1 z-10">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-600/20 text-rose-400 border border-rose-500/30">
-              Platform Master Control Plane
-            </span>
-            <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              SaaS Engine v3.4 Active
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Superadmin Multi-Tenant Center
-          </h1>
-          <p className="text-xs text-slate-400 max-w-2xl">
-            Monitor global platform health, provision new isolated tenant databases, configure SaaS subscription quotas, and manage client storefronts.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 z-10">
-          <button
-            onClick={() => setIsProvisionModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-105"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Provision New Store</span>
-          </button>
-        </div>
-      </div>
-
-      {/* KPI Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1 */}
-        <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Total Tenant Stores</span>
-            <Building2 className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">
-            {metrics?.totalTenants || tenants.length}
-          </div>
-          <div className="flex items-center gap-2 text-[11px]">
-            <span className="text-emerald-400 font-bold">{metrics?.activeTenants || tenants.filter(t => t.status === 'active').length} Active</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-amber-400 font-bold">{metrics?.trialTenants || 0} Trial</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-red-400 font-bold">{metrics?.suspendedTenants || 0} Suspended</span>
-          </div>
-        </div>
-
-        {/* Metric 2 */}
-        <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Platform SaaS MRR</span>
-            <CreditCard className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">
-            ₹{(metrics?.mrrInr || 35496).toLocaleString('en-IN')} /mo
-          </div>
-          <p className="text-[11px] text-emerald-400 font-medium">
-            +18.4% MRR growth vs previous month (INR)
-          </p>
-        </div>
-
-        {/* Metric 3 */}
-        <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Global Catalog &amp; Orders</span>
-            <BarChart3 className="w-4 h-4 text-sky-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">
-            {(metrics?.totalProducts || 220).toLocaleString()} Items
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Across {(metrics?.totalOrders || 1842).toLocaleString()} customer orders processed
-          </p>
-        </div>
-
-        {/* Metric 4 */}
-        <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Database Isolation</span>
-            <Database className="w-4 h-4 text-purple-400" />
-          </div>
-          <div className="text-2xl font-bold text-white flex items-center gap-2">
-            <span>{tenants.length} Isolated DBs</span>
-          </div>
-          <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> 100% Tenant Isolation Verified
-          </p>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+      {/* Navigation Tabs Bar */}
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
         <button
           onClick={() => handleTabChange('overview')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'overview'
-              ? 'bg-rose-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
@@ -403,10 +307,10 @@ function PlatformContent() {
 
         <button
           onClick={() => handleTabChange('tenants')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'tenants'
-              ? 'bg-rose-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
           }`}
         >
           <Store className="w-4 h-4" />
@@ -415,10 +319,10 @@ function PlatformContent() {
 
         <button
           onClick={() => handleTabChange('domains')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'domains'
-              ? 'bg-rose-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
           }`}
         >
           <Globe className="w-4 h-4" />
@@ -427,10 +331,10 @@ function PlatformContent() {
 
         <button
           onClick={() => handleTabChange('plans')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'plans'
-              ? 'bg-rose-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
           }`}
         >
           <Zap className="w-4 h-4" />
@@ -439,10 +343,10 @@ function PlatformContent() {
 
         <button
           onClick={() => handleTabChange('activity')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'activity'
-              ? 'bg-rose-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
           }`}
         >
           <Activity className="w-4 h-4" />
@@ -453,6 +357,102 @@ function PlatformContent() {
       {/* TAB 0: EXECUTIVE OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Superadmin Header Banner */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-[#12141D] via-[#161822] to-[#1A1D2B] p-6 rounded-2xl border border-rose-900/40 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="space-y-1 z-10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-600/20 text-rose-400 border border-rose-500/30">
+                  Platform Master Control Plane
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  SaaS Engine v3.4 Active
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                Superadmin Multi-Tenant Center
+              </h1>
+              <p className="text-xs text-slate-400 max-w-2xl">
+                Monitor global platform health, provision new isolated tenant databases, configure SaaS subscription quotas, and manage client storefronts.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 z-10">
+              <button
+                onClick={() => setIsProvisionModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-105"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Provision New Store</span>
+              </button>
+            </div>
+          </div>
+
+          {/* KPI Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Metric 1 */}
+            <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+                <span>Total Tenant Stores</span>
+                <Building2 className="w-4 h-4 text-rose-400" />
+              </div>
+              <div className="text-2xl font-bold text-white">
+                {metrics?.totalTenants || tenants.length}
+              </div>
+              <div className="flex items-center gap-2 text-[11px]">
+                <span className="text-emerald-400 font-bold">{metrics?.activeTenants || tenants.filter(t => t.status === 'active').length} Active</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-amber-400 font-bold">{metrics?.trialTenants || 0} Trial</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-red-400 font-bold">{metrics?.suspendedTenants || 0} Suspended</span>
+              </div>
+            </div>
+
+            {/* Metric 2 */}
+            <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+                <span>Platform SaaS MRR</span>
+                <CreditCard className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="text-2xl font-bold text-white">
+                ₹{(metrics?.mrrInr || 35496).toLocaleString('en-IN')} /mo
+              </div>
+              <p className="text-[11px] text-emerald-400 font-medium">
+                +18.4% MRR growth vs previous month (INR)
+              </p>
+            </div>
+
+            {/* Metric 3 */}
+            <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+                <span>Global Catalog &amp; Orders</span>
+                <BarChart3 className="w-4 h-4 text-sky-400" />
+              </div>
+              <div className="text-2xl font-bold text-white">
+                {(metrics?.totalProducts || 220).toLocaleString()} Items
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Across {(metrics?.totalOrders || 1842).toLocaleString()} customer orders processed
+              </p>
+            </div>
+
+            {/* Metric 4 */}
+            <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+                <span>Database Isolation</span>
+                <Database className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="text-2xl font-bold text-white flex items-center gap-2">
+                <span>{tenants.length} Isolated DBs</span>
+              </div>
+              <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> 100% Tenant Isolation Verified
+              </p>
+            </div>
+          </div>
+
           {/* Quick Operations Bar */}
           <div className="bg-gradient-to-r from-[#161822] via-[#1A1D2B] to-[#161822] p-5 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="space-y-1 text-center md:text-left">
@@ -707,7 +707,27 @@ function PlatformContent() {
 
       {/* TAB 1: TENANTS LIST */}
       {activeTab === 'tenants' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
+                <Store className="w-5 h-5 text-rose-400" />
+                <span>Tenant Store Directory ({tenants.length})</span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Manage client store configurations, database partitions, and merchant workspaces.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsProvisionModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/40 transition-all self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Provision New Store</span>
+            </button>
+          </div>
+
           {/* Controls */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#161822] p-4 rounded-xl border border-slate-800">
             <div className="relative w-full sm:w-80">
