@@ -47,11 +47,22 @@ import { Modal } from '@/components/ui/Modal';
 
 export default function SuperadminPlatformPage() {
   const { showToast } = useToast();
+
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [tenants, setTenants] = useState<TenantStore[]>([]);
   const [plans, setPlans] = useState<TenantPlan[]>([]);
   const [activities, setActivities] = useState<PlatformActivityLog[]>([]);
   const [activeTab, setActiveTab] = useState<'tenants' | 'plans' | 'domains' | 'activity'>('tenants');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam && ['tenants', 'plans', 'domains', 'activity'].includes(tabParam)) {
+        setActiveTab(tabParam as any);
+      }
+    }
+  }, []);
 
   // Search & Filter
   const [search, setSearch] = useState('');
