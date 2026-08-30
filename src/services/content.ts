@@ -1,4 +1,5 @@
 import { ApiClient } from './api';
+import { PlatformService } from './platform';
 import { INITIAL_HOMEPAGE_BLOCKS } from '@/lib/mock-data';
 import type { ContentBlock, HomepageConfig, Page } from '@/types';
 
@@ -102,8 +103,9 @@ export class ContentService {
   ];
 
   static async getHomepage(preview = false): Promise<HomepageConfig> {
+    const tenantSlug = PlatformService.getActiveTenant().slug || 'jqtrends';
     try {
-      const res = await ApiClient.get<any>(`/api/v1/content/homepage${preview ? '?preview=draft' : ''}`);
+      const res = await ApiClient.get<any>(`/api/v1/content/homepage?tenant=${tenantSlug}${preview ? '&preview=draft' : ''}`);
       if (res.data?.sections && Array.isArray(res.data.sections) && res.data.sections.length > 0) {
         const normalized = res.data.sections.map(normalizeBlock);
         this.localBlocks = normalized;
@@ -127,10 +129,11 @@ export class ContentService {
   }
 
   static async saveDraft(sections: ContentBlock[]): Promise<HomepageConfig> {
+    const tenantSlug = PlatformService.getActiveTenant().slug || 'jqtrends';
     const normalized = sections.map(normalizeBlock);
     this.localBlocks = normalized;
     try {
-      await ApiClient.put('/api/v1/content/homepage', { sections: normalized, status: 'draft' });
+      await ApiClient.put(`/api/v1/content/homepage?tenant=${tenantSlug}`, { sections: normalized, status: 'draft' });
     } catch {
       // Mock Fallback
     }
@@ -144,6 +147,7 @@ export class ContentService {
   }
 
   static async publishHomepage(sections: ContentBlock[]): Promise<HomepageConfig> {
+    const tenantSlug = PlatformService.getActiveTenant().slug || 'jqtrends';
     const normalized = sections.map(normalizeBlock);
     this.localBlocks = normalized;
     const newVersion = this.versionHistory.length + 1;
@@ -157,7 +161,7 @@ export class ContentService {
 
     try {
       // Direct update and publish to CMS backend
-      await ApiClient.put('/api/v1/content/homepage', { sections: normalized, status: 'published' });
+      await ApiClient.put(`/api/v1/content/homepage?tenant=${tenantSlug}`, { sections: normalized, status: 'published' });
     } catch {
       // Mock Fallback
     }
