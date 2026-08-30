@@ -1,9 +1,18 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_CMS_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
-    ? 'https://jq-trends.vercel.app'
-    : 'http://localhost:4000');
+function getApiBaseUrl(): string {
+  let raw =
+    process.env.NEXT_PUBLIC_CMS_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
+      ? 'https://jq-trends.vercel.app'
+      : 'http://localhost:4000');
+
+  raw = raw.trim().replace(/\/+$/, '');
+  if (raw && !raw.startsWith('http://') && !raw.startsWith('https://')) {
+    raw = `https://${raw}`;
+  }
+  return raw;
+}
+
 const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID || 'store_jq_trends';
 
 export interface ApiResponse<T> {
@@ -25,7 +34,8 @@ export class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    const baseUrl = getApiBaseUrl();
+    const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
     const token = this.getToken();
 
     const headers: Record<string, string> = {
