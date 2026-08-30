@@ -29,6 +29,8 @@ function timeAgo(dateString: string): string {
   return `${months}mo ago`;
 }
 
+const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+
 export async function GET() {
   try {
     const db = await getDatabase();
@@ -39,11 +41,38 @@ export async function GET() {
       );
     }
 
+    const cutoffTime = new Date(Date.now() - FIVE_DAYS_MS);
+    const cutoffIso = cutoffTime.toISOString();
+
+    // 1. Automatically delete any records older than 5 days from MongoDB Atlas
+    await db.collection('platform_activities').deleteMany({
+      $or: [
+        { createdAt: { $lt: cutoffIso } },
+        { createdAtDate: { $lt: cutoffTime } },
+      ],
+    });
+
+    // 2. Ensure MongoDB TTL Index exists on platform_activities (5 days = 432,000s)
+    try {
+      await db.collection('platform_activities').createIndex(
+        { createdAtDate: 1 },
+        { expireAfterSeconds: 5 * 24 * 60 * 60, background: true }
+      );
+    } catch {
+      // Index already created
+    }
+
+    // 3. Fetch only logs within the 5-day rolling window
     const logs = await db
       .collection('platform_activities')
-      .find({})
+      .find({
+        $or: [
+          { createdAt: { $gte: cutoffIso } },
+          { createdAtDate: { $gte: cutoffTime } },
+        ],
+      })
       .sort({ createdAt: -1 })
-      .limit(50)
+      .limit(100)
       .toArray();
 
     const formattedLogs = logs.map((log) => ({
@@ -78,6 +107,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database unavailable' }, { status: 503, headers: corsHeaders() });
     }
 
+    const now = new Date();
     const newActivity = {
       event,
       actor: actor || 'superadmin@platform.com',
@@ -85,7 +115,8 @@ export async function POST(request: NextRequest) {
       tenantName: tenantName || null,
       severity,
       ipAddress,
-      createdAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
+      createdAtDate: now,
     };
 
     const result = await db.collection('platform_activities').insertOne(newActivity);

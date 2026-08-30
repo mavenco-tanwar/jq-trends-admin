@@ -86,6 +86,7 @@ export interface PlatformActivityLog {
   ipAddress: string;
   severity: 'info' | 'warning' | 'critical';
   timestamp: string;
+  createdAt?: string;
 }
 
 export interface PlatformMetrics {
@@ -864,22 +865,31 @@ export class PlatformService {
   }
 
   public static async listActivityLogs(): Promise<PlatformActivityLog[]> {
+    const fiveDaysAgo = Date.now() - 5 * 24 * 60 * 60 * 1000;
     try {
       const res = await fetch('/api/v1/platform/activity');
       if (res.ok) {
         const data = await res.json();
         if (data.activities && Array.isArray(data.activities) && data.activities.length > 0) {
-          this.activities = data.activities;
-          return data.activities;
+          const freshActivities = data.activities.filter((a: PlatformActivityLog) => {
+            if (!a.createdAt) return true;
+            return new Date(a.createdAt).getTime() >= fiveDaysAgo;
+          });
+          this.activities = freshActivities;
+          return freshActivities;
         }
       }
     } catch (err) {
       console.warn('Failed to fetch activity logs from MongoDB API:', err);
     }
-    return this.activities;
+    return this.activities.filter((a) => {
+      if (!a.createdAt) return true;
+      return new Date(a.createdAt).getTime() >= fiveDaysAgo;
+    });
   }
 
   public static async logActivity(log: Partial<PlatformActivityLog> & { event: string }) {
+    const now = new Date();
     const newLog: PlatformActivityLog = {
       id: log.id || `act_${Date.now()}`,
       event: log.event,
@@ -889,9 +899,14 @@ export class PlatformService {
       ipAddress: log.ipAddress || '127.0.0.1',
       severity: log.severity || 'info',
       timestamp: 'Just now',
+      createdAt: log.createdAt || now.toISOString(),
     };
 
-    this.activities = [newLog, ...this.activities];
+    const fiveDaysAgo = Date.now() - 5 * 24 * 60 * 60 * 1000;
+    this.activities = [newLog, ...this.activities].filter((a) => {
+      if (!a.createdAt) return true;
+      return new Date(a.createdAt).getTime() >= fiveDaysAgo;
+    });
 
     try {
       await fetch('/api/v1/platform/activity', {

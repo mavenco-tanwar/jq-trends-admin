@@ -40,6 +40,7 @@ import {
   Mail,
   Copy,
   Key,
+  Clock,
 } from 'lucide-react';
 import {
   PlatformService,
@@ -1441,7 +1442,7 @@ function PlatformContent() {
                 </span>
                 <span className="flex items-center gap-1 text-[11px] text-sky-400 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-                  Immutable Stream
+                  5-Day Rolling Retention (Auto-Purged)
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
@@ -1449,13 +1450,13 @@ function PlatformContent() {
                 <span>Platform Audit Trail &amp; Security Logs</span>
               </h1>
               <p className="text-xs text-slate-400 max-w-2xl">
-                Immutable cryptographic activity logs, tenant provisioning records, admin impersonation sessions, and database schema mutations.
+                Cryptographic activity logs, tenant provisioning records, admin impersonation sessions, and domain routing changes. Automatically retained for 5 days and purged from MongoDB.
               </p>
             </div>
 
             <div className="flex items-center gap-3 z-10">
               <span className="px-3.5 py-2 rounded-xl bg-sky-500/20 text-sky-300 font-bold text-xs border border-sky-500/30 font-mono">
-                {activities.length} Recorded Events
+                {activities.length} Events (Last 5 Days)
               </span>
             </div>
           </div>
@@ -1466,8 +1467,9 @@ function PlatformContent() {
                 <Activity className="w-5 h-5 text-sky-400" />
                 <span>Event Stream History</span>
               </h3>
-              <span className="text-xs text-slate-400 font-mono">
-                Real-Time Append-Only
+              <span className="text-xs text-emerald-400 font-mono flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                <span>5-Day Auto-Delete Window Active</span>
               </span>
             </div>
 
