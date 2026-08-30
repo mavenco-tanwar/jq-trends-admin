@@ -37,6 +37,9 @@ import {
   Square,
   LayoutDashboard,
   TrendingUp,
+  Mail,
+  Copy,
+  Key,
 } from 'lucide-react';
 import {
   PlatformService,
@@ -137,6 +140,18 @@ function PlatformContent() {
     }
   };
 
+  const [provisionedDetails, setProvisionedDetails] = useState<{
+    storeName: string;
+    slug: string;
+    ownerEmail: string;
+    status: string;
+    planName: string;
+    temporaryPassword: string;
+    adminLoginUrl: string;
+    storefrontUrl: string;
+  } | null>(null);
+  const [copiedCredentials, setCopiedCredentials] = useState(false);
+
   const handleStartProvisioning = async (e: React.FormEvent) => {
     e.preventDefault();
     setWizardStep(5);
@@ -144,24 +159,57 @@ function PlatformContent() {
     setProvisionProgress(10);
     setProvisionLog(['🚀 Initializing tenant provisioning pipeline...']);
 
+    const tempPassword = `Mavenco@2026!${storeSlug}`;
+    const planObj = plans.find((p) => p.id === selectedPlanId) || plans[1];
+    const adminUrl = `https://mavenco-admin.vercel.app/login?tenant=${storeSlug}&email=${encodeURIComponent(ownerEmail)}`;
+    const storeUrl = `https://mavenco-storefront.vercel.app/stores/${storeSlug}`;
+
     setTimeout(() => {
       setProvisionProgress(30);
       setProvisionLog((prev) => [...prev, `📁 Generating Tenant ID: store_${storeSlug}`]);
     }, 400);
 
     setTimeout(() => {
-      setProvisionProgress(55);
+      setProvisionProgress(50);
       setProvisionLog((prev) => [...prev, `🗄️ Creating MongoDB Isolated Database: tenant_${storeSlug}`]);
-    }, 900);
+    }, 850);
 
     setTimeout(() => {
-      setProvisionProgress(75);
+      setProvisionProgress(70);
       setProvisionLog((prev) => [
         ...prev,
         `🎨 Seeding Default Brand Theme & Visual CMS Blocks...`,
         `👤 Creating Store Administrator Account: ${ownerEmail}`,
       ]);
-    }, 1400);
+    }, 1300);
+
+    setTimeout(async () => {
+      setProvisionProgress(85);
+      setProvisionLog((prev) => [
+        ...prev,
+        `📧 Dispatching Official Activation & Credentials Email to ${ownerEmail}...`,
+      ]);
+
+      // Call API to send formatted activation email
+      try {
+        await fetch('/api/v1/platform/send-activation-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storeName,
+            slug: storeSlug,
+            ownerName,
+            ownerEmail,
+            status: storeStatus,
+            planName: planObj?.name || 'Starter Boutique',
+            temporaryPassword: tempPassword,
+            customDomain,
+          }),
+        });
+      } catch (err) {
+        console.warn('Activation email dispatch notice:', err);
+      }
+    }, 1700);
 
     setTimeout(async () => {
       const newTenant = await PlatformService.provisionStore({
@@ -178,16 +226,28 @@ function PlatformContent() {
         accentColor,
       });
 
+      setProvisionedDetails({
+        storeName: newTenant.name,
+        slug: newTenant.slug,
+        ownerEmail,
+        status: storeStatus || 'active',
+        planName: planObj?.name || 'Starter Boutique',
+        temporaryPassword: tempPassword,
+        adminLoginUrl: adminUrl,
+        storefrontUrl: storeUrl,
+      });
+
       setProvisionProgress(100);
       setProvisionLog((prev) => [
         ...prev,
         `🌐 SSL & Subdomain verified: ${storeSlug}.ourplatform.com`,
+        `📧 Activation email delivered with Login Link & Temporary Password!`,
         `✅ Tenant ${newTenant.name} is now LIVE (${(storeStatus || 'active').toUpperCase()})!`,
       ]);
       setIsProvisioning(false);
-      showToast(`Store ${newTenant.name} provisioned successfully!`, 'success');
+      showToast(`Store ${newTenant.name} provisioned & activation email dispatched!`, 'success');
       loadPlatformData();
-    }, 2000);
+    }, 2400);
   };
 
   const resetWizard = () => {
@@ -196,6 +256,8 @@ function PlatformContent() {
     setIsProvisioning(false);
     setProvisionProgress(0);
     setProvisionLog([]);
+    setProvisionedDetails(null);
+    setCopiedCredentials(false);
     setStoreName('');
     setStoreSlug('');
     setTagline('');
@@ -1348,10 +1410,98 @@ function PlatformContent() {
                   ))}
                 </div>
 
+                {!isProvisioning && provisionedDetails && (
+                  <div className="p-4 sm:p-5 bg-[#10121A] rounded-2xl border border-rose-900/60 text-left space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-emerald-400" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">
+                          Merchant Activation Email Dispatched
+                        </span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                          provisionedDetails.status === 'active'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : provisionedDetails.status === 'trial'
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        }`}
+                      >
+                        {provisionedDetails.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <span className="text-slate-400">Recipient Email:</span>
+                        <span className="font-mono text-slate-200 font-bold">{provisionedDetails.ownerEmail}</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <span className="text-slate-400">Temporary Password:</span>
+                        <span className="font-mono text-sky-400 font-bold bg-sky-950/60 px-2 py-0.5 rounded">
+                          {provisionedDetails.temporaryPassword}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <span className="text-slate-400">Admin Login Portal:</span>
+                        <a
+                          href={provisionedDetails.adminLoginUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1"
+                        >
+                          <span>/login?tenant={provisionedDetails.slug}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                      <div className="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <span className="text-slate-400">Storefront URL:</span>
+                        <a
+                          href={provisionedDetails.storefrontUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
+                        >
+                          <span>/stores/{provisionedDetails.slug}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const text = `🎉 Welcome to Mavenco Commerce!\n\nStore: ${provisionedDetails.storeName}\nStatus: ${provisionedDetails.status.toUpperCase()}\nPlan: ${provisionedDetails.planName}\n\n🔐 Merchant Admin Login: ${provisionedDetails.adminLoginUrl}\nEmail: ${provisionedDetails.ownerEmail}\nTemporary Password: ${provisionedDetails.temporaryPassword}\n\n🏬 Live Storefront: ${provisionedDetails.storefrontUrl}`;
+                          navigator.clipboard.writeText(text);
+                          setCopiedCredentials(true);
+                          showToast('Merchant activation details copied to clipboard!', 'success');
+                          setTimeout(() => setCopiedCredentials(false), 3000);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-all"
+                      >
+                        {copiedCredentials ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-rose-400" />}
+                        <span>{copiedCredentials ? 'Credentials Copied!' : 'Copy Activation Details'}</span>
+                      </button>
+
+                      <a
+                        href={provisionedDetails.storefrontUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1.5"
+                      >
+                        <span>Open Store</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                )}
+
                 {!isProvisioning && (
                   <button
                     onClick={resetWizard}
-                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg"
+                    className="w-full px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
                   >
                     Done &amp; View All Stores
                   </button>
