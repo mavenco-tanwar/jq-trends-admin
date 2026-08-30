@@ -645,24 +645,38 @@ function PlatformContent() {
       {/* TAB 1: TENANTS LIST */}
       {activeTab === 'tenants' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
-                <Store className="w-5 h-5 text-rose-400" />
-                <span>Tenant Store Directory ({tenants.length})</span>
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Manage client store configurations, database partitions, and merchant workspaces.
+          {/* Hero Banner for Tenants */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-[#12141D] via-[#161822] to-[#1A1D2B] p-6 rounded-2xl border border-rose-900/40 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="space-y-1 z-10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-600/20 text-rose-400 border border-rose-500/30">
+                  Multi-Tenant Ecosystem
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {tenants.length} Active Stores
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                <Store className="w-7 h-7 text-rose-400" />
+                <span>Tenant Stores &amp; Workspaces</span>
+              </h1>
+              <p className="text-xs text-slate-400 max-w-2xl">
+                Manage client store configurations, database partitions, merchant accounts, and active storefront previews with one-click impersonation.
               </p>
             </div>
 
-            <button
-              onClick={() => setIsProvisionModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/40 transition-all self-start sm:self-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Provision New Store</span>
-            </button>
+            <div className="flex items-center gap-3 z-10">
+              <button
+                onClick={() => setIsProvisionModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-105"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Provision New Store</span>
+              </button>
+            </div>
           </div>
 
           {/* Controls */}
@@ -748,71 +762,39 @@ function PlatformContent() {
                       <span className="font-mono text-slate-300 font-bold">{tenant.databaseName}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500">Plan:</span>
-                      <span className="font-bold text-rose-400">{tenant.planName}</span>
+                      <span className="text-slate-500">Plan Tier:</span>
+                      <span className="text-rose-400 font-semibold">{tenant.planName}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500">Routing / Domain:</span>
-                      <span className="font-mono text-slate-300">{tenant.primaryDomain}</span>
+                      <span className="text-slate-500">Store Domain:</span>
+                      <span className="font-mono text-slate-400 truncate max-w-[160px]">{tenant.primaryDomain}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500">Owner:</span>
-                      <span className="text-slate-300 truncate max-w-[140px]">{tenant.ownerEmail}</span>
-                    </div>
-                  </div>
-
-                  {/* Mini Stats Bar */}
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="p-2 bg-[#10121A]/60 rounded-lg border border-slate-800">
-                      <div className="font-bold text-white">{tenant.metrics?.products || 0}</div>
-                      <div className="text-[10px] text-slate-500">Products</div>
-                    </div>
-                    <div className="p-2 bg-[#10121A]/60 rounded-lg border border-slate-800">
-                      <div className="font-bold text-white">{tenant.metrics?.orders || 0}</div>
-                      <div className="text-[10px] text-slate-500">Orders</div>
-                    </div>
-                    <div className="p-2 bg-[#10121A]/60 rounded-lg border border-slate-800">
-                      <div className="font-bold text-white">
-                        ₹{(tenant.metrics?.monthlyRevenue || 0) >= 100000 
-                          ? `${((tenant.metrics?.monthlyRevenue || 0) / 100000).toFixed(1)}L`
-                          : `${((tenant.metrics?.monthlyRevenue || 0) / 1000).toFixed(0)}k`}
-                      </div>
-                      <div className="text-[10px] text-slate-500">Monthly GMV</div>
+                      <span className="text-slate-500">Monthly Sales:</span>
+                      <span className="text-emerald-400 font-bold">
+                        ₹{(tenant.metrics?.monthlyRevenue || 0).toLocaleString('en-IN')}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Actions Bar */}
-                <div className="pt-3 border-t border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between gap-1.5">
-                    <a
-                      href={`https://mavenco-storefront.vercel.app/stores/${tenant.slug}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex-1 py-1.5 px-2 bg-[#10121A] hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1 border border-slate-700 transition-all"
-                    >
-                      <Store className="w-3.5 h-3.5 text-rose-400" />
-                      <span>Storefront</span>
-                      <ExternalLink className="w-3 h-3 text-slate-500" />
-                    </a>
+                {/* Card Actions */}
+                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => handleImpersonate(tenant)}
+                    className="flex-1 py-1.5 px-3 bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 text-xs font-bold rounded-lg border border-rose-500/30 flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Impersonate</span>
+                  </button>
 
-                    <button
-                      onClick={() => handleImpersonate(tenant)}
-                      className="flex-1 py-1.5 px-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1"
-                      title="Open store admin panel as Superadmin"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Impersonate</span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleOpenEdit(tenant)}
-                      className="px-2.5 py-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded flex items-center gap-1 transition-all"
+                      className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+                      title="Edit Tenant Configuration"
                     >
-                      <Edit className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Edit</span>
+                      <Edit className="w-3.5 h-3.5" />
                     </button>
 
                     <button
@@ -828,10 +810,9 @@ function PlatformContent() {
 
                     <button
                       onClick={() => setDeletingTenant(tenant)}
-                      className="px-2.5 py-1 text-red-400 hover:bg-red-950/30 rounded flex items-center gap-1 transition-all"
+                      className="p-1.5 text-red-400 hover:text-white hover:bg-red-950/30 rounded-lg transition-all"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>Archive</span>
                     </button>
                   </div>
                 </div>
@@ -844,14 +825,35 @@ function PlatformContent() {
       {/* TAB 2: DOMAINS & TENANT URLS */}
       {activeTab === 'domains' && (
         <div className="space-y-6">
-          <div className="bg-[#161822] p-5 rounded-2xl border border-slate-800 space-y-2">
-            <div className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-rose-400" />
-              <h2 className="text-base font-bold text-white">Multi-Tenant Routing &amp; Domain Manager</h2>
+          {/* Hero Banner for Domains */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-[#12141D] via-[#161822] to-[#1A1D2B] p-6 rounded-2xl border border-emerald-900/40 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="space-y-1 z-10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
+                  Edge Ingress &amp; CDN
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Auto TLS 1.3 Active
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                <Globe className="w-7 h-7 text-emerald-400" />
+                <span>Custom Domains &amp; SSL Routing</span>
+              </h1>
+              <p className="text-xs text-slate-400 max-w-2xl">
+                Configure automated DNS ingress, wildcard SSL certificates, and custom apex domains for client storefronts and merchant workspaces.
+              </p>
             </div>
-            <p className="text-xs text-slate-400">
-              Each tenant store receives dedicated isolated URLs for both its <strong>Customer Storefront</strong> and <strong>Merchant Admin Console</strong>.
-            </p>
+
+            <div className="flex items-center gap-3 z-10">
+              <span className="px-3.5 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                All Domains Verified
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
@@ -973,6 +975,36 @@ function PlatformContent() {
       {/* TAB 3: PLANS & FEATURE FLAGS */}
       {activeTab === 'plans' && (
         <div className="space-y-6">
+          {/* Hero Banner for Plans */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-[#12141D] via-[#161822] to-[#1A1D2B] p-6 rounded-2xl border border-amber-900/40 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="space-y-1 z-10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-600/20 text-amber-400 border border-amber-500/30">
+                  Pricing &amp; Quotas
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-amber-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  INR (₹) Engine Active
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                <CreditCard className="w-7 h-7 text-amber-400" />
+                <span>SaaS Billing Plans &amp; Feature Flags</span>
+              </h1>
+              <p className="text-xs text-slate-400 max-w-2xl">
+                Define monthly subscription pricing in INR (₹), allocate storage/product quotas, and toggle dynamic feature access flags across tenant stores in real-time.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 z-10">
+              <span className="px-3.5 py-2 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30 font-mono">
+                3 Active Plan Tiers
+              </span>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {plans.map((p) => (
               <div
@@ -1056,33 +1088,65 @@ function PlatformContent() {
 
       {/* TAB 4: AUDIT TRAIL */}
       {activeTab === 'activity' && (
-        <div className="bg-[#161822] p-6 rounded-2xl border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white text-base flex items-center gap-2">
-              <Activity className="w-5 h-5 text-rose-400" />
-              <span>Platform Multi-Tenant Audit Logs</span>
-            </h3>
-            <span className="text-xs text-slate-400 font-mono">
-              Immutable Log Stream
-            </span>
+        <div className="space-y-6">
+          {/* Hero Banner for Activity Logs */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-[#12141D] via-[#161822] to-[#1A1D2B] p-6 rounded-2xl border border-sky-900/40 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="space-y-1 z-10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-600/20 text-sky-400 border border-sky-500/30">
+                  Security &amp; Compliance
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-sky-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                  Immutable Stream
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                <Activity className="w-7 h-7 text-sky-400" />
+                <span>Platform Audit Trail &amp; Security Logs</span>
+              </h1>
+              <p className="text-xs text-slate-400 max-w-2xl">
+                Immutable cryptographic activity logs, tenant provisioning records, admin impersonation sessions, and database schema mutations.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 z-10">
+              <span className="px-3.5 py-2 rounded-xl bg-sky-500/20 text-sky-300 font-bold text-xs border border-sky-500/30 font-mono">
+                {activities.length} Recorded Events
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-2 divide-y divide-slate-800/80">
-            {activities.map((act) => (
-              <div key={act.id} className="pt-3 first:pt-0 flex items-start justify-between gap-4 text-xs">
-                <div className="space-y-1">
-                  <div className="text-white font-medium">{act.event}</div>
-                  <div className="text-[11px] text-slate-400 flex items-center gap-2">
-                    <span className="text-rose-400 font-mono">{act.actor}</span>
-                    <span>•</span>
-                    <span className="text-slate-500">{act.tenantName || act.tenantId}</span>
+          <div className="bg-[#161822] p-6 rounded-2xl border border-slate-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <Activity className="w-5 h-5 text-sky-400" />
+                <span>Event Stream History</span>
+              </h3>
+              <span className="text-xs text-slate-400 font-mono">
+                Real-Time Append-Only
+              </span>
+            </div>
+
+            <div className="space-y-2 divide-y divide-slate-800/80">
+              {activities.map((act) => (
+                <div key={act.id} className="pt-3 first:pt-0 flex items-start justify-between gap-4 text-xs">
+                  <div className="space-y-1">
+                    <div className="text-white font-medium">{act.event}</div>
+                    <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                      <span className="text-rose-400 font-mono">{act.actor}</span>
+                      <span>•</span>
+                      <span className="text-slate-500">{act.tenantName || act.tenantId}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-slate-500 font-mono">{act.timestamp}</span>
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <span className="text-[10px] text-slate-500 font-mono">{act.timestamp}</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
