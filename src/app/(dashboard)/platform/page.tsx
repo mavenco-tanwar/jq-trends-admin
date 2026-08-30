@@ -361,17 +361,17 @@ function PlatformContent() {
               </p>
             </div>
 
-            {/* Metric 3 */}
+            {/* Metric 3: Global Platform GMV */}
             <div className="p-5 bg-[#161822] border border-slate-800 rounded-xl space-y-2">
               <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-                <span>Global Catalog &amp; Orders</span>
-                <BarChart3 className="w-4 h-4 text-sky-400" />
+                <span>Platform GMV &amp; Volume</span>
+                <TrendingUp className="w-4 h-4 text-sky-400" />
               </div>
               <div className="text-2xl font-bold text-white">
-                {(metrics?.totalProducts || 220).toLocaleString()} Items
+                ₹{(metrics?.totalPlatformSalesInr || 1245000).toLocaleString('en-IN')}
               </div>
-              <p className="text-[11px] text-slate-400">
-                Across {(metrics?.totalOrders || 1842).toLocaleString()} customer orders processed
+              <p className="text-[11px] text-sky-400 font-medium">
+                +24.6% merchant volume this month
               </p>
             </div>
 
