@@ -632,17 +632,17 @@ export class PlatformService {
     });
 
     try {
-      await ApiClient.patch(`/api/v1/platform/tenants/${id}/status`, { status });
+      await ApiClient.patch(`/api/v1/platform/tenants`, { id, slug: tenant?.slug, status });
     } catch {}
 
     // Real-time sync with storefront API
     if (tenant?.slug) {
       try {
-        fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${tenant.slug}`, {
-          method: 'PUT',
+        await fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${tenant.slug}`, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status }),
-        }).catch(() => {});
+        });
       } catch {}
     }
   }
