@@ -112,6 +112,8 @@ function PlatformContent() {
   const [editPrimaryColor, setEditPrimaryColor] = useState('#111111');
   const [editAccentColor, setEditAccentColor] = useState('#E11D48');
   const [editStatus, setEditStatus] = useState<TenantStore['status']>('active');
+  const [editTempPassword, setEditTempPassword] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Delete Tenant Confirmation State
   const [deletingTenant, setDeletingTenant] = useState<TenantStore | null>(null);
@@ -292,6 +294,38 @@ function PlatformContent() {
     setEditPrimaryColor(tenant.theme?.primaryColor || '#111111');
     setEditAccentColor(tenant.theme?.accentColor || '#E11D48');
     setEditStatus(tenant.status);
+    setEditTempPassword(`Mavenco@2026!${tenant.slug}`);
+  };
+
+  const handleResetMerchantPassword = async () => {
+    if (!editingTenant) return;
+    setIsResettingPassword(true);
+    try {
+      const res = await fetch('/api/v1/platform/merchant-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: editingTenant.slug,
+          email: editOwnerEmail || editingTenant.ownerEmail,
+          customPassword: editTempPassword || undefined,
+          requestedBy: 'Superadmin Console',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(
+          `Temporary password generated & dispatched to ${data.credentials?.email}!`,
+          'success'
+        );
+        setEditTempPassword(data.credentials?.temporaryPassword || '');
+      } else {
+        showToast(data.error || 'Failed to reset password', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error resetting password', 'error');
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -1631,6 +1665,38 @@ function PlatformContent() {
                     onChange={(e) => setEditAccentColor(e.target.value)}
                     className="w-full h-10 mt-1 p-1 bg-[#10121A] border border-slate-700 rounded-xl cursor-pointer"
                   />
+                </div>
+              </div>
+
+              {/* Password Management & Reset Section */}
+              <div className="p-4 bg-[#10121A] border border-slate-800 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-rose-400" />
+                    <span className="text-xs font-bold text-white">Merchant Admin Password</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">
+                    Dispatches credentials email via Gmail SMTP
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editTempPassword}
+                    onChange={(e) => setEditTempPassword(e.target.value)}
+                    placeholder="Mavenco@2026!store"
+                    className="flex-1 px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-xs text-white font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleResetMerchantPassword}
+                    disabled={isResettingPassword}
+                    className="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>{isResettingPassword ? 'Sending...' : 'Reset & Email Merchant'}</span>
+                  </button>
                 </div>
               </div>
 

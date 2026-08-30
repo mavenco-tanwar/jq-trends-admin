@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sliders, Save, Store, Mail, Phone, MapPin, IndianRupee } from 'lucide-react';
+import { Sliders, Save, Store, Mail, Phone, MapPin, IndianRupee, Lock, Key, CheckCircle2 } from 'lucide-react';
 import { SettingsService } from '@/services/settings';
 import { useToast } from '@/lib/toast-context';
 import type { StoreSettings } from '@/types';
@@ -14,6 +14,11 @@ export default function GeneralSettingsPage() {
   const [phone, setPhone] = useState('+91 98765 43210');
   const [address, setAddress] = useState('100 Feet Road, Indiranagar, Bengaluru, Karnataka 560038, India');
   const [currency, setCurrency] = useState('INR');
+
+  // Password Change State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   useEffect(() => {
     SettingsService.getStoreSettings().then((s) => {
@@ -37,6 +42,41 @@ export default function GeneralSettingsPage() {
       currency,
     });
     showToast('Store settings saved', 'success');
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      showToast('Password must be at least 6 characters long', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('Passwords do not match', 'error');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const res = await fetch('/api/v1/platform/merchant-password', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: contactEmail,
+          newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Permanent password updated successfully!', 'success');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        showToast(data.error || 'Failed to update password', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error updating password', 'error');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   return (
@@ -127,6 +167,54 @@ export default function GeneralSettingsPage() {
               onChange={(e) => setAddress(e.target.value)}
               className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
             />
+          </div>
+        </div>
+
+        {/* Security & Password Reset Section */}
+        <div className="bg-[#161822] p-6 rounded-xl border border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Lock className="w-4 h-4 text-rose-400" />
+              <span>Merchant Security &amp; Password</span>
+            </h3>
+            <span className="text-[11px] text-slate-400">
+              Change your temporary password to a permanent one
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-slate-300 font-bold mb-1">New Permanent Password *</label>
+              <input
+                type="password"
+                placeholder="••••••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-bold mb-1">Confirm New Password *</label>
+              <input
+                type="password"
+                placeholder="••••••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end pt-2">
+            <button
+              type="button"
+              onClick={handleChangePassword}
+              disabled={isUpdatingPassword || !newPassword}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-lg transition-all disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <Key className="w-3.5 h-3.5 text-rose-400" />
+              <span>{isUpdatingPassword ? 'Updating Password...' : 'Update & Save Permanent Password'}</span>
+            </button>
           </div>
         </div>
       </form>

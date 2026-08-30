@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Store } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Store, Key, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PlatformService } from '@/services/platform';
 
@@ -16,11 +16,50 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Forgot / Reset Password Modal State
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSlug, setResetSlug] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.title = 'Merchant Sign In | Mavenco Commerce';
     }
   }, []);
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsResetting(true);
+    setResetSuccess(null);
+    setResetError(null);
+
+    try {
+      const res = await fetch('/api/v1/platform/merchant-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: resetEmail,
+          slug: resetSlug,
+          requestedBy: 'Merchant Self-Service',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResetSuccess(
+          `Temporary password generated and dispatched to ${resetEmail || data.credentials?.email}! Please check your inbox.`
+        );
+      } else {
+        setResetError(data.error || 'Failed to reset password. Please verify your email.');
+      }
+    } catch (err: any) {
+      setResetError(err.message || 'Network error resetting password');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +179,14 @@ export default function LoginPage() {
                 />
                 <span>Remember session</span>
               </label>
-              <button type="button" className="text-rose-400 hover:text-rose-300 font-semibold">
+              <button
+                type="button"
+                onClick={() => {
+                  setResetEmail(email);
+                  setIsForgotModalOpen(true);
+                }}
+                className="text-rose-400 hover:text-rose-300 font-semibold"
+              >
                 Forgot password?
               </button>
             </div>
@@ -162,6 +208,102 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
+
+      {/* Forgot / Reset Password Modal */}
+      {isForgotModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#161822] border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-rose-400" />
+                <h3 className="text-base font-bold text-white">Reset Temporary Password</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setIsForgotModalOpen(false);
+                  setResetSuccess(null);
+                  setResetError(null);
+                }}
+                className="p-1 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Enter your Merchant Email or Store Slug. We will generate and email a fresh temporary password directly to your registered inbox.
+            </p>
+
+            {resetSuccess && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{resetSuccess}</span>
+              </div>
+            )}
+
+            {resetError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-400 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{resetError}</span>
+              </div>
+            )}
+
+            {!resetSuccess ? (
+              <form onSubmit={handleResetPassword} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Merchant Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="merchant@yourbrand.com"
+                    className="w-full px-3 py-2.5 bg-[#0C0E14] border border-slate-700 rounded-lg text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Store Slug (Optional)</label>
+                  <input
+                    type="text"
+                    value={resetSlug}
+                    onChange={(e) => setResetSlug(e.target.value)}
+                    placeholder="e.g. lumina, demo, auraliving"
+                    className="w-full px-3 py-2.5 bg-[#0C0E14] border border-slate-700 rounded-lg text-white font-mono"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isResetting || !resetEmail}
+                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow transition-all disabled:opacity-50"
+                  >
+                    {isResetting ? 'Dispatching...' : 'Send Temporary Password Email →'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsForgotModalOpen(false)}
+                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl"
+                >
+                  Return to Sign In
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
