@@ -8,20 +8,26 @@
   }
 }
 
-/* Custom Scrollbar */
+/* Modern Sleek Minimalist Scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #111116;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #272733;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f50;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .custom-card {
