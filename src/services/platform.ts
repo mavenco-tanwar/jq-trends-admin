@@ -557,6 +557,7 @@ export class PlatformService {
     ownerEmail: string;
     currency: string;
     planId: string;
+    status?: TenantStore['status'];
     primaryColor?: string;
     accentColor?: string;
     subdomain?: string;
@@ -595,7 +596,7 @@ export class PlatformService {
       slug: payload.slug.toLowerCase().trim(),
       code: payload.name.substring(0, 3).toUpperCase(),
       tagline: payload.tagline || 'Modern Commerce Store',
-      status: 'active',
+      status: payload.status || 'active',
       planId: plan.id,
       planName: plan.name,
       databaseName: `tenant_${payload.slug.toLowerCase()}`,

@@ -92,6 +92,7 @@ function PlatformContent() {
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [currency, setCurrency] = useState('INR');
+  const [storeStatus, setStoreStatus] = useState<TenantStore['status']>('active');
   const [customDomain, setCustomDomain] = useState('');
   const [selectedPlanId, setSelectedPlanId] = useState('plan_pro');
   const [primaryColor, setPrimaryColor] = useState('#0F172A');
@@ -171,6 +172,7 @@ function PlatformContent() {
         ownerEmail,
         currency,
         planId: selectedPlanId,
+        status: storeStatus,
         customDomain: customDomain || undefined,
         primaryColor,
         accentColor,
@@ -180,7 +182,7 @@ function PlatformContent() {
       setProvisionLog((prev) => [
         ...prev,
         `🌐 SSL & Subdomain verified: ${storeSlug}.ourplatform.com`,
-        `✅ Tenant ${newTenant.name} is now LIVE & ACTIVE!`,
+        `✅ Tenant ${newTenant.name} is now LIVE (${(storeStatus || 'active').toUpperCase()})!`,
       ]);
       setIsProvisioning(false);
       showToast(`Store ${newTenant.name} provisioned successfully!`, 'success');
@@ -199,7 +201,8 @@ function PlatformContent() {
     setTagline('');
     setOwnerName('');
     setOwnerEmail('');
-    setCurrency('USD');
+    setCurrency('INR');
+    setStoreStatus('active');
     setCustomDomain('');
   };
 
@@ -1206,18 +1209,19 @@ function PlatformContent() {
                     />
                   </div>
 
+                  <div>
+                    <label className="text-xs text-slate-300 font-bold">Store Slug (Routing)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="zenith-outdoor"
+                      value={storeSlug}
+                      onChange={(e) => setStoreSlug(e.target.value)}
+                      className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white font-mono"
+                    />
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-slate-300 font-bold">Store Slug (Routing)</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="zenith-outdoor"
-                        value={storeSlug}
-                        onChange={(e) => setStoreSlug(e.target.value)}
-                        className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white font-mono"
-                      />
-                    </div>
                     <div>
                       <label className="text-xs text-slate-300 font-bold">Currency</label>
                       <select
@@ -1229,6 +1233,18 @@ function PlatformContent() {
                         <option value="USD">USD ($)</option>
                         <option value="EUR">EUR (€)</option>
                         <option value="GBP">GBP (£)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-300 font-bold">Initial Store Status</label>
+                      <select
+                        value={storeStatus}
+                        onChange={(e) => setStoreStatus(e.target.value as any)}
+                        className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
+                      >
+                        <option value="active">Active (Production Live)</option>
+                        <option value="trial">Trial (14-Day Trial)</option>
+                        <option value="suspended">Suspended (Paused)</option>
                       </select>
                     </div>
                   </div>
