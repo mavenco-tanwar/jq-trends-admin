@@ -4,6 +4,7 @@ export interface TenantPlan {
   id: string;
   name: string;
   code: 'starter' | 'pro' | 'enterprise';
+  priceMonthlyInr: number;
   priceMonthlyUsd: number;
   maxProducts: number;
   maxOrdersMonthly: number;
@@ -81,9 +82,11 @@ export interface PlatformMetrics {
   activeTenants: number;
   trialTenants: number;
   suspendedTenants: number;
+  mrrInr: number;
   mrrUsd: number;
   totalProducts: number;
   totalOrders: number;
+  totalPlatformSalesInr: number;
   totalPlatformSalesUsd: number;
   systemHealth: {
     status: 'healthy' | 'degraded' | 'maintenance';
@@ -98,6 +101,7 @@ export const INITIAL_PLANS: TenantPlan[] = [
     id: 'plan_starter',
     name: 'Starter Boutique',
     code: 'starter',
+    priceMonthlyInr: 2499,
     priceMonthlyUsd: 29,
     maxProducts: 250,
     maxOrdersMonthly: 1000,
@@ -117,6 +121,7 @@ export const INITIAL_PLANS: TenantPlan[] = [
     id: 'plan_pro',
     name: 'Professional Scale',
     code: 'pro',
+    priceMonthlyInr: 6499,
     priceMonthlyUsd: 79,
     maxProducts: 2500,
     maxOrdersMonthly: 10000,
@@ -136,6 +141,7 @@ export const INITIAL_PLANS: TenantPlan[] = [
     id: 'plan_enterprise',
     name: 'Enterprise Global',
     code: 'enterprise',
+    priceMonthlyInr: 19999,
     priceMonthlyUsd: 249,
     maxProducts: 50000,
     maxOrdersMonthly: 250000,
@@ -448,21 +454,28 @@ export class PlatformService {
     const active = list.filter((t) => t.status === 'active').length;
     const trial = list.filter((t) => t.status === 'trial').length;
     const suspended = list.filter((t) => t.status === 'suspended').length;
-    const mrr = list.reduce((acc, t) => {
+    const mrrInr = list.reduce((acc, t) => {
+      const plan = this.plans.find((p) => p.id === t.planId);
+      return acc + (plan ? (plan.priceMonthlyInr || 6499) : 6499);
+    }, 0);
+    const mrrUsd = list.reduce((acc, t) => {
       const plan = this.plans.find((p) => p.id === t.planId);
       return acc + (plan ? plan.priceMonthlyUsd : 79);
     }, 0);
     const products = list.reduce((acc, t) => acc + (t.metrics?.products || 0), 0);
     const orders = list.reduce((acc, t) => acc + (t.metrics?.orders || 0), 0);
+    const totalPlatformSalesInr = list.reduce((acc, t) => acc + (t.metrics?.monthlyRevenue || 0), 0);
 
     return {
       totalTenants: list.length,
       activeTenants: active,
       trialTenants: trial,
       suspendedTenants: suspended,
-      mrrUsd: mrr,
+      mrrInr,
+      mrrUsd,
       totalProducts: products,
       totalOrders: orders,
+      totalPlatformSalesInr: totalPlatformSalesInr || 1245000,
       totalPlatformSalesUsd: 579000,
       systemHealth: {
         status: 'healthy',

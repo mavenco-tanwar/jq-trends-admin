@@ -87,7 +87,7 @@ function PlatformContent() {
   const [tagline, setTagline] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('INR');
   const [customDomain, setCustomDomain] = useState('');
   const [selectedPlanId, setSelectedPlanId] = useState('plan_pro');
   const [primaryColor, setPrimaryColor] = useState('#0F172A');
@@ -99,7 +99,7 @@ function PlatformContent() {
   const [editTagline, setEditTagline] = useState('');
   const [editOwnerName, setEditOwnerName] = useState('');
   const [editOwnerEmail, setEditOwnerEmail] = useState('');
-  const [editCurrency, setEditCurrency] = useState('USD');
+  const [editCurrency, setEditCurrency] = useState('INR');
   const [editPlanId, setEditPlanId] = useState('plan_pro');
   const [editPrimaryColor, setEditPrimaryColor] = useState('#111111');
   const [editAccentColor, setEditAccentColor] = useState('#E11D48');
@@ -347,10 +347,10 @@ function PlatformContent() {
             <CreditCard className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-bold text-white">
-            ${(metrics?.mrrUsd || 436).toLocaleString()} /mo
+            ₹{(metrics?.mrrInr || 35496).toLocaleString('en-IN')} /mo
           </div>
           <p className="text-[11px] text-emerald-400 font-medium">
-            +18.4% growth vs previous month
+            +18.4% MRR growth vs previous month (INR)
           </p>
         </div>
 
@@ -468,9 +468,9 @@ function PlatformContent() {
                 className="bg-[#10121A] border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-300"
               >
                 <option value="all">All Plans</option>
-                <option value="plan_starter">Starter Boutique ($29)</option>
-                <option value="plan_pro">Professional Scale ($79)</option>
-                <option value="plan_enterprise">Enterprise Global ($249)</option>
+                <option value="plan_starter">Starter Boutique (₹2,499)</option>
+                <option value="plan_pro">Professional Scale (₹6,499)</option>
+                <option value="plan_enterprise">Enterprise Global (₹19,999)</option>
               </select>
             </div>
           </div>
@@ -545,10 +545,11 @@ function PlatformContent() {
                     </div>
                     <div className="p-2 bg-[#10121A]/60 rounded-lg border border-slate-800">
                       <div className="font-bold text-white">
-                        {tenant.currency === 'INR' ? '₹' : '$'}
-                        {((tenant.metrics?.monthlyRevenue || 0) / 1000).toFixed(0)}k
+                        ₹{(tenant.metrics?.monthlyRevenue || 0) >= 100000 
+                          ? `${((tenant.metrics?.monthlyRevenue || 0) / 100000).toFixed(1)}L`
+                          : `${((tenant.metrics?.monthlyRevenue || 0) / 1000).toFixed(0)}k`}
                       </div>
-                      <div className="text-[10px] text-slate-500">Revenue</div>
+                      <div className="text-[10px] text-slate-500">Monthly GMV</div>
                     </div>
                   </div>
                 </div>
@@ -756,7 +757,7 @@ function PlatformContent() {
                       Tier: {p.code}
                     </span>
                     <span className="text-2xl font-black text-white">
-                      ${p.priceMonthlyUsd}
+                      ₹{(p.priceMonthlyInr || 6499).toLocaleString('en-IN')}
                       <span className="text-xs font-normal text-slate-400">/mo</span>
                     </span>
                   </div>
@@ -764,7 +765,7 @@ function PlatformContent() {
                   <div>
                     <h3 className="text-lg font-bold text-white">{p.name}</h3>
                     <p className="text-xs text-slate-400 mt-1">
-                      Targeted for scaling brands with dedicated resource allocations.
+                      Billed monthly in INR with dedicated cloud compute &amp; multi-tenant database isolation.
                     </p>
                   </div>
 
@@ -908,8 +909,8 @@ function PlatformContent() {
                         onChange={(e) => setCurrency(e.target.value)}
                         className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
                       >
-                        <option value="USD">USD ($)</option>
                         <option value="INR">INR (₹)</option>
+                        <option value="USD">USD ($)</option>
                         <option value="EUR">EUR (€)</option>
                         <option value="GBP">GBP (£)</option>
                       </select>
@@ -1098,8 +1099,8 @@ function PlatformContent() {
                     onChange={(e) => setEditCurrency(e.target.value)}
                     className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
                   >
-                    <option value="USD">USD ($)</option>
                     <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
                     <option value="EUR">EUR (€)</option>
                     <option value="GBP">GBP (£)</option>
                   </select>
@@ -1111,9 +1112,9 @@ function PlatformContent() {
                     onChange={(e) => setEditPlanId(e.target.value)}
                     className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
                   >
-                    <option value="plan_starter">Starter Boutique</option>
-                    <option value="plan_pro">Professional Scale</option>
-                    <option value="plan_enterprise">Enterprise Global</option>
+                    <option value="plan_starter">Starter Boutique (₹2,499 /mo)</option>
+                    <option value="plan_pro">Professional Scale (₹6,499 /mo)</option>
+                    <option value="plan_enterprise">Enterprise Global (₹19,999 /mo)</option>
                   </select>
                 </div>
                 <div>
