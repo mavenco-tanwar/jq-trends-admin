@@ -173,7 +173,7 @@ export default function SuperadminPlatformPage() {
   const handleImpersonate = (tenant: TenantStore) => {
     PlatformService.startImpersonation(tenant);
     showToast(`Logged in as Superadmin to ${tenant.name}`, 'success');
-    window.location.href = '/';
+    window.location.href = `/stores/${tenant.slug}`;
   };
 
   const filteredTenants = tenants.filter((t) => {

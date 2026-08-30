@@ -308,6 +308,31 @@ export class PlatformService {
   // Active Store Context (Tenant Switcher)
   public static getActiveTenantId(): string {
     if (typeof window === 'undefined') return 'store_jq_trends';
+
+    // 1. Check URL path for /stores/[slug] or /tenant/[slug]
+    const pathMatch = window.location.pathname.match(/^\/(stores|tenant)\/([a-zA-Z0-9_-]+)/);
+    if (pathMatch) {
+      const slug = pathMatch[2].toLowerCase();
+      const match = this.tenants.find((t) => t.slug.toLowerCase() === slug || t.id.toLowerCase() === slug);
+      if (match) {
+        localStorage.setItem(CURRENT_STORE_KEY, match.id);
+        return match.id;
+      }
+    }
+
+    // 2. Check search params ?tenant=[slug]
+    const params = new URLSearchParams(window.location.search);
+    const tenantParam = params.get('tenant');
+    if (tenantParam) {
+      const match = this.tenants.find(
+        (t) => t.slug.toLowerCase() === tenantParam.toLowerCase() || t.id.toLowerCase() === tenantParam.toLowerCase()
+      );
+      if (match) {
+        localStorage.setItem(CURRENT_STORE_KEY, match.id);
+        return match.id;
+      }
+    }
+
     return localStorage.getItem(CURRENT_STORE_KEY) || 'store_jq_trends';
   }
 

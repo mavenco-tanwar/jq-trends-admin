@@ -52,7 +52,7 @@ export function AdminHeader({
     PlatformService.setActiveTenantId(store.id);
     setActiveTenant(store);
     setIsStoreSwitcherOpen(false);
-    window.location.reload();
+    window.location.href = `/stores/${store.slug}`;
   };
 
   const handleExitImpersonation = () => {
