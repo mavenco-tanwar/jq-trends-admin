@@ -223,6 +223,17 @@ export async function PATCH(request: NextRequest) {
           },
         }
       );
+
+      // Record activity in MongoDB
+      await db.collection('platform_activities').insertOne({
+        event: `Merchant password updated to permanent for store ${cleanSlug || cleanEmail}`,
+        actor: cleanEmail || 'merchant',
+        tenantId: cleanSlug || 'store',
+        tenantName: cleanSlug || cleanEmail,
+        severity: 'info',
+        ipAddress: '127.0.0.1',
+        createdAt: new Date().toISOString(),
+      });
     }
 
     return NextResponse.json(

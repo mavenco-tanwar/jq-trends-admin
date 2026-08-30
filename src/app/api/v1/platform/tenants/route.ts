@@ -40,12 +40,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const db = await getDatabase();
     if (db && body.slug) {
+      const cleanSlug = body.slug.toLowerCase().trim();
       await db.collection('tenants').updateOne(
-        { slug: body.slug.toLowerCase().trim() },
+        { slug: cleanSlug },
         {
           $set: {
             ...body,
-            slug: body.slug.toLowerCase().trim(),
+            slug: cleanSlug,
             updatedAt: new Date().toISOString(),
           },
           $setOnInsert: {
@@ -54,6 +55,17 @@ export async function POST(request: NextRequest) {
         },
         { upsert: true }
       );
+
+      // Record activity in MongoDB
+      await db.collection('platform_activities').insertOne({
+        event: `Superadmin provisioned new store: ${body.name || cleanSlug}`,
+        actor: 'superadmin@platform.com',
+        tenantId: body.id || `store_${cleanSlug}`,
+        tenantName: body.name || cleanSlug,
+        severity: 'info',
+        ipAddress: '127.0.0.1',
+        createdAt: new Date().toISOString(),
+      });
     }
 
     return NextResponse.json({ success: true, message: 'Tenant persisted in database' }, { headers: corsHeaders() });
@@ -79,6 +91,19 @@ export async function PATCH(request: NextRequest) {
           },
         }
       );
+
+      // Record activity in MongoDB
+      if (updates.status) {
+        await db.collection('platform_activities').insertOne({
+          event: `Store ${identifier} status changed to ${updates.status.toUpperCase()}`,
+          actor: 'superadmin@platform.com',
+          tenantId: identifier,
+          tenantName: identifier,
+          severity: updates.status === 'suspended' ? 'warning' : 'info',
+          ipAddress: '127.0.0.1',
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
 
     return NextResponse.json({ success: true, message: 'Tenant updated in database' }, { headers: corsHeaders() });
@@ -103,12 +128,24 @@ export async function DELETE(request: NextRequest) {
           $set: {
             status: 'deleted',
             deletedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           },
         }
       );
+
+      // Record activity in MongoDB
+      await db.collection('platform_activities').insertOne({
+        event: `Store ${identifier} archived from platform`,
+        actor: 'superadmin@platform.com',
+        tenantId: identifier,
+        tenantName: identifier,
+        severity: 'critical',
+        ipAddress: '127.0.0.1',
+        createdAt: new Date().toISOString(),
+      });
     }
 
-    return NextResponse.json({ success: true, message: `Tenant ${identifier} marked deleted in database` }, { headers: corsHeaders() });
+    return NextResponse.json({ success: true, message: 'Tenant archived in database' }, { headers: corsHeaders() });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400, headers: corsHeaders() });
   }

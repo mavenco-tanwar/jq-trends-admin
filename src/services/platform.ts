@@ -823,10 +823,43 @@ export class PlatformService {
   }
 
   public static async listActivityLogs(): Promise<PlatformActivityLog[]> {
+    try {
+      const res = await fetch('/api/v1/platform/activity');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.activities && Array.isArray(data.activities) && data.activities.length > 0) {
+          this.activities = data.activities;
+          return data.activities;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch activity logs from MongoDB API:', err);
+    }
     return this.activities;
   }
 
-  private static logActivity(log: PlatformActivityLog) {
-    this.activities = [log, ...this.activities];
+  public static async logActivity(log: Partial<PlatformActivityLog> & { event: string }) {
+    const newLog: PlatformActivityLog = {
+      id: log.id || `act_${Date.now()}`,
+      event: log.event,
+      actor: log.actor || 'superadmin@platform.com',
+      tenantId: log.tenantId,
+      tenantName: log.tenantName,
+      ipAddress: log.ipAddress || '127.0.0.1',
+      severity: log.severity || 'info',
+      timestamp: 'Just now',
+    };
+
+    this.activities = [newLog, ...this.activities];
+
+    try {
+      await fetch('/api/v1/platform/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLog),
+      });
+    } catch (err) {
+      console.error('Failed to persist activity log to MongoDB:', err);
+    }
   }
 }
