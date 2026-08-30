@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -33,8 +33,11 @@ import {
   LogOut,
   HelpCircle,
   FolderTree,
+  Shield,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { PlatformService, TenantStore } from '@/services/platform';
 
 interface NavItem {
   label: string;
@@ -59,8 +62,19 @@ export function AdminSidebar({
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getActiveTenant());
+
+  useEffect(() => {
+    setActiveTenant(PlatformService.getActiveTenant());
+  }, []);
 
   const navSections: NavSection[] = [
+    {
+      title: 'SUPERADMIN PLATFORM',
+      items: [
+        { label: 'Platform Control Plane', href: '/platform', icon: Shield, badge: 'SaaS', badgeColor: 'bg-rose-600/30 text-rose-300 font-bold border border-rose-500/40' },
+      ],
+    },
     {
       title: 'DASHBOARD',
       items: [
@@ -70,7 +84,7 @@ export function AdminSidebar({
     {
       title: 'CATALOG',
       items: [
-        { label: 'Products', href: '/products', icon: Package, badge: '8', badgeColor: 'bg-emerald-500/20 text-emerald-300' },
+        { label: 'Products', href: '/products', icon: Package, badge: `${activeTenant.metrics?.products || 8}`, badgeColor: 'bg-emerald-500/20 text-emerald-300' },
         { label: 'Categories', href: '/categories', icon: FolderTree },
         { label: 'Collections', href: '/collections', icon: Layers },
         { label: 'Inventory', href: '/inventory', icon: Boxes, badge: '1 Low', badgeColor: 'bg-amber-500/20 text-amber-300' },
@@ -107,7 +121,7 @@ export function AdminSidebar({
       title: 'STORE & THEME',
       items: [
         { label: 'Store Settings', href: '/settings', icon: Sliders },
-        { label: 'Theme Tokens', href: '/settings/theme', icon: Palette, badge: 'Luxury', badgeColor: 'bg-rose-500/20 text-rose-300' },
+        { label: 'Theme Tokens', href: '/settings/theme', icon: Palette, badge: activeTenant.planName ? activeTenant.planName.split(' ')[0] : 'Pro', badgeColor: 'bg-rose-500/20 text-rose-300' },
         { label: 'Shipping & Delivery', href: '/settings/shipping', icon: Truck },
         { label: 'Payment Gateways', href: '/settings/payments', icon: CreditCard },
         { label: 'Taxes & GST', href: '/settings/tax', icon: Receipt },
@@ -129,17 +143,27 @@ export function AdminSidebar({
       <div className="p-4 border-b border-slate-800/90 flex items-center justify-between">
         {!isCollapsed ? (
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-600 to-pink-500 flex items-center justify-center text-white font-serif font-black text-lg shadow-md shadow-rose-950/40">
-              JQ
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-serif font-black text-lg shadow-md shrink-0"
+              style={{ backgroundColor: activeTenant.theme?.primaryColor || '#111111' }}
+            >
+              {activeTenant.code || activeTenant.name.substring(0, 2).toUpperCase()}
             </div>
-            <div>
-              <div className="font-serif font-bold text-white text-sm tracking-wide">JQ TRENDS</div>
-              <div className="text-[10px] text-rose-400 font-semibold tracking-wider uppercase">Merchant Console</div>
+            <div className="min-w-0">
+              <div className="font-serif font-bold text-white text-sm tracking-wide truncate">
+                {activeTenant.name}
+              </div>
+              <div className="text-[10px] text-rose-400 font-semibold tracking-wider uppercase truncate">
+                {activeTenant.planName || 'Merchant Console'}
+              </div>
             </div>
           </div>
         ) : (
-          <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-rose-600 to-pink-500 flex items-center justify-center text-white font-serif font-black text-lg shadow-md">
-            JQ
+          <div
+            className="w-9 h-9 mx-auto rounded-xl flex items-center justify-center text-white font-serif font-black text-lg shadow-md"
+            style={{ backgroundColor: activeTenant.theme?.primaryColor || '#111111' }}
+          >
+            {activeTenant.code || activeTenant.name.substring(0, 2).toUpperCase()}
           </div>
         )}
 
@@ -202,7 +226,7 @@ export function AdminSidebar({
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-bold text-white truncate">{user?.firstName} {user?.lastName}</div>
-                <div className="text-[10px] text-slate-500 truncate">{user?.roleName || 'Store Owner'}</div>
+                <div className="text-[10px] text-slate-500 truncate">{user?.roleName || 'Store Admin'}</div>
               </div>
             </div>
             <button

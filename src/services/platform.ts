@@ -1,0 +1,557 @@
+import { ApiClient } from './api';
+
+export interface TenantPlan {
+  id: string;
+  name: string;
+  code: 'starter' | 'pro' | 'enterprise';
+  priceMonthlyUsd: number;
+  maxProducts: number;
+  maxOrdersMonthly: number;
+  maxStorageMb: number;
+  maxStaff: number;
+  features: {
+    customDomains: boolean;
+    advancedAnalytics: boolean;
+    richCms: boolean;
+    productReviews: boolean;
+    abandonedCart: boolean;
+    aiFeatures: boolean;
+    apiAccess: boolean;
+  };
+}
+
+export interface TenantDomain {
+  id: string;
+  domain: string;
+  type: 'subdomain' | 'custom';
+  isPrimary: boolean;
+  status: 'connected' | 'verifying' | 'pending' | 'failed';
+  sslActive: boolean;
+  createdAt: string;
+}
+
+export interface TenantStore {
+  id: string;
+  name: string;
+  slug: string;
+  code: string;
+  tagline: string;
+  status: 'active' | 'trial' | 'suspended' | 'provisioning' | 'archived';
+  planId: string;
+  planName: string;
+  databaseName: string;
+  currency: string;
+  ownerEmail: string;
+  ownerName: string;
+  primaryDomain: string;
+  domains: TenantDomain[];
+  theme: {
+    logoUrl?: string;
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+    headingFont: string;
+    bodyFont: string;
+    borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'full';
+  };
+  metrics: {
+    products: number;
+    orders: number;
+    customers: number;
+    monthlyRevenue: number;
+    storageUsedMb: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformActivityLog {
+  id: string;
+  event: string;
+  actor: string;
+  tenantId?: string;
+  tenantName?: string;
+  ipAddress: string;
+  severity: 'info' | 'warning' | 'critical';
+  timestamp: string;
+}
+
+export interface PlatformMetrics {
+  totalTenants: number;
+  activeTenants: number;
+  trialTenants: number;
+  suspendedTenants: number;
+  mrrUsd: number;
+  totalProducts: number;
+  totalOrders: number;
+  totalPlatformSalesUsd: number;
+  systemHealth: {
+    status: 'healthy' | 'degraded' | 'maintenance';
+    uptimePercentage: number;
+    apiLatencyMs: number;
+    dbClusterStatus: string;
+  };
+}
+
+export const INITIAL_PLANS: TenantPlan[] = [
+  {
+    id: 'plan_starter',
+    name: 'Starter Boutique',
+    code: 'starter',
+    priceMonthlyUsd: 29,
+    maxProducts: 250,
+    maxOrdersMonthly: 1000,
+    maxStorageMb: 2048,
+    maxStaff: 3,
+    features: {
+      customDomains: true,
+      advancedAnalytics: false,
+      richCms: true,
+      productReviews: true,
+      abandonedCart: false,
+      aiFeatures: false,
+      apiAccess: false,
+    },
+  },
+  {
+    id: 'plan_pro',
+    name: 'Professional Scale',
+    code: 'pro',
+    priceMonthlyUsd: 79,
+    maxProducts: 2500,
+    maxOrdersMonthly: 10000,
+    maxStorageMb: 10240,
+    maxStaff: 15,
+    features: {
+      customDomains: true,
+      advancedAnalytics: true,
+      richCms: true,
+      productReviews: true,
+      abandonedCart: true,
+      aiFeatures: true,
+      apiAccess: true,
+    },
+  },
+  {
+    id: 'plan_enterprise',
+    name: 'Enterprise Global',
+    code: 'enterprise',
+    priceMonthlyUsd: 249,
+    maxProducts: 50000,
+    maxOrdersMonthly: 250000,
+    maxStorageMb: 102400,
+    maxStaff: 100,
+    features: {
+      customDomains: true,
+      advancedAnalytics: true,
+      richCms: true,
+      productReviews: true,
+      abandonedCart: true,
+      aiFeatures: true,
+      apiAccess: true,
+    },
+  },
+];
+
+export const INITIAL_TENANTS: TenantStore[] = [
+  {
+    id: 'store_jq_trends',
+    name: 'JQ Trends',
+    slug: 'jqtrends',
+    code: 'JQT',
+    tagline: 'Affordable Luxury Women & Kids Fashion',
+    status: 'active',
+    planId: 'plan_pro',
+    planName: 'Professional Scale',
+    databaseName: 'tenant_jqtrends',
+    currency: 'INR',
+    ownerEmail: 'founder@jqtrends.com',
+    ownerName: 'Ammar Tanwar',
+    primaryDomain: 'jqtrends.com',
+    domains: [
+      { id: 'dom_1', domain: 'jqtrends.com', type: 'custom', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-01-10T00:00:00Z' },
+      { id: 'dom_2', domain: 'jqtrends.ourplatform.com', type: 'subdomain', isPrimary: false, status: 'connected', sslActive: true, createdAt: '2026-01-10T00:00:00Z' },
+    ],
+    theme: {
+      logoUrl: '',
+      primaryColor: '#111111',
+      secondaryColor: '#FFFDFC',
+      accentColor: '#B77A68',
+      headingFont: 'Playfair Display',
+      bodyFont: 'Plus Jakarta Sans',
+      borderRadius: 'sm',
+    },
+    metrics: {
+      products: 24,
+      orders: 342,
+      customers: 289,
+      monthlyRevenue: 486200,
+      storageUsedMb: 184,
+    },
+    createdAt: '2026-01-10T10:00:00Z',
+    updatedAt: '2026-08-30T10:00:00Z',
+  },
+  {
+    id: 'store_aura_living',
+    name: 'Aura Living',
+    slug: 'auraliving',
+    code: 'AURA',
+    tagline: 'Minimalist Scandinavian Home Decor & Lifestyle',
+    status: 'active',
+    planId: 'plan_starter',
+    planName: 'Starter Boutique',
+    databaseName: 'tenant_auraliving',
+    currency: 'USD',
+    ownerEmail: 'elena@auraliving.com',
+    ownerName: 'Elena Rostova',
+    primaryDomain: 'auraliving.com',
+    domains: [
+      { id: 'dom_3', domain: 'auraliving.com', type: 'custom', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-03-15T00:00:00Z' },
+      { id: 'dom_4', domain: 'auraliving.ourplatform.com', type: 'subdomain', isPrimary: false, status: 'connected', sslActive: true, createdAt: '2026-03-15T00:00:00Z' },
+    ],
+    theme: {
+      logoUrl: '',
+      primaryColor: '#1B4332',
+      secondaryColor: '#FAF3E0',
+      accentColor: '#74C69D',
+      headingFont: 'Cinzel',
+      bodyFont: 'Inter',
+      borderRadius: 'md',
+    },
+    metrics: {
+      products: 48,
+      orders: 198,
+      customers: 172,
+      monthlyRevenue: 14200,
+      storageUsedMb: 92,
+    },
+    createdAt: '2026-03-15T12:00:00Z',
+    updatedAt: '2026-08-28T14:30:00Z',
+  },
+  {
+    id: 'store_apex_athletics',
+    name: 'Apex Athletics',
+    slug: 'apexathletics',
+    code: 'APEX',
+    tagline: 'High-Performance Activewear & Compression Gear',
+    status: 'active',
+    planId: 'plan_enterprise',
+    planName: 'Enterprise Global',
+    databaseName: 'tenant_apexathletics',
+    currency: 'USD',
+    ownerEmail: 'marcus@apexathletics.com',
+    ownerName: 'Marcus Vance',
+    primaryDomain: 'apexathletics.com',
+    domains: [
+      { id: 'dom_5', domain: 'apexathletics.com', type: 'custom', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-05-01T00:00:00Z' },
+      { id: 'dom_6', domain: 'apexathletics.ourplatform.com', type: 'subdomain', isPrimary: false, status: 'connected', sslActive: true, createdAt: '2026-05-01T00:00:00Z' },
+    ],
+    theme: {
+      logoUrl: '',
+      primaryColor: '#0A0A0A',
+      secondaryColor: '#161822',
+      accentColor: '#00F5D4',
+      headingFont: 'Montserrat',
+      bodyFont: 'Inter',
+      borderRadius: 'lg',
+    },
+    metrics: {
+      products: 112,
+      orders: 890,
+      customers: 750,
+      monthlyRevenue: 78900,
+      storageUsedMb: 420,
+    },
+    createdAt: '2026-05-01T09:00:00Z',
+    updatedAt: '2026-08-29T16:00:00Z',
+  },
+];
+
+export const INITIAL_ACTIVITY_LOGS: PlatformActivityLog[] = [
+  { id: 'act_1', event: 'Superadmin provisioned new tenant Apex Athletics', actor: 'superadmin@platform.com', tenantId: 'store_apex_athletics', tenantName: 'Apex Athletics', ipAddress: '103.21.244.12', severity: 'info', timestamp: '10m ago' },
+  { id: 'act_2', event: 'Custom domain apexathletics.com SSL auto-renewed', actor: 'System SSL Daemon', tenantId: 'store_apex_athletics', tenantName: 'Apex Athletics', ipAddress: '127.0.0.1', severity: 'info', timestamp: '1h ago' },
+  { id: 'act_3', event: 'Aura Living upgraded to Starter Boutique Plan', actor: 'elena@auraliving.com', tenantId: 'store_aura_living', tenantName: 'Aura Living', ipAddress: '49.207.198.54', severity: 'info', timestamp: '4h ago' },
+  { id: 'act_4', event: 'Superadmin impersonated JQ Trends for technical audit', actor: 'superadmin@platform.com', tenantId: 'store_jq_trends', tenantName: 'JQ Trends', ipAddress: '103.21.244.12', severity: 'warning', timestamp: '1d ago' },
+  { id: 'act_5', event: 'Database migration tenant_jqtrends upgraded to Schema v2', actor: 'Platform DB Engine', tenantId: 'store_jq_trends', tenantName: 'JQ Trends', ipAddress: '127.0.0.1', severity: 'info', timestamp: '2d ago' },
+];
+
+const PLATFORM_STORAGE_KEY = 'jq_saas_platform_tenants_v1';
+const CURRENT_STORE_KEY = 'jq_saas_active_tenant_id';
+const IMPERSONATION_KEY = 'jq_saas_impersonation_state';
+
+export class PlatformService {
+  private static tenants: TenantStore[] = this.loadTenants();
+  private static plans: TenantPlan[] = INITIAL_PLANS;
+  private static activities: PlatformActivityLog[] = INITIAL_ACTIVITY_LOGS;
+
+  private static loadTenants(): TenantStore[] {
+    if (typeof window === 'undefined') return INITIAL_TENANTS;
+    try {
+      const stored = localStorage.getItem(PLATFORM_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return INITIAL_TENANTS;
+  }
+
+  private static saveTenants(list: TenantStore[]) {
+    this.tenants = list;
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(PLATFORM_STORAGE_KEY, JSON.stringify(list));
+      } catch {}
+    }
+  }
+
+  // Active Store Context (Tenant Switcher)
+  public static getActiveTenantId(): string {
+    if (typeof window === 'undefined') return 'store_jq_trends';
+    return localStorage.getItem(CURRENT_STORE_KEY) || 'store_jq_trends';
+  }
+
+  public static setActiveTenantId(tenantId: string): void {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(CURRENT_STORE_KEY, tenantId);
+    }
+  }
+
+  public static getActiveTenant(): TenantStore {
+    const activeId = this.getActiveTenantId();
+    return this.tenants.find((t) => t.id === activeId) || this.tenants[0] || INITIAL_TENANTS[0];
+  }
+
+  // Impersonation Support
+  public static getImpersonationState(): { isImpersonating: boolean; tenant?: TenantStore } {
+    if (typeof window === 'undefined') return { isImpersonating: false };
+    try {
+      const raw = localStorage.getItem(IMPERSONATION_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return { isImpersonating: true, tenant: parsed };
+      }
+    } catch {}
+    return { isImpersonating: false };
+  }
+
+  public static startImpersonation(tenant: TenantStore): void {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(IMPERSONATION_KEY, JSON.stringify(tenant));
+      this.setActiveTenantId(tenant.id);
+      this.logActivity({
+        id: `act_${Date.now()}`,
+        event: `Superadmin started impersonation session for ${tenant.name}`,
+        actor: 'superadmin@platform.com',
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        ipAddress: '127.0.0.1',
+        severity: 'warning',
+        timestamp: 'Just now',
+      });
+    }
+  }
+
+  public static stopImpersonation(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(IMPERSONATION_KEY);
+    }
+  }
+
+  // Platform Metrics
+  public static async getMetrics(): Promise<PlatformMetrics> {
+    const list = await this.listTenants();
+    const active = list.filter((t) => t.status === 'active').length;
+    const trial = list.filter((t) => t.status === 'trial').length;
+    const suspended = list.filter((t) => t.status === 'suspended').length;
+    const mrr = list.reduce((acc, t) => {
+      const plan = this.plans.find((p) => p.id === t.planId);
+      return acc + (plan ? plan.priceMonthlyUsd : 79);
+    }, 0);
+    const products = list.reduce((acc, t) => acc + (t.metrics?.products || 0), 0);
+    const orders = list.reduce((acc, t) => acc + (t.metrics?.orders || 0), 0);
+
+    return {
+      totalTenants: list.length,
+      activeTenants: active,
+      trialTenants: trial,
+      suspendedTenants: suspended,
+      mrrUsd: mrr,
+      totalProducts: products,
+      totalOrders: orders,
+      totalPlatformSalesUsd: 579000,
+      systemHealth: {
+        status: 'healthy',
+        uptimePercentage: 99.98,
+        apiLatencyMs: 24,
+        dbClusterStatus: 'MongoDB Atlas Multi-Region Cluster (Active & Synchronized)',
+      },
+    };
+  }
+
+  public static async listTenants(): Promise<TenantStore[]> {
+    try {
+      const res = await ApiClient.get<any[]>('/api/v1/platform/tenants');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        // Merge with local state
+      }
+    } catch {}
+    return this.loadTenants();
+  }
+
+  public static async getTenantById(id: string): Promise<TenantStore | null> {
+    const list = await this.listTenants();
+    return list.find((t) => t.id === id || t.slug === id) || null;
+  }
+
+  // 5-Step Store Provisioning Engine
+  public static async provisionStore(payload: {
+    name: string;
+    slug: string;
+    tagline: string;
+    ownerName: string;
+    ownerEmail: string;
+    currency: string;
+    planId: string;
+    primaryColor?: string;
+    accentColor?: string;
+    subdomain?: string;
+    customDomain?: string;
+  }): Promise<TenantStore> {
+    const tenantId = `store_${payload.slug.replace(/[^a-z0-9]/g, '_')}_${Date.now().toString().slice(-4)}`;
+    const plan = this.plans.find((p) => p.id === payload.planId) || this.plans[1];
+
+    const domains: TenantDomain[] = [
+      {
+        id: `dom_${Date.now()}_1`,
+        domain: `${payload.slug}.ourplatform.com`,
+        type: 'subdomain',
+        isPrimary: !payload.customDomain,
+        status: 'connected',
+        sslActive: true,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    if (payload.customDomain) {
+      domains.push({
+        id: `dom_${Date.now()}_2`,
+        domain: payload.customDomain.replace(/^https?:\/\//, ''),
+        type: 'custom',
+        isPrimary: true,
+        status: 'verifying',
+        sslActive: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    const newStore: TenantStore = {
+      id: tenantId,
+      name: payload.name,
+      slug: payload.slug.toLowerCase().trim(),
+      code: payload.name.substring(0, 3).toUpperCase(),
+      tagline: payload.tagline || 'Modern Commerce Store',
+      status: 'active',
+      planId: plan.id,
+      planName: plan.name,
+      databaseName: `tenant_${payload.slug.toLowerCase()}`,
+      currency: payload.currency || 'USD',
+      ownerEmail: payload.ownerEmail,
+      ownerName: payload.ownerName,
+      primaryDomain: payload.customDomain || `${payload.slug}.ourplatform.com`,
+      domains,
+      theme: {
+        logoUrl: '',
+        primaryColor: payload.primaryColor || '#111111',
+        secondaryColor: '#FFFFFF',
+        accentColor: payload.accentColor || '#E11D48',
+        headingFont: 'Playfair Display',
+        bodyFont: 'Plus Jakarta Sans',
+        borderRadius: 'md',
+      },
+      metrics: {
+        products: 4,
+        orders: 0,
+        customers: 0,
+        monthlyRevenue: 0,
+        storageUsedMb: 12,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const current = this.loadTenants();
+    const updated = [newStore, ...current];
+    this.saveTenants(updated);
+
+    this.logActivity({
+      id: `act_${Date.now()}`,
+      event: `New tenant store ${newStore.name} provisioned with database ${newStore.databaseName}`,
+      actor: payload.ownerEmail,
+      tenantId: newStore.id,
+      tenantName: newStore.name,
+      ipAddress: '127.0.0.1',
+      severity: 'info',
+      timestamp: 'Just now',
+    });
+
+    try {
+      await ApiClient.post('/api/v1/platform/tenants', newStore);
+    } catch {}
+
+    return newStore;
+  }
+
+  public static async updateTenantStatus(id: string, status: TenantStore['status']): Promise<void> {
+    const list = this.loadTenants();
+    const updated = list.map((t) => (t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+    this.saveTenants(updated);
+
+    this.logActivity({
+      id: `act_${Date.now()}`,
+      event: `Tenant ${id} status updated to ${status.toUpperCase()}`,
+      actor: 'superadmin@platform.com',
+      tenantId: id,
+      ipAddress: '127.0.0.1',
+      severity: status === 'suspended' ? 'critical' : 'info',
+      timestamp: 'Just now',
+    });
+
+    try {
+      await ApiClient.patch(`/api/v1/platform/tenants/${id}/status`, { status });
+    } catch {}
+  }
+
+  public static async updateTenantPlan(id: string, planId: string): Promise<void> {
+    const plan = this.plans.find((p) => p.id === planId);
+    if (!plan) return;
+
+    const list = this.loadTenants();
+    const updated = list.map((t) =>
+      t.id === id ? { ...t, planId: plan.id, planName: plan.name, updatedAt: new Date().toISOString() } : t
+    );
+    this.saveTenants(updated);
+
+    this.logActivity({
+      id: `act_${Date.now()}`,
+      event: `Tenant ${id} plan changed to ${plan.name}`,
+      actor: 'superadmin@platform.com',
+      tenantId: id,
+      ipAddress: '127.0.0.1',
+      severity: 'info',
+      timestamp: 'Just now',
+    });
+  }
+
+  public static async listPlans(): Promise<TenantPlan[]> {
+    return this.plans;
+  }
+
+  public static async listActivityLogs(): Promise<PlatformActivityLog[]> {
+    return this.activities;
+  }
+
+  private static logActivity(log: PlatformActivityLog) {
+    this.activities = [log, ...this.activities];
+  }
+}
