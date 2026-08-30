@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { slug, email, currentPassword, newPassword } = body;
+    const { slug, email, newPassword } = body;
 
     if (!newPassword || newPassword.length < 6) {
       return NextResponse.json(
@@ -172,17 +172,52 @@ export async function PATCH(request: NextRequest) {
     const cleanEmail = email ? email.toLowerCase().trim() : '';
 
     const db = await getDatabase();
-    if (db && (cleanSlug || cleanEmail)) {
-      await db.collection('tenants').updateOne(
-        { $or: [{ slug: cleanSlug }, { ownerEmail: cleanEmail }] },
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database connection error' },
+        { status: 503, headers: corsHeaders() }
+      );
+    }
+
+    const matchConditions: any[] = [];
+    if (cleanSlug) matchConditions.push({ slug: cleanSlug });
+    if (cleanEmail) {
+      matchConditions.push({ ownerEmail: cleanEmail });
+      matchConditions.push({ 'contact.email': cleanEmail });
+      matchConditions.push({ email: cleanEmail });
+    }
+
+    if (matchConditions.length > 0) {
+      // 1. Update in tenants collection
+      await db.collection('tenants').updateMany(
+        { $or: matchConditions },
         {
           $set: {
             password: newPassword,
+            temporaryPassword: newPassword,
             isTemporaryPassword: false,
             passwordUpdatedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
-          $unset: { temporaryPassword: '' },
+        }
+      );
+
+      // 2. Update in users collection
+      await db.collection('users').updateMany(
+        {
+          $or: [
+            ...(cleanEmail ? [{ email: cleanEmail }] : []),
+            ...(cleanSlug ? [{ tenantSlug: cleanSlug }] : []),
+          ],
+        },
+        {
+          $set: {
+            password: newPassword,
+            temporaryPassword: newPassword,
+            isTemporaryPassword: false,
+            passwordUpdatedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
         }
       );
     }
@@ -190,7 +225,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'Permanent password set successfully! You can now log in with your new password.',
+        message: 'Permanent password updated successfully in database! You can now log in with your new password.',
       },
       { headers: corsHeaders() }
     );

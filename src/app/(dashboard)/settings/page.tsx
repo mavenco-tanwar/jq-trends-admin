@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sliders, Save, Store, Mail, Phone, MapPin, IndianRupee, Lock, Key, CheckCircle2 } from 'lucide-react';
+import { Sliders, Save, Store, Mail, Phone, MapPin, IndianRupee, Lock, Key, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { SettingsService } from '@/services/settings';
 import { useToast } from '@/lib/toast-context';
 import type { StoreSettings } from '@/types';
@@ -18,6 +18,8 @@ export default function GeneralSettingsPage() {
   // Password Change State
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   useEffect(() => {
@@ -56,17 +58,36 @@ export default function GeneralSettingsPage() {
 
     setIsUpdatingPassword(true);
     try {
+      let userEmail = contactEmail;
+      let currentSlug = '';
+
+      if (typeof window !== 'undefined') {
+        try {
+          const rawUser = localStorage.getItem('jq_admin_user');
+          if (rawUser) {
+            const parsed = JSON.parse(rawUser);
+            if (parsed.email) userEmail = parsed.email;
+            if (parsed.tenantSlug) currentSlug = parsed.tenantSlug;
+          }
+          const rawActiveTenant = localStorage.getItem('jq_saas_active_tenant_id');
+          if (rawActiveTenant && !currentSlug) {
+            currentSlug = rawActiveTenant.replace('store_', '');
+          }
+        } catch {}
+      }
+
       const res = await fetch('/api/v1/platform/merchant-password', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: contactEmail,
+          email: userEmail,
+          slug: currentSlug,
           newPassword,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('Permanent password updated successfully!', 'success');
+        showToast('Permanent password updated in database!', 'success');
         setNewPassword('');
         setConfirmPassword('');
       } else {
@@ -185,23 +206,41 @@ export default function GeneralSettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-slate-300 font-bold mb-1">New Permanent Password *</label>
-              <input
-                type="password"
-                placeholder="••••••••••••"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  placeholder="••••••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 pr-9 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-slate-300 font-bold mb-1">Confirm New Password *</label>
-              <input
-                type="password"
-                placeholder="••••••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="••••••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-3 pr-9 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 
