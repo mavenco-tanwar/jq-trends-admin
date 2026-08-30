@@ -855,22 +855,12 @@ function PlatformContent() {
                           tenant.status === 'active'
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                             : tenant.status === 'suspended'
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                             : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                         }`}
                       >
                         {tenant.status}
                       </span>
-
-                      <a
-                        href={`https://mavenco-storefront.vercel.app/stores/${tenant.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
-                        title="View Frontend Storefront"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
                     </div>
                   </div>
 
