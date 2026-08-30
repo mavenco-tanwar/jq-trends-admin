@@ -100,9 +100,16 @@ export default function HomepageBuilderPage() {
     showToast('Section removed', 'info');
   };
 
-  const handleSaveBlockEdit = (updatedBlock: ContentBlock) => {
-    setSections(sections.map((s) => (s.id === updatedBlock.id ? updatedBlock : s)));
-    showToast(`Updated section: ${updatedBlock.name}`, 'success');
+  const handleSaveBlockEdit = async (updatedBlock: ContentBlock) => {
+    const updated = sections.map((s) => (s.id === updatedBlock.id ? updatedBlock : s));
+    setSections(updated);
+    try {
+      const pub = await ContentService.publishHomepage(updated);
+      setHomepage(pub);
+      showToast(`Saved & Published live: ${updatedBlock.name}`, 'success');
+    } catch {
+      showToast(`Updated section: ${updatedBlock.name}`, 'info');
+    }
   };
 
   const handleAddBlockFromLibrary = (newBlock: ContentBlock) => {
