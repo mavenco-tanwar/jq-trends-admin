@@ -45,6 +45,10 @@ import {
   X,
   Cpu,
   Lock,
+  BarChart3,
+  ShoppingBag,
+  Wand2,
+  Code,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PlatformService, TenantStore } from '@/services/platform';
@@ -195,22 +199,17 @@ function AdminSidebarInner({
     {
       title: 'SALES & CUSTOMERS',
       items: [
-        {
-          label: 'Orders',
-          href: '/orders',
-          icon: ShoppingCart,
-          badge: '3 New',
-          badgeColor: 'bg-rose-500/20 text-rose-300',
-        },
+        { label: 'Orders & Fulfillment', href: '/orders', icon: ShoppingCart },
         { label: 'Customers', href: '/customers', icon: Users },
         {
-          label: 'Reviews',
+          label: 'Customer Reviews',
           href: '/reviews',
           icon: MessageSquare,
           badge: '3',
           badgeColor: 'bg-sky-500/20 text-sky-300',
         },
         { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
+        { label: 'Advanced Analytics', href: '/analytics', icon: BarChart3 },
       ],
     },
     {
@@ -230,8 +229,16 @@ function AdminSidebarInner({
       ],
     },
     {
-      title: 'MARKETING & SEO',
+      title: 'MARKETING & AUTOMATION',
       items: [
+        { label: 'Abandoned Carts', href: '/marketing/abandoned-cart', icon: ShoppingBag },
+        {
+          label: 'AI Studio',
+          href: '/marketing/ai',
+          icon: Wand2,
+          badge: 'AI',
+          badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
+        },
         { label: 'Campaigns', href: '/marketing/campaigns', icon: Megaphone },
         { label: 'Coupons', href: '/marketing/coupons', icon: Tag },
         { label: 'SEO Settings', href: '/marketing/seo', icon: SearchIcon },
@@ -251,6 +258,7 @@ function AdminSidebarInner({
         { label: 'Shipping & Delivery', href: '/settings/shipping', icon: Truck },
         { label: 'Payment Gateways', href: '/settings/payments', icon: CreditCard },
         { label: 'Taxes & GST', href: '/settings/tax', icon: Receipt },
+        { label: 'REST API & Webhooks', href: '/settings/api', icon: Code },
       ],
     },
     {
