@@ -324,6 +324,10 @@ export class PlatformService {
     return list[idx];
   }
 
+  public static getAllTenants(): TenantStore[] {
+    return this.loadTenants();
+  }
+
   // Active Store Context (Tenant Switcher)
   public static getActiveTenantId(): string {
     if (typeof window === 'undefined') return 'store_jq_trends';
