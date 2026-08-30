@@ -805,11 +805,10 @@ function PlatformContent() {
                     href={`https://mavenco-storefront.vercel.app/stores/${tenant.slug}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 rounded-lg transition-all flex items-center justify-center gap-1 text-xs font-semibold"
-                    title="View Frontend Storefront"
+                    className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 rounded-lg transition-all flex items-center justify-center"
+                    title="View Live Storefront"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Storefront</span>
                   </a>
 
                   <div className="flex items-center gap-1">
