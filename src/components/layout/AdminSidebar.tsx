@@ -73,7 +73,7 @@ function AdminSidebarInner({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeTabParam = searchParams.get('tab') || 'tenants';
+  const activeTabParam = searchParams.get('tab') || 'overview';
 
   const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -104,6 +104,12 @@ function AdminSidebarInner({
     {
       title: 'PLATFORM MANAGEMENT',
       items: [
+        {
+          label: 'Overview',
+          href: '/platform?tab=overview',
+          tabKey: 'overview',
+          icon: LayoutDashboard,
+        },
         {
           label: 'Tenant Stores',
           href: '/platform?tab=tenants',
@@ -328,7 +334,7 @@ function AdminSidebarInner({
       {!isSuperadminRoute && (user?.email?.toLowerCase().includes('superadmin') || impersonationState.isImpersonating) && (
         <div className="px-3 pt-3">
           <Link
-            href="/platform"
+            href="/platform?tab=overview"
             className="w-full flex items-center justify-between p-2 rounded-xl bg-gradient-to-r from-rose-950/60 to-amber-950/40 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-bold transition-all shadow-sm group"
           >
             <div className="flex items-center gap-2">

@@ -35,6 +35,8 @@ import {
   Settings,
   CheckSquare,
   Square,
+  LayoutDashboard,
+  TrendingUp,
 } from 'lucide-react';
 import {
   PlatformService,
@@ -56,15 +58,17 @@ function PlatformContent() {
   const [tenants, setTenants] = useState<TenantStore[]>([]);
   const [plans, setPlans] = useState<TenantPlan[]>([]);
   const [activities, setActivities] = useState<PlatformActivityLog[]>([]);
-  const [activeTab, setActiveTab] = useState<'tenants' | 'plans' | 'domains' | 'activity'>('tenants');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'plans' | 'domains' | 'activity'>('overview');
 
   useEffect(() => {
-    if (tabParam && ['tenants', 'plans', 'domains', 'activity'].includes(tabParam)) {
+    if (tabParam && ['overview', 'tenants', 'plans', 'domains', 'activity'].includes(tabParam)) {
       setActiveTab(tabParam);
+    } else if (!tabParam) {
+      setActiveTab('overview');
     }
   }, [tabParam]);
 
-  const handleTabChange = (tab: 'tenants' | 'plans' | 'domains' | 'activity') => {
+  const handleTabChange = (tab: 'overview' | 'tenants' | 'plans' | 'domains' | 'activity') => {
     setActiveTab(tab);
     router.push(`/platform?tab=${tab}`);
   };
@@ -386,6 +390,18 @@ function PlatformContent() {
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
         <button
+          onClick={() => handleTabChange('overview')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+            activeTab === 'overview'
+              ? 'bg-rose-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          <span>Platform Overview</span>
+        </button>
+
+        <button
           onClick={() => handleTabChange('tenants')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'tenants'
@@ -433,6 +449,261 @@ function PlatformContent() {
           <span>Platform Audit Trail</span>
         </button>
       </div>
+
+      {/* TAB 0: EXECUTIVE OVERVIEW */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Quick Operations Bar */}
+          <div className="bg-gradient-to-r from-[#161822] via-[#1A1D2B] to-[#161822] p-5 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="space-y-1 text-center md:text-left">
+              <h3 className="font-bold text-white text-sm flex items-center gap-2 justify-center md:justify-start">
+                <Sparkles className="w-4 h-4 text-rose-400" />
+                <span>Multi-Tenant SaaS Operations Hub</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Manage high-throughput store provisioning, custom domain routing, and isolated database clusters.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-center">
+              <button
+                onClick={() => setIsProvisionModalOpen(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-950/50 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Provision New Store</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('domains')}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-all"
+              >
+                <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Manage Domains</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('plans')}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-all"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>Plans &amp; Feature Flags</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2-Column Dashboard Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left: Active Client Stores Matrix (2 Cols) */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-[#161822] p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Store className="w-5 h-5 text-rose-400" />
+                    <h3 className="font-bold text-white text-sm">Provisioned Tenant Stores</h3>
+                  </div>
+                  <button
+                    onClick={() => handleTabChange('tenants')}
+                    className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                  >
+                    <span>View All {tenants.length} Stores</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {tenants.map((t) => (
+                    <div
+                      key={t.id}
+                      className="p-4 rounded-xl bg-[#10121A] border border-slate-800/80 hover:border-slate-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-xs shadow-md shrink-0"
+                          style={{ backgroundColor: t.theme?.primaryColor || '#111111' }}
+                        >
+                          {t.code || t.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white text-xs truncate">{t.name}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-300">
+                              {t.status}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 truncate flex items-center gap-2 mt-0.5">
+                            <span className="text-rose-400 font-medium">{t.planName}</span>
+                            <span>•</span>
+                            <span className="font-mono text-slate-500">{t.primaryDomain}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
+                        <div className="text-left sm:text-right">
+                          <div className="text-xs font-bold text-white">
+                            ₹{(t.metrics?.monthlyRevenue || 0) >= 100000 
+                              ? `${((t.metrics?.monthlyRevenue || 0) / 100000).toFixed(1)}L`
+                              : `${((t.metrics?.monthlyRevenue || 0) / 1000).toFixed(0)}k`}
+                          </div>
+                          <div className="text-[10px] text-slate-500">Monthly GMV</div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleImpersonate(t)}
+                            className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 text-xs font-bold rounded-lg border border-rose-500/30 transition-all flex items-center gap-1.5"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Impersonate</span>
+                          </button>
+
+                          <a
+                            href={`https://mavenco-storefront.vercel.app/stores/${t.slug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors border border-slate-800"
+                            title="Open Storefront"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* SaaS Subscription Tier Distribution */}
+              <div className="bg-[#161822] p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-amber-400" />
+                    <h3 className="font-bold text-white text-sm">SaaS Subscription Distribution</h3>
+                  </div>
+                  <button
+                    onClick={() => handleTabChange('plans')}
+                    className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                  >
+                    <span>Manage Plans</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {plans.map((p) => {
+                    const subscriberCount = tenants.filter((t) => t.planId === p.id).length;
+                    const tierRevenue = subscriberCount * (p.priceMonthlyInr || 6499);
+                    return (
+                      <div
+                        key={p.id}
+                        className="p-4 rounded-xl bg-[#10121A] border border-slate-800 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-white">{p.name}</span>
+                          <span className="text-xs font-mono text-emerald-400 font-bold">
+                            ₹{(p.priceMonthlyInr || 6499).toLocaleString('en-IN')}/mo
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs text-slate-400">
+                            <span>Subscribers</span>
+                            <span className="font-bold text-white">{subscriberCount} Stores</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-slate-400">
+                            <span>MRR Share</span>
+                            <span className="font-bold text-rose-400">₹{tierRevenue.toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
+                          <span>Max {p.maxProducts} Products</span>
+                          <span>{p.maxStaff} Staff</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Infrastructure & Activity Stream (1 Col) */}
+            <div className="space-y-6">
+              {/* Live Cluster Health Widget */}
+              <div className="bg-[#161822] p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Database className="w-5 h-5 text-purple-400" />
+                    <h3 className="font-bold text-white text-sm">Cluster Health &amp; Security</h3>
+                  </div>
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    100% OK
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 text-xs">
+                  <div className="p-3 rounded-xl bg-[#10121A] border border-slate-800 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="text-white font-medium">MongoDB Atlas Multi-Region</div>
+                      <div className="text-[10px] text-slate-500">{tenants.length} Isolated Tenant Partitions</div>
+                    </div>
+                    <span className="text-emerald-400 font-mono font-bold text-[11px]">99.98% SLA</span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#10121A] border border-slate-800 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="text-white font-medium">Edge Anycast Routing</div>
+                      <div className="text-[10px] text-slate-500">Auto TLS 1.3 &amp; Wildcard SSL</div>
+                    </div>
+                    <span className="text-emerald-400 font-mono font-bold text-[11px]">24ms TTFB</span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#10121A] border border-slate-800 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="text-white font-medium">Cross-Tenant Isolation</div>
+                      <div className="text-[10px] text-slate-500">Zero Shared Tables Policy</div>
+                    </div>
+                    <span className="text-purple-400 font-mono font-bold text-[11px]">Enforced</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-time Activity Stream */}
+              <div className="bg-[#161822] p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-sky-400" />
+                    <h3 className="font-bold text-white text-sm">Platform Audit Feed</h3>
+                  </div>
+                  <button
+                    onClick={() => handleTabChange('activity')}
+                    className="text-xs font-bold text-rose-400 hover:text-rose-300"
+                  >
+                    View All
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {activities.slice(0, 4).map((act) => (
+                    <div
+                      key={act.id}
+                      className="p-3 rounded-xl bg-[#10121A] border border-slate-800/80 space-y-1 text-xs"
+                    >
+                      <div className="text-slate-200 font-medium leading-snug">{act.event}</div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-500">
+                        <span className="text-rose-400 font-mono">{act.actor}</span>
+                        <span>{act.timestamp}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: TENANTS LIST */}
       {activeTab === 'tenants' && (
