@@ -1122,13 +1122,13 @@ function PlatformContent() {
                 <span>SaaS Billing Plans &amp; Feature Flags</span>
               </h1>
               <p className="text-xs text-slate-400 max-w-2xl">
-                One-time storefront + admin platform license fee with annual cloud maintenance (MongoDB Atlas, CDN, SMTP Mail, Next.js Edge compute, and security SLAs). Custom domain renewal excluded and billed separately.
+                One-time storefront + admin platform license fee with flexible monthly cloud server maintenance (MongoDB Atlas, CDN, SMTP Mail, Next.js Edge compute). Custom domain renewal excluded and billed separately.
               </p>
             </div>
 
             <div className="flex items-center gap-3 z-10">
               <span className="px-3.5 py-2 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30 font-mono">
-                One-Time License + Annual AMC
+                One-Time License + Flexible Cloud
               </span>
             </div>
           </div>
@@ -1170,14 +1170,13 @@ function PlatformContent() {
                   {/* Maintenance & Recurring Cost */}
                   <div className="p-3.5 bg-gradient-to-br from-[#10121A] to-[#141724] rounded-xl border border-slate-800 space-y-2 text-xs">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                      <span className="text-slate-300 font-bold">Annual Maintenance (AMC):</span>
+                      <span className="text-slate-300 font-bold">Cloud Server &amp; DB:</span>
                       <span className="text-amber-400 font-black text-xs">
-                        ₹{(p.annualMaintenanceInr || 48000).toLocaleString('en-IN')} <span className="text-[10px] font-normal text-slate-400">/year</span>
+                        ₹{(p.monthlyEquivalentInr || 4000).toLocaleString('en-IN')} <span className="text-[10px] font-normal text-slate-400">/mo</span>
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Monthly Equivalent:</span>
-                      <span className="font-mono text-slate-200">₹{(p.monthlyEquivalentInr || 4000).toLocaleString('en-IN')}/mo</span>
+                    <div className="text-[11px] text-slate-400">
+                      <span>Flexible recharge (e.g. pay 2 months). No locked annual AMC contracts.</span>
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1">
                       <span>Domain Renewal:</span>
@@ -1691,9 +1690,9 @@ function PlatformContent() {
                     onChange={(e) => setEditPlanId(e.target.value)}
                     className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
                   >
-                    <option value="plan_starter">Starter Boutique (₹29,999 + ₹24k/yr AMC)</option>
-                    <option value="plan_pro">Professional Scale (₹59,999 + ₹48k/yr AMC)</option>
-                    <option value="plan_enterprise">Enterprise Global (₹1,49,999 + ₹96k/yr AMC)</option>
+                    <option value="plan_starter">Starter Boutique (₹29,999 One-Time + ₹2,000/mo server)</option>
+                    <option value="plan_pro">Professional Scale (₹59,999 One-Time + ₹4,000/mo server)</option>
+                    <option value="plan_enterprise">Enterprise Global (₹1,49,999 One-Time + ₹8,000/mo cluster)</option>
                   </select>
                 </div>
                 <div>
