@@ -18,6 +18,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { ProductService } from '@/services/products';
+import { PlatformService, TenantPlan } from '@/services/platform';
 import { useToast } from '@/lib/toast-context';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import type { Product } from '@/types';
@@ -26,12 +27,19 @@ export default function ProductsListPage() {
   const { showToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activePlan, setActivePlan] = useState<TenantPlan | null>(null);
 
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const list = await ProductService.getAll();
+      const [list, plans] = await Promise.all([
+        ProductService.getAll(),
+        Promise.resolve(PlatformService.listPlans()),
+      ]);
+      const currentTenant = PlatformService.getActiveTenant();
+      const plan = plans.find((p) => p.id === currentTenant.planId) || plans[0];
       setProducts(list);
+      setActivePlan(plan);
     } catch {
       showToast('Failed to load products', 'error');
     } finally {
@@ -213,13 +221,27 @@ export default function ProductsListPage() {
           </p>
         </div>
 
-        <Link
-          href="/products/new"
-          className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-md shadow-rose-950/40 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Add Product</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          {activePlan && (
+            <div className="px-3.5 py-1.5 bg-[#10121A] border border-slate-800 rounded-xl flex items-center gap-2 text-xs">
+              <span className="text-slate-400">Quota:</span>
+              <span className="font-bold text-white font-mono">
+                {products.length} / {activePlan.maxProducts}
+              </span>
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/20">
+                {activePlan.name}
+              </span>
+            </div>
+          )}
+
+          <Link
+            href="/products/new"
+            className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-md shadow-rose-950/40 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Add Product</span>
+          </Link>
+        </div>
       </div>
 
       {/* Data Table */}

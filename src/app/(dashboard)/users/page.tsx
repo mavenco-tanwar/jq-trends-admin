@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserCheck, Plus, Trash2, Mail, Shield } from 'lucide-react';
 import { UserService } from '@/services/users';
+import { PlatformService, TenantPlan } from '@/services/platform';
 import { useToast } from '@/lib/toast-context';
 import { Modal } from '@/components/ui/Modal';
 import type { AdminUser, Role } from '@/types';
@@ -11,6 +12,7 @@ export default function UsersPage() {
   const { showToast } = useToast();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [activePlan, setActivePlan] = useState<TenantPlan | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   // Invite Form
@@ -20,10 +22,16 @@ export default function UsersPage() {
   const [roleId, setRoleId] = useState('role_manager');
 
   const fetchData = async () => {
-    const u = await UserService.getUsers();
-    const r = await UserService.getRoles();
+    const [u, r, plans] = await Promise.all([
+      UserService.getUsers(),
+      UserService.getRoles(),
+      Promise.resolve(PlatformService.listPlans()),
+    ]);
+    const currentTenant = PlatformService.getActiveTenant();
+    const plan = plans.find((p) => p.id === currentTenant.planId) || plans[0];
     setUsers(u);
     setRoles(r);
+    setActivePlan(plan);
   };
 
   useEffect(() => {
@@ -32,6 +40,10 @@ export default function UsersPage() {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (activePlan && users.length >= activePlan.maxStaff) {
+      showToast(`Staff limit reached (${users.length}/${activePlan.maxStaff} users). Upgrade plan to invite more staff members.`, 'error');
+      return;
+    }
     await UserService.inviteUser(email, firstName, lastName, roleId);
     showToast(`Invitation sent to ${email}`, 'success');
     setIsInviteOpen(false);
@@ -61,13 +73,33 @@ export default function UsersPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsInviteOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-md shadow-rose-950/40 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Invite Staff Member</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {activePlan && (
+            <div className="px-3.5 py-1.5 bg-[#10121A] border border-slate-800 rounded-xl flex items-center gap-2 text-xs">
+              <span className="text-slate-400">Staff Quota:</span>
+              <span className="font-bold text-white font-mono">
+                {users.length} / {activePlan.maxStaff}
+              </span>
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/20">
+                {activePlan.name}
+              </span>
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              if (activePlan && users.length >= activePlan.maxStaff) {
+                showToast(`Staff account limit reached (${users.length}/${activePlan.maxStaff}). Please upgrade plan.`, 'error');
+                return;
+              }
+              setIsInviteOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-md shadow-rose-950/40 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Invite Staff Member</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-[#161822] border border-slate-800 rounded-xl overflow-hidden shadow-sm">
