@@ -305,6 +305,25 @@ export class PlatformService {
     }
   }
 
+  public static updateTenant(tenantId: string, updates: Partial<TenantStore>): TenantStore | null {
+    const list = this.loadTenants();
+    const idx = list.findIndex((t) => t.id === tenantId);
+    if (idx === -1) return null;
+
+    list[idx] = {
+      ...list[idx],
+      ...updates,
+      theme: {
+        ...list[idx].theme,
+        ...(updates.theme || {}),
+      },
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.saveTenants(list);
+    return list[idx];
+  }
+
   // Active Store Context (Tenant Switcher)
   public static getActiveTenantId(): string {
     if (typeof window === 'undefined') return 'store_jq_trends';
