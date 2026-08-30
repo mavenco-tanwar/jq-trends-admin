@@ -640,7 +640,7 @@ function PlatformContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {plans.map((p) => {
                     const subscriberCount = tenants.filter((t) => t.planId === p.id).length;
-                    const tierRevenue = subscriberCount * (p.priceMonthlyInr || 6499);
+                    const tierRevenue = subscriberCount * (p.monthlyEquivalentInr || 4000);
                     return (
                       <div
                         key={p.id}
@@ -648,19 +648,23 @@ function PlatformContent() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-white">{p.name}</span>
-                          <span className="text-xs font-mono text-emerald-400 font-bold">
-                            ₹{(p.priceMonthlyInr || 6499).toLocaleString('en-IN')}/mo
+                          <span className="text-xs font-mono text-amber-400 font-bold">
+                            ₹{(p.monthlyEquivalentInr || 4000).toLocaleString('en-IN')}/mo AMC
                           </span>
                         </div>
 
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs text-slate-400">
+                            <span>One-Time Fee</span>
+                            <span className="font-bold text-white">₹{(p.oneTimeFeeInr || 59999).toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-slate-400">
                             <span>Subscribers</span>
                             <span className="font-bold text-white">{subscriberCount} Stores</span>
                           </div>
                           <div className="flex items-center justify-between text-xs text-slate-400">
-                            <span>MRR Share</span>
-                            <span className="font-bold text-rose-400">₹{tierRevenue.toLocaleString('en-IN')}</span>
+                            <span>AMC Revenue</span>
+                            <span className="font-bold text-rose-400">₹{tierRevenue.toLocaleString('en-IN')}/mo</span>
                           </div>
                         </div>
 
@@ -1118,13 +1122,13 @@ function PlatformContent() {
                 <span>SaaS Billing Plans &amp; Feature Flags</span>
               </h1>
               <p className="text-xs text-slate-400 max-w-2xl">
-                Define monthly subscription pricing in INR (₹), allocate storage/product quotas, and toggle dynamic feature access flags across tenant stores in real-time.
+                One-time storefront + admin platform license fee with annual cloud maintenance (MongoDB Atlas, CDN, SMTP Mail, Next.js Edge compute, and security SLAs). Custom domain renewal excluded and billed separately.
               </p>
             </div>
 
             <div className="flex items-center gap-3 z-10">
               <span className="px-3.5 py-2 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30 font-mono">
-                3 Active Plan Tiers
+                One-Time License + Annual AMC
               </span>
             </div>
           </div>
@@ -1133,25 +1137,83 @@ function PlatformContent() {
             {plans.map((p) => (
               <div
                 key={p.id}
-                className="bg-[#161822] border border-slate-800 rounded-2xl p-6 space-y-5 shadow-lg flex flex-col justify-between"
+                className={`bg-[#161822] border ${
+                  p.code === 'pro' ? 'border-rose-500/50 shadow-rose-950/40' : 'border-slate-800'
+                } rounded-2xl p-6 space-y-5 shadow-xl flex flex-col justify-between relative`}
               >
+                {p.code === 'pro' && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-rose-600 to-amber-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-md">
+                    Most Popular Setup
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
                       Tier: {p.code}
                     </span>
-                    <span className="text-2xl font-black text-white">
-                      ₹{(p.priceMonthlyInr || 6499).toLocaleString('en-IN')}
-                      <span className="text-xs font-normal text-slate-400">/mo</span>
-                    </span>
+                    <div className="text-right">
+                      <div className="text-2xl font-black text-white">
+                        ₹{(p.oneTimeFeeInr || 59999).toLocaleString('en-IN')}
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400">One-Time License</span>
+                    </div>
                   </div>
 
                   <div>
                     <h3 className="text-lg font-bold text-white">{p.name}</h3>
                     <p className="text-xs text-slate-400 mt-1">
-                      Billed monthly in INR with dedicated cloud compute &amp; multi-tenant database isolation.
+                      Full storefront + merchant admin panel deployment with isolated MongoDB database partition.
                     </p>
                   </div>
+
+                  {/* Maintenance & Recurring Cost */}
+                  <div className="p-3.5 bg-gradient-to-br from-[#10121A] to-[#141724] rounded-xl border border-slate-800 space-y-2 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span className="text-slate-300 font-bold">Annual Maintenance (AMC):</span>
+                      <span className="text-amber-400 font-black text-xs">
+                        ₹{(p.annualMaintenanceInr || 48000).toLocaleString('en-IN')} <span className="text-[10px] font-normal text-slate-400">/year</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Monthly Equivalent:</span>
+                      <span className="font-mono text-slate-200">₹{(p.monthlyEquivalentInr || 4000).toLocaleString('en-IN')}/mo</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                      <span>Domain Renewal:</span>
+                      <span className="text-rose-400 font-semibold">Excluded (Billed on renewal)</span>
+                    </div>
+                  </div>
+
+                  {/* Estimated Real-Time Cloud Breakdown */}
+                  {p.cloudCostBreakdown && (
+                    <div className="p-3 bg-[#0c0e14] rounded-xl border border-slate-800/80 space-y-1.5 text-[11px]">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                        <span>Real Cloud Expenses Breakdown</span>
+                        <span className="text-emerald-400 font-mono">est. /mo</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>• MongoDB Atlas Database:</span>
+                        <span className="text-white font-mono">₹{p.cloudCostBreakdown.mongodbAtlas}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>• Next.js Serverless Edge:</span>
+                        <span className="text-white font-mono">₹{p.cloudCostBreakdown.serverlessHosting}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>• SMTP Transactional Mail:</span>
+                        <span className="text-white font-mono">₹{p.cloudCostBreakdown.transactionalMail}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>• Media CDN &amp; WebP Opt.:</span>
+                        <span className="text-white font-mono">₹{p.cloudCostBreakdown.mediaCdn}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>• Security &amp; Platform SLA:</span>
+                        <span className="text-white font-mono">₹{p.cloudCostBreakdown.platformSupportBuffer}</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Quotas */}
                   <div className="p-3 bg-[#10121A] rounded-xl border border-slate-800 space-y-2 text-xs">
@@ -1629,9 +1691,9 @@ function PlatformContent() {
                     onChange={(e) => setEditPlanId(e.target.value)}
                     className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
                   >
-                    <option value="plan_starter">Starter Boutique (₹2,499 /mo)</option>
-                    <option value="plan_pro">Professional Scale (₹6,499 /mo)</option>
-                    <option value="plan_enterprise">Enterprise Global (₹19,999 /mo)</option>
+                    <option value="plan_starter">Starter Boutique (₹29,999 + ₹24k/yr AMC)</option>
+                    <option value="plan_pro">Professional Scale (₹59,999 + ₹48k/yr AMC)</option>
+                    <option value="plan_enterprise">Enterprise Global (₹1,49,999 + ₹96k/yr AMC)</option>
                   </select>
                 </div>
                 <div>

@@ -4,8 +4,11 @@ export interface TenantPlan {
   id: string;
   name: string;
   code: 'starter' | 'pro' | 'enterprise';
-  priceMonthlyInr: number;
-  priceMonthlyUsd: number;
+  oneTimeFeeInr: number;
+  oneTimeFeeUsd: number;
+  annualMaintenanceInr: number;
+  monthlyEquivalentInr: number;
+  domainPolicy: string;
   maxProducts: number;
   maxOrdersMonthly: number;
   maxStorageMb: number;
@@ -18,6 +21,13 @@ export interface TenantPlan {
     abandonedCart: boolean;
     aiFeatures: boolean;
     apiAccess: boolean;
+  };
+  cloudCostBreakdown: {
+    mongodbAtlas: number;
+    serverlessHosting: number;
+    transactionalMail: number;
+    mediaCdn: number;
+    platformSupportBuffer: number;
   };
 }
 
@@ -101,8 +111,11 @@ export const INITIAL_PLANS: TenantPlan[] = [
     id: 'plan_starter',
     name: 'Starter Boutique',
     code: 'starter',
-    priceMonthlyInr: 2499,
-    priceMonthlyUsd: 29,
+    oneTimeFeeInr: 29999,
+    oneTimeFeeUsd: 399,
+    annualMaintenanceInr: 24000,
+    monthlyEquivalentInr: 2000,
+    domainPolicy: 'Custom domain renewal billed separately (excl.)',
     maxProducts: 250,
     maxOrdersMonthly: 1000,
     maxStorageMb: 2048,
@@ -116,13 +129,23 @@ export const INITIAL_PLANS: TenantPlan[] = [
       aiFeatures: false,
       apiAccess: false,
     },
+    cloudCostBreakdown: {
+      mongodbAtlas: 300,
+      serverlessHosting: 400,
+      transactionalMail: 150,
+      mediaCdn: 250,
+      platformSupportBuffer: 900,
+    },
   },
   {
     id: 'plan_pro',
     name: 'Professional Scale',
     code: 'pro',
-    priceMonthlyInr: 6499,
-    priceMonthlyUsd: 79,
+    oneTimeFeeInr: 59999,
+    oneTimeFeeUsd: 799,
+    annualMaintenanceInr: 48000,
+    monthlyEquivalentInr: 4000,
+    domainPolicy: 'Custom domain renewal billed separately (excl.)',
     maxProducts: 2500,
     maxOrdersMonthly: 10000,
     maxStorageMb: 10240,
@@ -136,13 +159,23 @@ export const INITIAL_PLANS: TenantPlan[] = [
       aiFeatures: true,
       apiAccess: true,
     },
+    cloudCostBreakdown: {
+      mongodbAtlas: 500,
+      serverlessHosting: 800,
+      transactionalMail: 300,
+      mediaCdn: 500,
+      platformSupportBuffer: 1900,
+    },
   },
   {
     id: 'plan_enterprise',
     name: 'Enterprise Global',
     code: 'enterprise',
-    priceMonthlyInr: 19999,
-    priceMonthlyUsd: 249,
+    oneTimeFeeInr: 149999,
+    oneTimeFeeUsd: 1999,
+    annualMaintenanceInr: 96000,
+    monthlyEquivalentInr: 8000,
+    domainPolicy: 'Custom domain renewal billed separately (excl.)',
     maxProducts: 50000,
     maxOrdersMonthly: 250000,
     maxStorageMb: 102400,
@@ -155,6 +188,13 @@ export const INITIAL_PLANS: TenantPlan[] = [
       abandonedCart: true,
       aiFeatures: true,
       apiAccess: true,
+    },
+    cloudCostBreakdown: {
+      mongodbAtlas: 1200,
+      serverlessHosting: 1800,
+      transactionalMail: 600,
+      mediaCdn: 1400,
+      platformSupportBuffer: 3000,
     },
   },
 ];
@@ -456,11 +496,11 @@ export class PlatformService {
     const suspended = list.filter((t) => t.status === 'suspended').length;
     const mrrInr = list.reduce((acc, t) => {
       const plan = this.plans.find((p) => p.id === t.planId);
-      return acc + (plan ? (plan.priceMonthlyInr || 6499) : 6499);
+      return acc + (plan ? (plan.monthlyEquivalentInr || 4000) : 4000);
     }, 0);
     const mrrUsd = list.reduce((acc, t) => {
       const plan = this.plans.find((p) => p.id === t.planId);
-      return acc + (plan ? plan.priceMonthlyUsd : 79);
+      return acc + (plan ? Math.round((plan.oneTimeFeeUsd || 799) / 12) : 50);
     }, 0);
     const products = list.reduce((acc, t) => acc + (t.metrics?.products || 0), 0);
     const orders = list.reduce((acc, t) => acc + (t.metrics?.orders || 0), 0);
