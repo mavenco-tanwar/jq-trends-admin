@@ -563,7 +563,15 @@ function PlatformContent() {
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-white text-xs truncate">{t.name}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-300">
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                t.status === 'active'
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : t.status === 'suspended'
+                                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                  : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              }`}
+                            >
                               {t.status}
                             </span>
                           </div>
