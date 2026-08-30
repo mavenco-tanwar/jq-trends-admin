@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Shield,
   Store,
@@ -45,8 +46,11 @@ import {
 import { useToast } from '@/lib/toast-context';
 import { Modal } from '@/components/ui/Modal';
 
-export default function SuperadminPlatformPage() {
+function PlatformContent() {
   const { showToast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as any;
 
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [tenants, setTenants] = useState<TenantStore[]>([]);
@@ -55,14 +59,15 @@ export default function SuperadminPlatformPage() {
   const [activeTab, setActiveTab] = useState<'tenants' | 'plans' | 'domains' | 'activity'>('tenants');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab');
-      if (tabParam && ['tenants', 'plans', 'domains', 'activity'].includes(tabParam)) {
-        setActiveTab(tabParam as any);
-      }
+    if (tabParam && ['tenants', 'plans', 'domains', 'activity'].includes(tabParam)) {
+      setActiveTab(tabParam);
     }
-  }, []);
+  }, [tabParam]);
+
+  const handleTabChange = (tab: 'tenants' | 'plans' | 'domains' | 'activity') => {
+    setActiveTab(tab);
+    router.push(`/platform?tab=${tab}`);
+  };
 
   // Search & Filter
   const [search, setSearch] = useState('');
@@ -381,7 +386,7 @@ export default function SuperadminPlatformPage() {
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
         <button
-          onClick={() => setActiveTab('tenants')}
+          onClick={() => handleTabChange('tenants')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'tenants'
               ? 'bg-rose-600 text-white shadow-md'
@@ -393,7 +398,7 @@ export default function SuperadminPlatformPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab('domains')}
+          onClick={() => handleTabChange('domains')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'domains'
               ? 'bg-rose-600 text-white shadow-md'
@@ -405,7 +410,7 @@ export default function SuperadminPlatformPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab('plans')}
+          onClick={() => handleTabChange('plans')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'plans'
               ? 'bg-rose-600 text-white shadow-md'
@@ -417,7 +422,7 @@ export default function SuperadminPlatformPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab('activity')}
+          onClick={() => handleTabChange('activity')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
             activeTab === 'activity'
               ? 'bg-rose-600 text-white shadow-md'
@@ -1203,5 +1208,13 @@ export default function SuperadminPlatformPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SuperadminPlatformPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-slate-400 text-xs font-mono">Loading Control Plane...</div>}>
+      <PlatformContent />
+    </Suspense>
   );
 }

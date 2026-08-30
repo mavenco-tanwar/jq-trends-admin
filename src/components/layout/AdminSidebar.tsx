@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
@@ -48,6 +48,7 @@ import { PlatformService, TenantStore } from '@/services/platform';
 interface NavItem {
   label: string;
   href: string;
+  tabKey?: string;
   icon: any;
   badge?: string;
   badgeColor?: string;
@@ -59,7 +60,7 @@ interface NavSection {
   items: NavItem[];
 }
 
-export function AdminSidebar({
+function AdminSidebarInner({
   isMobileOpen,
   onCloseMobile,
 }: {
@@ -67,7 +68,8 @@ export function AdminSidebar({
   onCloseMobile?: () => void;
 }) {
   const pathname = usePathname();
-  const [currentTab, setCurrentTab] = useState('tenants');
+  const searchParams = useSearchParams();
+  const activeTabParam = searchParams.get('tab') || 'tenants';
 
   const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -78,12 +80,6 @@ export function AdminSidebar({
   const isSuperadminRoute = pathname === '/platform' || pathname.startsWith('/platform');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get('tab') || 'tenants';
-      setCurrentTab(tab);
-    }
-
     PlatformService.listTenants().then((list) => {
       setAllTenants(list);
       setActiveTenant(PlatformService.getActiveTenant());
@@ -106,6 +102,7 @@ export function AdminSidebar({
         {
           label: 'Tenant Stores',
           href: '/platform?tab=tenants',
+          tabKey: 'tenants',
           icon: Store,
           badge: `${allTenants.length || 4} Stores`,
           badgeColor: 'bg-rose-500/20 text-rose-300 font-bold',
@@ -113,6 +110,7 @@ export function AdminSidebar({
         {
           label: 'Custom Domains & SSL',
           href: '/platform?tab=domains',
+          tabKey: 'domains',
           icon: Globe,
           badge: 'Auto SSL',
           badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold',
@@ -120,6 +118,7 @@ export function AdminSidebar({
         {
           label: 'SaaS Billing & Plans',
           href: '/platform?tab=plans',
+          tabKey: 'plans',
           icon: CreditCard,
           badge: '3 Tiers',
           badgeColor: 'bg-amber-500/20 text-amber-300 font-bold',
@@ -127,6 +126,7 @@ export function AdminSidebar({
         {
           label: 'Platform Audit Trail',
           href: '/platform?tab=activity',
+          tabKey: 'activity',
           icon: Activity,
           badge: 'Audit',
           badgeColor: 'bg-sky-500/20 text-sky-300 font-bold',
@@ -139,6 +139,7 @@ export function AdminSidebar({
         {
           label: 'Multi-Tenant Databases',
           href: '/platform?tab=tenants',
+          tabKey: 'tenants',
           icon: Database,
           badge: 'Isolated',
           badgeColor: 'bg-purple-500/20 text-purple-300',
@@ -146,6 +147,7 @@ export function AdminSidebar({
         {
           label: 'Edge Ingress & CDN',
           href: '/platform?tab=domains',
+          tabKey: 'domains',
           icon: Zap,
           badge: '< 50ms',
           badgeColor: 'bg-emerald-500/20 text-emerald-300',
@@ -365,7 +367,7 @@ export function AdminSidebar({
             )}
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const isTabMatch = isSuperadminRoute && item.href.includes('tab=') && item.href.includes(`tab=${currentTab}`);
+                const isTabMatch = isSuperadminRoute && item.tabKey ? activeTabParam === item.tabKey : false;
                 const isExactMatch = !isSuperadminRoute && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
                 const isActive = isTabMatch || isExactMatch;
                 const Icon = item.icon;
@@ -504,5 +506,16 @@ export function AdminSidebar({
         </div>
       )}
     </>
+  );
+}
+
+export function AdminSidebar(props: {
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}) {
+  return (
+    <Suspense fallback={<aside className="hidden md:block w-64 bg-[#10121A] shrink-0 h-screen" />}>
+      <AdminSidebarInner {...props} />
+    </Suspense>
   );
 }
