@@ -41,12 +41,19 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
     if (db && body.slug) {
       const cleanSlug = body.slug.toLowerCase().trim();
+      const tempPassword = body.temporaryPassword || `Mavenco@2026!${cleanSlug}`;
+      const ownerEmail = body.ownerEmail ? body.ownerEmail.toLowerCase().trim() : null;
+
+      // 1. Upsert Tenant Record in MongoDB Atlas
       await db.collection('tenants').updateOne(
         { slug: cleanSlug },
         {
           $set: {
             ...body,
             slug: cleanSlug,
+            ownerEmail: ownerEmail || body.ownerEmail,
+            temporaryPassword: tempPassword,
+            password: tempPassword,
             updatedAt: new Date().toISOString(),
           },
           $setOnInsert: {
@@ -56,9 +63,39 @@ export async function POST(request: NextRequest) {
         { upsert: true }
       );
 
-      // Record activity in MongoDB
+      // 2. Upsert Merchant Administrator Account in 'users' collection
+      if (ownerEmail) {
+        await db.collection('users').updateOne(
+          { email: ownerEmail },
+          {
+            $set: {
+              email: ownerEmail,
+              name: body.ownerName || body.name || 'Store Owner',
+              firstName: body.ownerName ? body.ownerName.split(' ')[0] : body.name || 'Store',
+              lastName: body.ownerName ? body.ownerName.split(' ').slice(1).join(' ') || 'Owner' : 'Owner',
+              roleId: 'role_owner',
+              role: 'owner',
+              roleName: 'Store Owner & Administrator',
+              tenantId: body.id || `store_${cleanSlug}`,
+              tenantSlug: cleanSlug,
+              temporaryPassword: tempPassword,
+              password: tempPassword,
+              isTemporaryPassword: true,
+              status: body.status || 'active',
+              updatedAt: new Date().toISOString(),
+            },
+            $setOnInsert: {
+              id: `user_${ownerEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+              createdAt: new Date().toISOString(),
+            },
+          },
+          { upsert: true }
+        );
+      }
+
+      // 3. Record activity in MongoDB
       await db.collection('platform_activities').insertOne({
-        event: `Superadmin provisioned new store: ${body.name || cleanSlug}`,
+        event: `Superadmin provisioned new store: ${body.name || cleanSlug} (Admin: ${ownerEmail || 'Pending'})`,
         actor: 'superadmin@platform.com',
         tenantId: body.id || `store_${cleanSlug}`,
         tenantName: body.name || cleanSlug,
@@ -68,7 +105,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, message: 'Tenant persisted in database' }, { headers: corsHeaders() });
+    return NextResponse.json({ success: true, message: 'Tenant and administrator account persisted in database' }, { headers: corsHeaders() });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400, headers: corsHeaders() });
   }

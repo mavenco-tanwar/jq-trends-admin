@@ -604,9 +604,11 @@ export class PlatformService {
     accentColor?: string;
     subdomain?: string;
     customDomain?: string;
+    temporaryPassword?: string;
   }): Promise<TenantStore> {
     const tenantId = `store_${payload.slug.replace(/[^a-z0-9]/g, '_')}_${Date.now().toString().slice(-4)}`;
     const plan = this.plans.find((p) => p.id === payload.planId) || this.plans[1];
+    const tempPass = payload.temporaryPassword || `Mavenco@2026!${payload.slug.toLowerCase().trim()}`;
 
     const domains: TenantDomain[] = [
       {
@@ -632,7 +634,7 @@ export class PlatformService {
       });
     }
 
-    const newStore: TenantStore = {
+    const newStore: any = {
       id: tenantId,
       name: payload.name,
       slug: payload.slug.toLowerCase().trim(),
@@ -645,6 +647,9 @@ export class PlatformService {
       currency: payload.currency || 'USD',
       ownerEmail: payload.ownerEmail,
       ownerName: payload.ownerName,
+      temporaryPassword: tempPass,
+      password: tempPass,
+      isTemporaryPassword: true,
       primaryDomain: payload.customDomain || `${payload.slug}.ourplatform.com`,
       domains,
       theme: {

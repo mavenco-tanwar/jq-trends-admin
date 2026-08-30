@@ -334,6 +334,7 @@ function PlatformContent() {
         customDomain: customDomain || undefined,
         primaryColor,
         accentColor,
+        temporaryPassword: tempPassword,
       });
 
       setProvisionedDetails({
