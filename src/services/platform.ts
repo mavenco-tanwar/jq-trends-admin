@@ -596,6 +596,21 @@ export class PlatformService {
       await ApiClient.post('/api/v1/platform/tenants', newStore);
     } catch {}
 
+    // Real-time sync with storefront API
+    try {
+      fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${newStore.slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newStore.name,
+          slug: newStore.slug,
+          tagline: newStore.tagline,
+          currency: newStore.currency,
+          theme: newStore.theme,
+        }),
+      }).catch(() => {});
+    } catch {}
+
     return newStore;
   }
 
@@ -604,9 +619,11 @@ export class PlatformService {
     const updated = list.map((t) => (t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
     this.saveTenants(updated);
 
+    const tenant = list.find((t) => t.id === id);
+
     this.logActivity({
       id: `act_${Date.now()}`,
-      event: `Tenant ${id} status updated to ${status.toUpperCase()}`,
+      event: `Tenant ${tenant?.name || id} status changed to ${status.toUpperCase()}`,
       actor: 'superadmin@platform.com',
       tenantId: id,
       ipAddress: '127.0.0.1',
@@ -617,6 +634,17 @@ export class PlatformService {
     try {
       await ApiClient.patch(`/api/v1/platform/tenants/${id}/status`, { status });
     } catch {}
+
+    // Real-time sync with storefront API
+    if (tenant?.slug) {
+      try {
+        fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${tenant.slug}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        }).catch(() => {});
+      } catch {}
+    }
   }
 
   public static async updateTenantPlan(id: string, planId: string): Promise<void> {
@@ -674,6 +702,20 @@ export class PlatformService {
         severity: 'info',
         timestamp: 'Just now',
       });
+
+      // Real-time sync with storefront API
+      try {
+        fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${(updatedStore as TenantStore).slug}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: (updatedStore as TenantStore).name,
+            tagline: (updatedStore as TenantStore).tagline,
+            currency: (updatedStore as TenantStore).currency,
+            theme: (updatedStore as TenantStore).theme,
+          }),
+        }).catch(() => {});
+      } catch {}
     }
 
     return updatedStore;
@@ -697,6 +739,13 @@ export class PlatformService {
       severity: 'critical',
       timestamp: 'Just now',
     });
+
+    // Real-time sync with storefront API to archive and invalidate storefront route
+    try {
+      fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${tenant.slug}`, {
+        method: 'DELETE',
+      }).catch(() => {});
+    } catch {}
 
     return true;
   }
