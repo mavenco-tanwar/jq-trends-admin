@@ -4,8 +4,8 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ToastProvider } from '@/lib/toast-context';
 
 export const metadata: Metadata = {
-  title: 'JQ Trends Admin | Headless Ecommerce Management',
-  description: 'Enterprise Storefront Administration, Visual CMS & Catalog Control',
+  title: 'Mavenco Commerce Admin | Multi-Tenant Platform & Headless CMS',
+  description: 'Enterprise Multi-Tenant SaaS Control Plane, Visual CMS & Catalog Studio',
 };
 
 export default function RootLayout({

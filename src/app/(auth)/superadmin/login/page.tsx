@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Shield, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
@@ -14,6 +14,12 @@ export default function SuperadminLoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = 'Superadmin Sign In | Mavenco Commerce';
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

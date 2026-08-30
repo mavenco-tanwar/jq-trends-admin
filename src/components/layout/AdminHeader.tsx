@@ -50,10 +50,19 @@ export function AdminHeader({
   useEffect(() => {
     PlatformService.listTenants().then((list) => {
       setTenants(list);
-      setActiveTenant(PlatformService.getActiveTenant());
+      const current = PlatformService.getActiveTenant();
+      setActiveTenant(current);
       setImpersonationState(PlatformService.getImpersonationState());
+
+      if (typeof document !== 'undefined') {
+        if (isSuperadminRoute) {
+          document.title = 'Superadmin Control Plane | Mavenco Commerce';
+        } else {
+          document.title = `${current.name} Admin | Mavenco Commerce`;
+        }
+      }
     });
-  }, [pathname]);
+  }, [pathname, isSuperadminRoute]);
 
   const handleSelectStore = (store: TenantStore) => {
     PlatformService.setActiveTenantId(store.id);
