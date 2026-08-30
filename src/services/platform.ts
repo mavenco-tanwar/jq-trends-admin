@@ -488,11 +488,58 @@ export class PlatformService {
 
   public static async listTenants(): Promise<TenantStore[]> {
     try {
-      const res = await ApiClient.get<any[]>('/api/v1/platform/tenants');
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        // Merge with local state
+      const res = await fetch('/api/v1/platform/tenants').then((r) => (r.ok ? r.json() : null));
+      if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+        const dbTenants: TenantStore[] = res.data.map((t: any) => ({
+          id: t.id || `store_${t.slug}`,
+          name: t.name,
+          slug: t.slug,
+          code: t.code || t.name.substring(0, 4).toUpperCase(),
+          tagline: t.tagline || 'Modern Commerce Store',
+          status: t.status || 'active',
+          planId: t.planId || 'plan_starter',
+          planName: t.planName || 'Starter Boutique',
+          databaseName: t.databaseName || `tenant_${t.slug}`,
+          currency: t.currency || 'USD',
+          ownerEmail: t.ownerEmail || t.contact?.email || 'owner@platform.com',
+          ownerName: t.ownerName || 'Store Owner',
+          primaryDomain: t.primaryDomain || `${t.slug}.com`,
+          domains: t.domains || [
+            {
+              id: `dom_${t.slug}`,
+              domain: `${t.slug}.com`,
+              type: 'custom',
+              isPrimary: true,
+              status: 'connected',
+              sslActive: true,
+              createdAt: t.createdAt || new Date().toISOString(),
+            },
+          ],
+          theme: {
+            logoUrl: t.theme?.logoUrl || '',
+            primaryColor: t.theme?.primaryColor || '#111111',
+            secondaryColor: t.theme?.secondaryColor || '#FFFFFF',
+            accentColor: t.theme?.accentColor || '#E11D48',
+            headingFont: t.theme?.headingFont || 'Playfair Display',
+            bodyFont: t.theme?.bodyFont || 'Plus Jakarta Sans',
+            borderRadius: t.theme?.borderRadius || 'md',
+          },
+          metrics: t.metrics || {
+            products: 16,
+            orders: 24,
+            customers: 19,
+            monthlyRevenue: 12400,
+            storageUsedMb: 28,
+          },
+          createdAt: t.createdAt || new Date().toISOString(),
+          updatedAt: t.updatedAt || new Date().toISOString(),
+        }));
+        this.saveTenants(dbTenants);
+        return dbTenants;
       }
-    } catch {}
+    } catch (err) {
+      console.error('Failed to fetch platform tenants from DB:', err);
+    }
     return this.loadTenants();
   }
 
