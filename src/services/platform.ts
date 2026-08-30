@@ -155,6 +155,42 @@ export const INITIAL_PLANS: TenantPlan[] = [
 
 export const INITIAL_TENANTS: TenantStore[] = [
   {
+    id: 'store_demo',
+    name: 'Demo Store',
+    slug: 'demo',
+    code: 'DEMO',
+    tagline: 'Curated Modern Lifestyle & Apparel',
+    status: 'active',
+    planId: 'plan_pro',
+    planName: 'Professional Scale',
+    databaseName: 'tenant_demo',
+    currency: 'USD',
+    ownerEmail: 'demo@mavenco.com',
+    ownerName: 'Mavenco Client Demo',
+    primaryDomain: 'demo.mavenco.com',
+    domains: [
+      { id: 'dom_demo_1', domain: 'demo.mavenco.com', type: 'custom', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-08-01T00:00:00Z' },
+    ],
+    theme: {
+      logoUrl: '',
+      primaryColor: '#0F172A',
+      secondaryColor: '#F8FAFC',
+      accentColor: '#6366F1',
+      headingFont: 'Playfair Display',
+      bodyFont: 'Plus Jakarta Sans',
+      borderRadius: 'md',
+    },
+    metrics: {
+      products: 36,
+      orders: 412,
+      customers: 320,
+      monthlyRevenue: 28400,
+      storageUsedMb: 128,
+    },
+    createdAt: '2026-08-01T10:00:00Z',
+    updatedAt: '2026-08-30T12:00:00Z',
+  },
+  {
     id: 'store_jq_trends',
     name: 'JQ Trends',
     slug: 'jqtrends',
