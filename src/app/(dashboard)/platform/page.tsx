@@ -1802,9 +1802,9 @@ function PlatformContent() {
                     onChange={(e) => setEditPlanId(e.target.value)}
                     className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
                   >
-                    <option value="plan_starter">Starter Boutique (₹29,999 One-Time + ₹2,000/mo server)</option>
-                    <option value="plan_pro">Professional Scale (₹59,999 One-Time + ₹4,000/mo server)</option>
-                    <option value="plan_enterprise">Enterprise Global (₹1,49,999 One-Time + ₹8,000/mo cluster)</option>
+                    <option value="plan_starter">Starter Boutique (₹19,999 One-Time + ₹2,000/mo server)</option>
+                    <option value="plan_pro">Professional Scale (₹49,999 One-Time + ₹4,000/mo server)</option>
+                    <option value="plan_enterprise">Enterprise Global (₹1,39,999 One-Time + ₹8,000/mo cluster)</option>
                   </select>
                 </div>
                 <div>
