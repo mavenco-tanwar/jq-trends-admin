@@ -322,7 +322,7 @@ function PlatformContent() {
                 className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-105"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ Provision New Store</span>
+                <span>Provision New Store</span>
               </button>
             </div>
           </div>
@@ -674,7 +674,7 @@ function PlatformContent() {
                 className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-105"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ Provision New Store</span>
+                <span>Provision New Store</span>
               </button>
             </div>
           </div>
