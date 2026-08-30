@@ -291,69 +291,6 @@ function PlatformContent() {
 
   return (
     <div className="space-y-6 pb-20 select-none max-w-7xl mx-auto">
-      {/* Navigation Tabs Bar */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
-        <button
-          onClick={() => handleTabChange('overview')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-            activeTab === 'overview'
-              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-          }`}
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          <span>Platform Overview</span>
-        </button>
-
-        <button
-          onClick={() => handleTabChange('tenants')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-            activeTab === 'tenants'
-              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-          }`}
-        >
-          <Store className="w-4 h-4" />
-          <span>Tenant Stores ({tenants.length})</span>
-        </button>
-
-        <button
-          onClick={() => handleTabChange('domains')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-            activeTab === 'domains'
-              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-          }`}
-        >
-          <Globe className="w-4 h-4" />
-          <span>Domains &amp; Tenant URLs</span>
-        </button>
-
-        <button
-          onClick={() => handleTabChange('plans')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-            activeTab === 'plans'
-              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-          }`}
-        >
-          <Zap className="w-4 h-4" />
-          <span>Subscription Plans &amp; Feature Flags</span>
-        </button>
-
-        <button
-          onClick={() => handleTabChange('activity')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-            activeTab === 'activity'
-              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-          }`}
-        >
-          <Activity className="w-4 h-4" />
-          <span>Platform Audit Trail</span>
-        </button>
-      </div>
-
       {/* TAB 0: EXECUTIVE OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
