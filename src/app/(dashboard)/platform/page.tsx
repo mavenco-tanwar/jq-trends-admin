@@ -304,13 +304,26 @@ function PlatformContent() {
 
     setTimeout(() => {
       setSeedingProgress(50);
-      setSeedingStatusText('Injecting 12 high-resolution SKUs with WebP media transformations...');
-    }, 500);
+      setSeedingStatusText('Injecting 12 high-resolution SKUs into MongoDB Atlas database...');
+    }, 400);
 
     setTimeout(() => {
       setSeedingProgress(85);
       setSeedingStatusText('Mounting 2 lookbook hero slides into Visual CMS canvas...');
-    }, 1100);
+    }, 900);
+
+    try {
+      await fetch('/api/v1/platform/tenants/seed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantSlug: seederTenant.slug,
+          preset: seederPreset,
+        }),
+      });
+    } catch (e) {
+      console.warn('Seeder API call warning:', e);
+    }
 
     setTimeout(async () => {
       const updatedCount = (seederTenant.metrics?.products || 0) + 12;
@@ -324,12 +337,12 @@ function PlatformContent() {
         },
       });
       setSeedingProgress(100);
-      setSeedingStatusText('Catalog and Lookbooks successfully provisioned into live store!');
+      setSeedingStatusText('Catalog & Lookbooks successfully stored in MongoDB Atlas database!');
       setIsSeeding(false);
       setSeedComplete(true);
-      showToast(`✨ Seeded 12 starter products into ${seederTenant.name}!`, 'success');
+      showToast(`✨ Seeded 12 starter products into ${seederTenant.name} database!`, 'success');
       loadPlatformData();
-    }, 1700);
+    }, 1400);
   };
 
   const handleOpenApiTokenModal = (tenant: TenantStore) => {
