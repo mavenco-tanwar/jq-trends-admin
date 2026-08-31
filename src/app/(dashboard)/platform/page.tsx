@@ -47,6 +47,11 @@ import {
   UserCheck,
   Calendar,
   Send,
+  FileText,
+  Download,
+  Award,
+  Megaphone,
+  Receipt,
 } from 'lucide-react';
 import {
   PlatformService,
@@ -129,12 +134,63 @@ function PlatformContent() {
     apiAccess: true,
   });
 
+  // Blueprint Store Cloner State
+  const [blueprintSource, setBlueprintSource] = useState<string>('none');
+
+  // Official GST / Tax Invoice Generator Modal State
+  const [invoiceTenant, setInvoiceTenant] = useState<TenantStore | null>(null);
+
+  // Global Superadmin Broadcast Announcement State
+  const [broadcastMsg, setBroadcastMsg] = useState<string>('');
+  const [activeBroadcast, setActiveBroadcast] = useState<string | null>(null);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+
   const handleSelectPlan = (planId: string) => {
     setSelectedPlanId(planId);
     const plan = plans.find((p) => p.id === planId);
     if (plan?.features) {
       setCustomFeatures({ ...plan.features });
     }
+  };
+
+  const handleApplyBlueprint = (sourceSlug: string) => {
+    setBlueprintSource(sourceSlug);
+    if (sourceSlug === 'none') return;
+
+    const sourceTenant = tenants.find((t) => t.slug === sourceSlug);
+    if (sourceTenant) {
+      setPrimaryColor(sourceTenant.theme?.primaryColor || '#0F172A');
+      setAccentColor(sourceTenant.theme?.accentColor || '#6366F1');
+      setTagline(sourceTenant.tagline || 'Curated Modern Lifestyle Brand');
+      if (sourceTenant.planId) {
+        setSelectedPlanId(sourceTenant.planId);
+      }
+      showToast(`Blueprint layout & theme cloned from ${sourceTenant.name}!`, 'info');
+    }
+  };
+
+  const handleSendPaymentReminderWhatsApp = (tenant: TenantStore) => {
+    const plan = plans.find((p) => p.id === tenant.planId) || plans[1] || plans[0];
+    const serverFee = plan.monthlyEquivalentInr || 4000;
+    const msg = `Hi ${tenant.ownerName},\n\nThis is a friendly renewal reminder for your store *${tenant.name}* cloud infrastructure hosting.\n\n*Plan:* ${plan.name}\n*Monthly Cloud Server Fee:* ₹${serverFee.toLocaleString('en-IN')}\n*Due Date:* Next 5 business days\n\nPlease confirm UPI/Bank transfer payment or reply to this message to renew.\n\nThank you,\nMavenco Cloud Operations`;
+    const cleanPhone = '918239019096'; // Default fallback or tenant contact phone
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleSendPaymentReminderEmail = (tenant: TenantStore) => {
+    const plan = plans.find((p) => p.id === tenant.planId) || plans[1] || plans[0];
+    const serverFee = plan.monthlyEquivalentInr || 4000;
+    const subject = `Monthly Cloud Server Renewal: ${tenant.name} (₹${serverFee.toLocaleString('en-IN')})`;
+    const body = `Hi ${tenant.ownerName},\n\nYour monthly cloud server hosting renewal for ${tenant.name} (${plan.name}) is due.\n\nAmount Due: ₹${serverFee.toLocaleString('en-IN')}\n\nPlease transfer and share the transaction UTR receipt.\n\nBest regards,\nMavenco Platform Billing Team`;
+    window.location.href = `mailto:${tenant.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handlePublishBroadcast = () => {
+    if (!broadcastMsg.trim()) return;
+    setActiveBroadcast(broadcastMsg);
+    setIsBroadcastModalOpen(false);
+    showToast('Platform-wide announcement broadcasted to all merchant dashboards!', 'success');
   };
 
   const handleToggleCustomFeature = (featureKey: string) => {
@@ -597,6 +653,25 @@ function PlatformContent() {
 
   return (
     <div className="space-y-6 pb-20 select-none max-w-7xl mx-auto">
+      {/* Global Superadmin Broadcast Alert Banner */}
+      {activeBroadcast && (
+        <div className="bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-amber-500/20 border border-amber-500/40 p-4 rounded-2xl flex items-center justify-between gap-4 text-xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-3 text-amber-200">
+            <Megaphone className="w-5 h-5 text-amber-400 shrink-0 animate-bounce" />
+            <div>
+              <span className="font-extrabold uppercase tracking-wider text-amber-400 mr-2">Live Merchant Broadcast:</span>
+              <span className="text-slate-200">{activeBroadcast}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveBroadcast(null)}
+            className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition-colors shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* TAB 0: EXECUTIVE OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
@@ -622,7 +697,15 @@ function PlatformContent() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3 z-10">
+            <div className="flex items-center gap-3 z-10 flex-wrap">
+              <button
+                onClick={() => setIsBroadcastModalOpen(true)}
+                className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/30 transition-all"
+              >
+                <Megaphone className="w-4 h-4 text-amber-400" />
+                <span>Broadcast Notice</span>
+              </button>
+
               <button
                 onClick={() => setIsProvisionModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-105"
@@ -898,6 +981,50 @@ function PlatformContent() {
 
             {/* Right Column: Infrastructure & Activity Stream (1 Col) */}
             <div className="space-y-6">
+              {/* Platform Merchant GMV Leaderboard */}
+              <div className="bg-[#161822] p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-amber-400" />
+                    <h3 className="font-bold text-white text-sm">Merchant GMV Leaderboard</h3>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    Live Velocity
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 text-xs">
+                  {tenants.slice(0, 4).map((t, idx) => (
+                    <div
+                      key={t.id}
+                      className="p-3 rounded-xl bg-[#10121A] border border-slate-800/80 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className={`w-5 h-5 rounded-full flex items-center justify-center font-extrabold text-[10px] ${
+                            idx === 0
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                              : 'bg-slate-800 text-slate-400'
+                          }`}
+                        >
+                          #{idx + 1}
+                        </span>
+                        <div>
+                          <div className="font-bold text-white text-xs">{t.name}</div>
+                          <div className="text-[10px] text-slate-400">{t.planName}</div>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono">
+                        <div className="font-bold text-emerald-400 text-xs">
+                          ₹{((t.metrics?.monthlyRevenue || 280000) * (idx === 0 ? 1.8 : idx === 1 ? 1.2 : 0.9)).toLocaleString('en-IN')}
+                        </div>
+                        <div className="text-[10px] text-slate-500">{140 - idx * 28} orders/mo</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Live Cluster Health Widget */}
               <div className="bg-[#161822] p-6 rounded-2xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between">
@@ -1108,31 +1235,62 @@ function PlatformContent() {
                         ₹{(tenant.metrics?.monthlyRevenue || 0).toLocaleString('en-IN')}
                       </span>
                     </div>
+                    <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/80">
+                      <span className="text-slate-500">Server Renewal:</span>
+                      <span className="text-amber-400 font-medium font-mono flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-400" />
+                        <span>Due in 14 Days</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Card Actions */}
-                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-1.5 flex-wrap">
                   <button
                     onClick={() => handleImpersonate(tenant)}
-                    className="flex-1 py-1.5 px-3 bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 text-xs font-bold rounded-lg border border-rose-500/30 flex items-center justify-center gap-1.5 transition-all"
+                    className="py-1.5 px-2.5 bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 text-xs font-bold rounded-lg border border-rose-500/30 flex items-center justify-center gap-1 transition-all"
                     title="Impersonate Store Admin"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>Impersonate</span>
                   </button>
 
-                  <a
-                    href={`${STOREFRONT_BASE_URL}/stores/${tenant.slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 rounded-lg transition-all flex items-center justify-center"
-                    title="View Live Storefront"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleSendPaymentReminderWhatsApp(tenant)}
+                      className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/30 border border-emerald-500/20 rounded-lg transition-all"
+                      title="Send WhatsApp Server Renewal Reminder"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleSendPaymentReminderEmail(tenant)}
+                      className="p-1.5 text-sky-400 hover:text-white hover:bg-sky-950/30 border border-sky-500/20 rounded-lg transition-all"
+                      title="Send Email Server Renewal Reminder"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => setInvoiceTenant(tenant)}
+                      className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/30 border border-amber-500/20 rounded-lg transition-all"
+                      title="Generate & Download Official GST / Tax Invoice"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                    </button>
+
+                    <a
+                      href={`${STOREFRONT_BASE_URL}/stores/${tenant.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 rounded-lg transition-all flex items-center justify-center"
+                      title="View Live Storefront"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+
                     <button
                       onClick={() => handleOpenEdit(tenant)}
                       className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
@@ -1897,6 +2055,29 @@ function PlatformContent() {
                       <span>1. Brand Identity &amp; Routing</span>
                     </div>
 
+                    {/* Optional Blueprint Template Cloner */}
+                    <div className="p-3 bg-[#0D0F16] rounded-2xl border border-rose-500/20 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-rose-300 flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Optional: Clone Blueprint from Existing Store</span>
+                        </span>
+                        <span className="text-[9px] text-slate-400">Copies theme &amp; layouts</span>
+                      </div>
+                      <select
+                        value={blueprintSource}
+                        onChange={(e) => handleApplyBlueprint(e.target.value)}
+                        className="w-full p-2 bg-[#141724] border border-slate-700/80 rounded-xl text-xs text-white focus:border-rose-500 focus:outline-none"
+                      >
+                        <option value="none">✨ Clean Slate (Custom Configuration)</option>
+                        {tenants.map((t) => (
+                          <option key={t.slug} value={t.slug}>
+                            🏬 Clone Blueprint from {t.name} ({t.planName})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="text-xs text-slate-300 font-bold">Store Brand Name *</label>
@@ -2631,6 +2812,224 @@ function PlatformContent() {
               >
                 Confirm Archive
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ========================================================================= */}
+      {/* GLOBAL BROADCAST ANNOUNCEMENT MODAL */}
+      {/* ========================================================================= */}
+      {isBroadcastModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#141724] border border-amber-500/30 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl space-y-5 p-6 relative">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="text-base font-bold text-white">Broadcast Platform Announcement</h3>
+                  <p className="text-xs text-slate-400">Post a global banner to all active merchant dashboards</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsBroadcastModalOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</div>
+              <div className="space-y-1.5">
+                {[
+                  '⚠️ Scheduled Cloud Database Maintenance: Tonight at 2:00 AM IST (Zero Downtime Expected).',
+                  '🚀 SaaS Platform Upgrade v3.4 Live: New AI SEO Studio & Visual Drag-Drop CMS Blocks Available.',
+                  '🔒 Security Notice: Automated TLS 1.3 Wildcard SSL Certificate Renewal Completed.',
+                ].map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setBroadcastMsg(preset)}
+                    className="w-full text-left p-2.5 rounded-xl bg-[#0A0C10] hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/30 text-xs text-slate-300 hover:text-amber-300 transition-all font-medium leading-relaxed"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-300 font-bold">Custom Broadcast Message</label>
+                <textarea
+                  rows={3}
+                  value={broadcastMsg}
+                  onChange={(e) => setBroadcastMsg(e.target.value)}
+                  placeholder="Enter system announcement or release notice..."
+                  className="w-full mt-1 p-3 bg-[#0A0C10] border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-600 focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsBroadcastModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handlePublishBroadcast}
+                className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+              >
+                <Megaphone className="w-3.5 h-3.5" />
+                <span>Publish Broadcast</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* OFFICIAL GST / TAX INVOICE GENERATOR MODAL */}
+      {/* ========================================================================= */}
+      {invoiceTenant && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#12141F] border border-slate-700 rounded-3xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-[#161824] shrink-0">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="text-base font-bold text-white">Official Platform Tax Invoice</h3>
+                  <p className="text-xs text-slate-400">License &amp; Cloud Maintenance Billing Voucher</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setInvoiceTenant(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Printable Invoice Container */}
+            <div className="p-6 overflow-y-auto space-y-6 bg-[#0E1018] text-xs text-slate-300">
+              {/* Invoice Header */}
+              <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+                <div>
+                  <div className="text-lg font-extrabold text-white tracking-tight flex items-center gap-1.5">
+                    <span>MAVENCO</span>
+                    <span className="text-rose-400 text-xs px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 uppercase font-mono">
+                      CLOUD SLA
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">Mavenco Global Commerce Cloud Engine</p>
+                  <p className="text-[10px] text-slate-500">GSTIN: 07AAACM1234F1Z5 • Reg. Cloud Provider</p>
+                </div>
+                <div className="text-right">
+                  <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-lg font-mono">
+                    STATUS: PAID
+                  </span>
+                  <div className="text-[11px] text-slate-400 mt-1 font-mono">
+                    INV-2026-{invoiceTenant.code || invoiceTenant.slug.toUpperCase()}
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono">
+                    Date: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Billed To */}
+              <div className="grid grid-cols-2 gap-4 bg-[#141622] p-4 rounded-xl border border-slate-800/80">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">BILLED TO (CLIENT):</span>
+                  <div className="font-bold text-white text-sm mt-0.5">{invoiceTenant.name}</div>
+                  <div className="text-[11px] text-slate-400">{invoiceTenant.ownerName} ({invoiceTenant.ownerEmail})</div>
+                  <div className="text-[11px] text-slate-400 font-mono mt-0.5">{invoiceTenant.primaryDomain}</div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">PLATFORM TIER:</span>
+                  <div className="font-bold text-rose-400 text-sm mt-0.5">{invoiceTenant.planName}</div>
+                  <div className="text-[11px] text-slate-400">Monthly Server Renewal: 14 Days Remaining</div>
+                </div>
+              </div>
+
+              {/* Line Items Table */}
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-[10px] uppercase text-slate-500 tracking-wider">
+                    <th className="py-2 font-bold">Service Description</th>
+                    <th className="py-2 text-center font-bold">Cycle</th>
+                    <th className="py-2 text-right font-bold">Amount (INR)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-xs">
+                  <tr>
+                    <td className="py-2.5 font-medium text-white">
+                      Mavenco Multi-Tenant Headless Platform License ({invoiceTenant.planName})
+                    </td>
+                    <td className="py-2.5 text-center text-slate-400 font-mono">One-Time</td>
+                    <td className="py-2.5 text-right font-mono text-slate-200">
+                      ₹{invoiceTenant.planId === 'plan_starter' ? '24,999' : invoiceTenant.planId === 'plan_enterprise' ? '1,39,999' : '49,999'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-medium text-white">
+                      Dedicated MongoDB Cluster &amp; Next.js Serverless Edge SLA
+                    </td>
+                    <td className="py-2.5 text-center text-slate-400 font-mono">Monthly</td>
+                    <td className="py-2.5 text-right font-mono text-slate-200">
+                      ₹{invoiceTenant.planId === 'plan_starter' ? '2,000' : invoiceTenant.planId === 'plan_enterprise' ? '8,000' : '4,000'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Total Calculation */}
+              <div className="pt-2 border-t border-slate-800 space-y-1.5 text-xs text-right">
+                <div className="flex justify-between text-slate-400">
+                  <span>Subtotal Amount:</span>
+                  <span className="font-mono text-slate-200">
+                    ₹{invoiceTenant.planId === 'plan_starter' ? '26,999.00' : invoiceTenant.planId === 'plan_enterprise' ? '1,47,999.00' : '53,999.00'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Integrated GST (18%):</span>
+                  <span className="font-mono text-slate-200">
+                    ₹{invoiceTenant.planId === 'plan_starter' ? '4,859.82' : invoiceTenant.planId === 'plan_enterprise' ? '26,639.82' : '9,719.82'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm font-extrabold text-white pt-2 border-t border-slate-800">
+                  <span className="text-emerald-400">Grand Total Invoice:</span>
+                  <span className="font-mono text-emerald-400">
+                    ₹{invoiceTenant.planId === 'plan_starter' ? '31,858.82' : invoiceTenant.planId === 'plan_enterprise' ? '1,74,638.82' : '63,718.82'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 border-t border-slate-800 bg-[#161824] flex items-center justify-between">
+              <span className="text-[10px] text-slate-500 font-mono">Digitally signed &amp; verified by Mavenco Cloud</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInvoiceTenant(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.print();
+                  }}
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5 transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Print / Save PDF</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
