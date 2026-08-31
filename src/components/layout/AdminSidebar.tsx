@@ -147,6 +147,14 @@ function AdminSidebarInner({
           badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold',
         },
         {
+          label: 'SaaS Showcase Reviews',
+          href: '/platform?tab=reviews',
+          tabKey: 'reviews',
+          icon: Sparkles,
+          badge: 'Live DB',
+          badgeColor: 'bg-rose-500/20 text-rose-300 font-bold',
+        },
+        {
           label: 'Platform Audit Trail',
           href: '/platform?tab=activity',
           tabKey: 'activity',

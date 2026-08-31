@@ -54,6 +54,7 @@ import {
   Receipt,
   DollarSign,
   Flame,
+  Star,
 } from 'lucide-react';
 import {
   PlatformService,
@@ -70,7 +71,7 @@ import { Modal } from '@/components/ui/Modal';
 const STOREFRONT_BASE_URL = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'https://mavenco-storefront.vercel.app';
 const ADMIN_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_URL || 'https://mavenco-admin.vercel.app';
 
-type TabType = 'overview' | 'tenants' | 'plans' | 'domains' | 'inquiries' | 'activity';
+type TabType = 'overview' | 'tenants' | 'plans' | 'domains' | 'inquiries' | 'activity' | 'reviews';
 
 function PlatformContent() {
   const { showToast } = useToast();
@@ -85,13 +86,45 @@ function PlatformContent() {
   const [inquiries, setInquiries] = useState<PlatformInquiry[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
+  // SaaS Reviews State (for Platform Showcase Landing Page)
+  const [saasReviews, setSaasReviews] = useState<any[]>([]);
+  const [isSaasReviewsLoading, setIsSaasReviewsLoading] = useState(false);
+  const [isSaasModalOpen, setIsSaasModalOpen] = useState(false);
+  const [editingSaasReviewId, setEditingSaasReviewId] = useState<string | null>(null);
+  const [saasAuthor, setSaasAuthor] = useState('');
+  const [saasRole, setSaasRole] = useState('Founder & CEO');
+  const [saasCompany, setSaasCompany] = useState('D2C Brand');
+  const [saasLocation, setSaasLocation] = useState('Bengaluru, India');
+  const [saasHighlight, setSaasHighlight] = useState('Saved ₹3.8L in First 6 Months');
+  const [saasRating, setSaasRating] = useState(5);
+  const [saasImage, setSaasImage] = useState('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop');
+  const [saasComment, setSaasComment] = useState('');
+  const [saasBadge, setSaasBadge] = useState('D2C Brand Founder');
+
+  const loadSaasReviews = async () => {
+    setIsSaasReviewsLoading(true);
+    try {
+      const res = await fetch('/api/v1/reviews?type=saas&status=all').then((r) => (r.ok ? r.json() : null));
+      if (res?.data && Array.isArray(res.data)) {
+        setSaasReviews(res.data);
+      }
+    } catch (e) {
+      console.warn('Failed to load SaaS reviews:', e);
+    } finally {
+      setIsSaasReviewsLoading(false);
+    }
+  };
+
   // Inquiry filters & search
   const [inquiryFilter, setInquiryFilter] = useState<'all' | 'new' | 'contacted' | 'provisioned' | 'archived'>('all');
   const [inquirySearch, setInquirySearch] = useState('');
 
   useEffect(() => {
-    if (tabParam && ['overview', 'tenants', 'plans', 'domains', 'inquiries', 'activity'].includes(tabParam)) {
+    if (tabParam && ['overview', 'tenants', 'plans', 'domains', 'inquiries', 'activity', 'reviews'].includes(tabParam)) {
       setActiveTab(tabParam);
+      if (tabParam === 'reviews') {
+        loadSaasReviews();
+      }
     } else if (!tabParam) {
       setActiveTab('overview');
     }
@@ -915,6 +948,95 @@ function PlatformContent() {
 
     showToast(`Updated ${featureKey} for plan ${targetPlan.name}`, 'info');
     loadPlatformData();
+  };
+
+  const handleOpenAddSaasReview = () => {
+    setEditingSaasReviewId(null);
+    setSaasAuthor('');
+    setSaasRole('Founder & CEO');
+    setSaasCompany('D2C Brand');
+    setSaasLocation('Bengaluru, India');
+    setSaasHighlight('Saved ₹3.8L in First 6 Months');
+    setSaasRating(5);
+    setSaasImage('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop');
+    setSaasComment('');
+    setSaasBadge('D2C Brand Founder');
+    setIsSaasModalOpen(true);
+  };
+
+  const handleOpenEditSaasReview = (rev: any) => {
+    setEditingSaasReviewId(rev.id);
+    setSaasAuthor(rev.author || '');
+    setSaasRole(rev.role || 'Founder & CEO');
+    setSaasCompany(rev.company || '');
+    setSaasLocation(rev.location || '');
+    setSaasHighlight(rev.highlight || '');
+    setSaasRating(rev.rating || 5);
+    setSaasImage(rev.image || '');
+    setSaasComment(rev.comment || '');
+    setSaasBadge(rev.badge || 'D2C Brand Founder');
+    setIsSaasModalOpen(true);
+  };
+
+  const handleSaveSaasReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saasAuthor.trim() || !saasComment.trim()) {
+      showToast('Please enter both author name and testimonial quote', 'error');
+      return;
+    }
+
+    const payload = {
+      id: editingSaasReviewId || `rev_saas_${Date.now()}`,
+      type: 'saas',
+      author: saasAuthor,
+      role: saasRole,
+      company: saasCompany,
+      location: saasLocation,
+      highlight: saasHighlight,
+      rating: saasRating,
+      image: saasImage,
+      comment: saasComment,
+      badge: saasBadge,
+      status: 'published',
+    };
+
+    try {
+      const method = editingSaasReviewId ? 'PUT' : 'POST';
+      const res = await fetch('/api/v1/reviews', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).then((r) => r.json());
+
+      if (res.success) {
+        showToast(
+          editingSaasReviewId
+            ? 'SaaS Testimonial updated in MongoDB Atlas!'
+            : 'New SaaS Testimonial published to MongoDB Atlas & Landing Page!',
+          'success'
+        );
+        setIsSaasModalOpen(false);
+        loadSaasReviews();
+      }
+    } catch (e) {
+      showToast('Failed to save review to MongoDB Atlas', 'error');
+    }
+  };
+
+  const handleDeleteSaasReview = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this SaaS testimonial from MongoDB Atlas?')) return;
+    try {
+      const res = await fetch(`/api/v1/reviews?id=${encodeURIComponent(id)}&type=saas`, {
+        method: 'DELETE',
+      }).then((r) => r.json());
+
+      if (res.success) {
+        showToast('SaaS Testimonial removed from MongoDB Atlas', 'info');
+        loadSaasReviews();
+      }
+    } catch (e) {
+      showToast('Failed to delete review', 'error');
+    }
   };
 
   const filteredTenants = tenants.filter((t) => {
@@ -2399,6 +2521,279 @@ function PlatformContent() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: SAAS SHOWCASE REVIEWS & TESTIMONIALS */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-6">
+          {/* Hero Banner for SaaS Reviews */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-[#12141D] via-[#161822] to-[#1A1D2B] p-6 rounded-2xl border border-rose-900/40 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="space-y-1 z-10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-600/20 text-rose-400 border border-rose-500/30">
+                  Landing Page UGC &amp; Testimonials
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  MongoDB Atlas Cluster (saas_reviews)
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                <Sparkles className="w-7 h-7 text-rose-400" />
+                <span>SaaS Showcase Founder Testimonials</span>
+              </h1>
+              <p className="text-xs text-slate-400 max-w-2xl">
+                Curate, add, and moderate verified founder &amp; merchant reviews displayed publicly on the main landing showcase (https://mavenco-storefront.vercel.app/). All changes are persisted directly to MongoDB Atlas.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 z-10">
+              <button
+                onClick={handleOpenAddSaasReview}
+                className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-105"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add SaaS Testimonial</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Testimonials List */}
+          <div className="space-y-4">
+            {isSaasReviewsLoading ? (
+              <div className="p-8 text-center text-slate-400 text-xs font-mono bg-[#161822] rounded-2xl border border-slate-800">
+                Loading SaaS reviews from MongoDB Atlas...
+              </div>
+            ) : saasReviews.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs bg-[#161822] rounded-2xl border border-slate-800 space-y-3">
+                <p>No SaaS testimonials found in database collection.</p>
+                <button
+                  onClick={handleOpenAddSaasReview}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl"
+                >
+                  Create First Testimonial
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {saasReviews.map((rev) => (
+                  <div
+                    key={rev.id}
+                    className="bg-[#161822] border border-slate-800 hover:border-rose-500/40 rounded-2xl p-5 space-y-4 shadow-sm transition-all flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {rev.image ? (
+                            <div className="w-12 h-12 rounded-full bg-slate-900 overflow-hidden shrink-0 border border-slate-700">
+                              <img src={rev.image} alt={rev.author} className="w-full h-full object-cover" />
+                            </div>
+                          ) : null}
+                          <div>
+                            <div className="font-bold text-white text-sm flex items-center gap-2">
+                              <span>{rev.author}</span>
+                              {rev.badge && (
+                                <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                  {rev.badge}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                              {rev.role ? `${rev.role}, ` : ''}<strong className="text-rose-400">{rev.company}</strong> • {rev.location || 'Global'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => handleOpenEditSaasReview(rev)}
+                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+                            title="Edit Testimonial"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSaasReview(rev.id)}
+                            className="p-1.5 text-red-400 hover:text-white hover:bg-red-950/60 rounded-lg transition-all"
+                            title="Delete Testimonial"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${
+                                i < (rev.rating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-700'
+                              }`}
+                            />
+                          ))}
+                        </div>
+
+                        {rev.highlight && (
+                          <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            <span>{rev.highlight}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-slate-300 italic leading-relaxed">
+                        &ldquo;{rev.comment}&rdquo;
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                      <span>Status: <strong className="text-emerald-400">{rev.status || 'published'}</strong></span>
+                      <span>Live on Showcase</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* SaaS Review Add/Edit Modal */}
+      {isSaasModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#12141F] border border-rose-500/40 rounded-3xl w-full max-w-lg shadow-2xl p-6 sm:p-8 space-y-5 relative">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-rose-400" />
+                <span>{editingSaasReviewId ? 'Edit SaaS Testimonial' : 'Add SaaS Testimonial'}</span>
+              </h3>
+              <button
+                onClick={() => setIsSaasModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSaasReview} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Founder Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={saasAuthor}
+                    onChange={(e) => setSaasAuthor(e.target.value)}
+                    placeholder="e.g. Aarav Singhania"
+                    className="w-full px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Role / Title</label>
+                  <input
+                    type="text"
+                    value={saasRole}
+                    onChange={(e) => setSaasRole(e.target.value)}
+                    placeholder="e.g. Founder & CEO"
+                    className="w-full px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Company Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={saasCompany}
+                    onChange={(e) => setSaasCompany(e.target.value)}
+                    placeholder="e.g. Vedic Luxe Botanicals"
+                    className="w-full px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={saasLocation}
+                    onChange={(e) => setSaasLocation(e.target.value)}
+                    placeholder="e.g. Bengaluru, India"
+                    className="w-full px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Impact Metric Highlight</label>
+                  <input
+                    type="text"
+                    value={saasHighlight}
+                    onChange={(e) => setSaasHighlight(e.target.value)}
+                    placeholder="e.g. Saved ₹3.8L in First 6 Months"
+                    className="w-full px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Rating</label>
+                  <select
+                    value={saasRating}
+                    onChange={(e) => setSaasRating(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  >
+                    <option value={5}>⭐⭐⭐⭐⭐ (5 Stars)</option>
+                    <option value={4}>⭐⭐⭐⭐ (4 Stars)</option>
+                    <option value={3}>⭐⭐⭐ (3 Stars)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Founder Photo URL</label>
+                <input
+                  type="url"
+                  value={saasImage}
+                  onChange={(e) => setSaasImage(e.target.value)}
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-[11px] font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Testimonial Quote *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={saasComment}
+                  onChange={(e) => setSaasComment(e.target.value)}
+                  placeholder="Enter genuine testimonial quote about Mavenco Commerce..."
+                  className="w-full px-3 py-2 bg-[#0A0C10] border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsSaasModalOpen(false)}
+                  className="px-4 py-2 text-slate-400 hover:text-white font-bold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50"
+                >
+                  {editingSaasReviewId ? 'Save Changes' : 'Publish to MongoDB Atlas'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
