@@ -1369,126 +1369,138 @@ function PlatformContent() {
                   </div>
                 </div>
 
-                {/* Card Actions */}
-                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-1.5 flex-wrap">
-                  <button
-                    onClick={() => handleImpersonate(tenant)}
-                    className="py-1.5 px-2.5 bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 text-xs font-bold rounded-lg border border-rose-500/30 flex items-center justify-center gap-1 transition-all"
-                    title="Impersonate Store Admin"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Impersonate</span>
-                  </button>
-
-                  <div className="flex items-center gap-1">
+                {/* Clean 2-Tier Responsive Action Footer */}
+                <div className="pt-3.5 border-t border-slate-800/80 space-y-2.5">
+                  {/* Tier 1: Primary Store Controls */}
+                  <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => handleSendPaymentReminderWhatsApp(tenant)}
-                      className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/30 border border-emerald-500/20 rounded-lg transition-all"
-                      title="Send WhatsApp Server Renewal Reminder"
+                      onClick={() => handleImpersonate(tenant)}
+                      className="py-2 px-3 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-rose-950/40 transition-all hover:scale-[1.02]"
+                      title="Impersonate Store Admin"
                     >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleSendPaymentReminderEmail(tenant)}
-                      className="p-1.5 text-sky-400 hover:text-white hover:bg-sky-950/30 border border-sky-500/20 rounded-lg transition-all"
-                      title="Send Email Server Renewal Reminder"
-                    >
-                      <Mail className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => setInvoiceTenant(tenant)}
-                      className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/30 border border-amber-500/20 rounded-lg transition-all"
-                      title="Generate & Download Official GST / Tax Invoice"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleExportStoreBackup(tenant)}
-                      className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-950/30 border border-purple-500/20 rounded-lg transition-all"
-                      title="Export Store Database Backup (.JSON Snapshot)"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleGenerateMagicLink(tenant)}
-                      className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/30 border border-emerald-500/20 rounded-lg transition-all"
-                      title="Generate 1-Hour Magic Login Link for Merchant"
-                    >
-                      <Key className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleSendWelcomeKit(tenant)}
-                      className="p-1.5 text-rose-400 hover:text-white hover:bg-rose-950/30 border border-rose-500/20 rounded-lg transition-all"
-                      title="Dispatch Official Onboarding Welcome Kit Email"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleSeedCatalog(tenant)}
-                      className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/30 border border-amber-500/20 rounded-lg transition-all"
-                      title="Seed 12 Sample Starter Products & Lookbooks"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleOpenApiTokenModal(tenant)}
-                      className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-950/30 border border-purple-500/20 rounded-lg transition-all"
-                      title="Manage Scoped Developer API & Webhook Tokens"
-                    >
-                      <Key className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleRunDnsDiagnostic(tenant)}
-                      className="p-1.5 text-sky-400 hover:text-white hover:bg-sky-950/30 border border-sky-500/20 rounded-lg transition-all"
-                      title="Run Live Custom Domain DNS & SSL Diagnostic"
-                    >
-                      <Globe className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Impersonate</span>
                     </button>
 
                     <a
                       href={`${STOREFRONT_BASE_URL}/stores/${tenant.slug}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 rounded-lg transition-all flex items-center justify-center"
-                      title="View Live Storefront"
+                      className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+                      title="Open Live Storefront in New Tab"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Storefront</span>
                     </a>
+                  </div>
 
-                    <button
-                      onClick={() => handleOpenEdit(tenant)}
-                      className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
-                      title="Edit Tenant Configuration"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Tier 2: Responsive Quick Tools Strip */}
+                  <div className="bg-[#0C0E15] p-2 rounded-xl border border-slate-800/80 flex items-center justify-between gap-1 flex-wrap">
+                    {/* Quick Comms & Billing */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleSendPaymentReminderWhatsApp(tenant)}
+                        className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/60 rounded-lg transition-all"
+                        title="Send WhatsApp Server Renewal Reminder"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </button>
 
-                    <button
-                      onClick={() => handleToggleTenantStatus(tenant)}
-                      className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                        tenant.status === 'active'
-                          ? 'text-amber-400 hover:bg-amber-950/30'
-                          : 'text-emerald-400 hover:bg-emerald-950/30'
-                      }`}
-                    >
-                      {tenant.status === 'active' ? 'Suspend' : 'Activate'}
-                    </button>
+                      <button
+                        onClick={() => handleSendPaymentReminderEmail(tenant)}
+                        className="p-1.5 text-sky-400 hover:text-white hover:bg-sky-950/60 rounded-lg transition-all"
+                        title="Send Email Server Renewal Reminder"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                      </button>
 
-                    <button
-                      onClick={() => setDeletingTenant(tenant)}
-                      className="p-1.5 text-red-400 hover:text-white hover:bg-red-950/30 rounded-lg transition-all"
-                      title="Delete Store"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                      <button
+                        onClick={() => setInvoiceTenant(tenant)}
+                        className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/60 rounded-lg transition-all"
+                        title="Generate & Download Official GST / Tax Invoice"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleExportStoreBackup(tenant)}
+                        className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-950/60 rounded-lg transition-all"
+                        title="Export Store Database Backup (.JSON Snapshot)"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleGenerateMagicLink(tenant)}
+                        className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/60 rounded-lg transition-all"
+                        title="Generate 1-Hour Magic Login Link for Merchant"
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleSendWelcomeKit(tenant)}
+                        className="p-1.5 text-rose-400 hover:text-white hover:bg-rose-950/60 rounded-lg transition-all"
+                        title="Dispatch Official Onboarding Welcome Kit Email"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleSeedCatalog(tenant)}
+                        className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/60 rounded-lg transition-all"
+                        title="Seed 12 Sample Starter Products & Lookbooks"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleOpenApiTokenModal(tenant)}
+                        className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-950/60 rounded-lg transition-all"
+                        title="Manage Scoped Developer API & Webhook Tokens"
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleRunDnsDiagnostic(tenant)}
+                        className="p-1.5 text-sky-400 hover:text-white hover:bg-sky-950/60 rounded-lg transition-all"
+                        title="Run Live Custom Domain DNS & SSL Diagnostic"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Store Lifecycle Actions */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenEdit(tenant)}
+                        className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+                        title="Edit Tenant Configuration"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleTenantStatus(tenant)}
+                        className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                          tenant.status === 'active'
+                            ? 'text-amber-400 hover:bg-amber-950/40 border border-amber-500/30'
+                            : 'text-emerald-400 hover:bg-emerald-950/40 border border-emerald-500/30'
+                        }`}
+                        title={tenant.status === 'active' ? 'Suspend Store' : 'Activate Store'}
+                      >
+                        {tenant.status === 'active' ? 'Pause' : 'Activate'}
+                      </button>
+
+                      <button
+                        onClick={() => setDeletingTenant(tenant)}
+                        className="p-1.5 text-red-400 hover:text-white hover:bg-red-950/60 rounded-lg transition-all"
+                        title="Archive Store"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
