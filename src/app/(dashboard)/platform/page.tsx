@@ -746,7 +746,7 @@ function PlatformContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {plans.map((p) => {
                     const subscriberCount = tenants.filter((t) => t.planId === p.id).length;
-                    const tierRevenue = subscriberCount * (p.monthlyEquivalentInr || 4000);
+                    const tierRevenue = subscriberCount * (p.monthlyEquivalentInr || 2000);
                     return (
                       <div
                         key={p.id}
@@ -755,28 +755,28 @@ function PlatformContent() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-white">{p.name}</span>
                           <span className="text-xs font-mono text-amber-400 font-bold">
-                            ₹{(p.monthlyEquivalentInr || 4000).toLocaleString('en-IN')}/mo AMC
+                            ₹{(p.monthlyEquivalentInr || 2000).toLocaleString('en-IN')}/mo Server
                           </span>
                         </div>
 
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs text-slate-400">
                             <span>One-Time Fee</span>
-                            <span className="font-bold text-white">₹{(p.oneTimeFeeInr || 59999).toLocaleString('en-IN')}</span>
+                            <span className="font-bold text-white">₹{(p.oneTimeFeeInr || 24999).toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex items-center justify-between text-xs text-slate-400">
                             <span>Subscribers</span>
-                            <span className="font-bold text-white">{subscriberCount} Stores</span>
+                            <span className="font-bold text-emerald-400">{subscriberCount} Stores</span>
                           </div>
                           <div className="flex items-center justify-between text-xs text-slate-400">
-                            <span>AMC Revenue</span>
+                            <span>Cloud Server Revenue</span>
                             <span className="font-bold text-rose-400">₹{tierRevenue.toLocaleString('en-IN')}/mo</span>
                           </div>
                         </div>
 
                         <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
-                          <span>Max {p.maxProducts} Products</span>
-                          <span>{p.maxStaff} Staff</span>
+                          <span>Max {p.maxProducts.toLocaleString('en-IN')} Products</span>
+                          <span>{p.maxStaff} Staff Accounts</span>
                         </div>
                       </div>
                     );
