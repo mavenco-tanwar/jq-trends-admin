@@ -85,6 +85,103 @@ export default function OrderDetailsPage() {
       { stage: 'Out for Delivery', timestamp: '28 Aug', location: 'Destination City', completed: order.status === 'delivered' },
     ];
 
+  const handlePrintPackingSlip = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const itemsHtml = (order.items || [])
+      .map(
+        (item: any, idx: number) => `
+        <tr style="border-bottom: 1px solid #ddd; font-size: 12px;">
+          <td style="padding: 8px 4px;">${idx + 1}</td>
+          <td style="padding: 8px 4px;"><strong>${item.title || item.productTitle || 'Garment'}</strong><br/><span style="color: #666; font-size: 10px;">SKU: ${item.sku || 'N/A'}</span></td>
+          <td style="padding: 8px 4px; text-align: center;">${item.quantity || 1}</td>
+          <td style="padding: 8px 4px; text-align: right;">₹${(item.price || 0).toLocaleString('en-IN')}</td>
+          <td style="padding: 8px 4px; text-align: right;">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</td>
+        </tr>
+      `
+      )
+      .join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Packing Slip - ${order.orderNumber || order.id}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px; color: #111; max-width: 650px; margin: 0 auto; }
+            .header { border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .badge { background: #eee; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; font-family: monospace; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th { text-align: left; background: #f5f5f5; padding: 8px 4px; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #ccc; }
+            .footer { margin-top: 24px; padding-top: 12px; border-top: 1px dashed #ccc; font-size: 11px; color: #666; text-align: center; }
+            @media print { button { display: none; } body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h2 style="margin: 0; font-size: 20px;">MAVENCO COMMERCE</h2>
+              <div style="font-size: 11px; color: #666;">Official Packing Slip &amp; Shipping Manifest</div>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge">ORDER #${order.orderNumber || order.id}</span>
+              <div style="font-size: 11px; color: #666; margin-top: 4px;">Date: ${new Date((order as any).createdAt || (order as any).placedAt || Date.now()).toLocaleDateString('en-IN')}</div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; gap: 20px; font-size: 12px; background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #eee;">
+            <div>
+              <strong style="text-transform: uppercase; font-size: 10px; color: #888;">Ship To:</strong><br/>
+              <strong>${(order.customer as any)?.name || 'Valued Customer'}</strong><br/>
+              ${street}<br/>
+              ${city}, ${state} - ${postalCode}<br/>
+              ${country}<br/>
+              Phone: ${(order.customer as any)?.phone || 'N/A'}
+            </div>
+            <div style="text-align: right;">
+              <strong style="text-transform: uppercase; font-size: 10px; color: #888;">Logistics:</strong><br/>
+              Carrier: <strong>${carrier}</strong><br/>
+              AWB / Tracking: <span style="font-family: monospace;">${trackingNumber}</span><br/>
+              Payment: <strong style="text-transform: uppercase; color: #059669;">${order.paymentStatus || 'PAID'}</strong>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30px;">#</th>
+                <th>Item &amp; Description</th>
+                <th style="text-align: center; width: 50px;">Qty</th>
+                <th style="text-align: right; width: 80px;">Rate</th>
+                <th style="text-align: right; width: 90px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" style="text-align: right; padding: 12px 4px; font-weight: bold;">Grand Total:</td>
+                <td style="text-align: right; padding: 12px 4px; font-weight: bold; font-size: 14px;">₹${((order as any).totalAmount || (order as any).total || order.subtotal || 0).toLocaleString('en-IN')}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div class="footer">
+            Thank you for shopping with us! For returns or support, contact support@mavenco.com
+          </div>
+
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   return (
     <div className="space-y-6 pb-20 select-none max-w-5xl">
       {/* Header */}
@@ -109,24 +206,35 @@ export default function OrderDetailsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          {(['confirmed', 'packed', 'shipped', 'delivered', 'cancelled'] as OrderStatus[]).map((st) => (
-            <button
-              key={st}
-              onClick={() => handleUpdateStatus(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all whitespace-nowrap ${
-                order.status === st
-                  ? st === 'cancelled'
-                    ? 'bg-red-600 text-white shadow-md ring-2 ring-red-400/50'
-                    : 'bg-rose-600 text-white shadow-md'
-                  : st === 'cancelled'
-                  ? 'bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/40'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-              }`}
-            >
-              {st === 'cancelled' ? '✕ Cancelled' : st}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Print Packing Slip */}
+          <button
+            onClick={handlePrintPackingSlip}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#121522] hover:bg-[#1A1D2B] text-slate-200 hover:text-white text-xs font-bold rounded-lg border border-slate-700 transition-all shadow-sm"
+          >
+            <FileText className="w-3.5 h-3.5 text-rose-400" />
+            <span>Print Packing Slip</span>
+          </button>
+
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {(['confirmed', 'packed', 'shipped', 'delivered', 'cancelled'] as OrderStatus[]).map((st) => (
+              <button
+                key={st}
+                onClick={() => handleUpdateStatus(st)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all whitespace-nowrap ${
+                  order.status === st
+                    ? st === 'cancelled'
+                      ? 'bg-red-600 text-white shadow-md ring-2 ring-red-400/50'
+                      : 'bg-rose-600 text-white shadow-md'
+                    : st === 'cancelled'
+                    ? 'bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/40'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                }`}
+              >
+                {st === 'cancelled' ? '✕ Cancelled' : st}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
