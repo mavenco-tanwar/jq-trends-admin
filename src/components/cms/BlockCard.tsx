@@ -21,8 +21,18 @@ import {
   Heart,
   ArrowUp,
   ArrowDown,
+  Search,
+  Tag,
+  BarChart2,
+  Star,
+  Map,
+  Gift,
+  Users,
+  Truck,
+  Monitor,
+  Smartphone,
 } from 'lucide-react';
-import type { ContentBlock, ContentBlockType } from '@/types';
+import type { ContentBlock } from '@/types';
 
 interface BlockCardProps {
   block: ContentBlock;
@@ -34,6 +44,10 @@ interface BlockCardProps {
   onDelete: (id: string) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
+  onDragStart?: (index: number) => void;
+  onDragOver?: (e: React.DragEvent, index: number) => void;
+  onDrop?: (index: number) => void;
+  isDragging?: boolean;
 }
 
 const BLOCK_ICONS: Record<string, any> = {
@@ -58,6 +72,14 @@ const BLOCK_ICONS: Record<string, any> = {
   'promo-banner': Sparkles,
   'value-props': Layers,
   video: Video,
+  'smart-search': Search,
+  'promo-tags': Tag,
+  'analytics-dashboard': BarChart2,
+  'star-ratings-qa': Star,
+  'store-locator': Map,
+  'gift-cards': Gift,
+  'referral-loyalty': Users,
+  'order-tracking': Truck,
 };
 
 export function BlockCard({
@@ -70,12 +92,22 @@ export function BlockCard({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragging,
 }: BlockCardProps) {
   const Icon = BLOCK_ICONS[block.type] || Layers;
 
   return (
     <div
-      className={`group bg-[#161822] border rounded-xl p-3.5 sm:p-4 transition-all duration-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+      draggable
+      onDragStart={() => onDragStart?.(index)}
+      onDragOver={(e) => onDragOver?.(e, index)}
+      onDrop={() => onDrop?.(index)}
+      className={`group bg-[#161822] border rounded-xl p-3.5 sm:p-4 transition-all duration-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 select-none ${
+        isDragging ? 'opacity-40 border-rose-500 scale-[0.99]' : ''
+      } ${
         block.isVisible
           ? 'border-slate-800 hover:border-slate-700'
           : 'border-slate-800/40 bg-[#12141D]/60 opacity-60'
@@ -83,12 +115,20 @@ export function BlockCard({
     >
       {/* Left: Drag Handle, Icon & Block Details */}
       <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+        {/* Grab Handle */}
+        <div
+          className="cursor-grab active:cursor-grabbing p-1 text-slate-500 hover:text-slate-300 hidden sm:block"
+          title="Drag to reorder section"
+        >
+          <GripVertical className="w-4 h-4" />
+        </div>
+
         {/* Reorder Buttons */}
         <div className="flex flex-col gap-0.5 text-slate-500">
           <button
             disabled={index === 0}
             onClick={() => onMoveUp(index)}
-            className="p-1 hover:text-white hover:bg-slate-800 rounded disabled:opacity-20"
+            className="p-1 hover:text-white hover:bg-slate-800 rounded disabled:opacity-20 transition-colors"
             title="Move Up"
           >
             <ArrowUp className="w-3 h-3" />
@@ -96,7 +136,7 @@ export function BlockCard({
           <button
             disabled={index === total - 1}
             onClick={() => onMoveDown(index)}
-            className="p-1 hover:text-white hover:bg-slate-800 rounded disabled:opacity-20"
+            className="p-1 hover:text-white hover:bg-slate-800 rounded disabled:opacity-20 transition-colors"
             title="Move Down"
           >
             <ArrowDown className="w-3 h-3" />
@@ -116,15 +156,30 @@ export function BlockCard({
 
         {/* Title & Metadata */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-white text-xs truncate">{block.name}</span>
             <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
               {block.type}
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
-            <span>Order #{index + 1}</span>
+          <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+            <span className="font-mono">Order #{index + 1}</span>
+
+            {/* Device Visibility Icons */}
+            <div className="flex items-center gap-1 text-slate-400">
+              {block.visibilityDevice?.desktop !== false && (
+                <span title="Visible on Desktop">
+                  <Monitor className="w-3 h-3 text-slate-400" />
+                </span>
+              )}
+              {block.visibilityDevice?.mobile !== false && (
+                <span title="Visible on Mobile">
+                  <Smartphone className="w-3 h-3 text-slate-400" />
+                </span>
+              )}
+            </div>
+
             {block.schedule?.enabled && (
               <span className="flex items-center gap-1 text-amber-400 text-[10px] font-semibold">
                 <Calendar className="w-3 h-3" />

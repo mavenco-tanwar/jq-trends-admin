@@ -62,6 +62,30 @@ export default function HomepageBuilderPage() {
     showToast('Section visibility updated. Remember to Save or Publish!', 'info');
   };
 
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetIndex: number) => {
+    if (draggedIndex === null || draggedIndex === targetIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+    const updated = [...sections];
+    const [draggedItem] = updated.splice(draggedIndex, 1);
+    updated.splice(targetIndex, 0, draggedItem);
+    updated.forEach((s, idx) => (s.displayOrder = idx + 1));
+    setSections(updated);
+    setDraggedIndex(null);
+    showToast('Sections reordered. Remember to Publish Live!', 'info');
+  };
+
   const handleMoveUp = (index: number) => {
     if (index === 0) return;
     const updated = [...sections];
@@ -247,6 +271,10 @@ export default function HomepageBuilderPage() {
             block={block}
             index={idx}
             total={sections.length}
+            isDragging={draggedIndex === idx}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
             onToggleVisibility={handleToggleVisibility}
             onEdit={(b) => setEditingBlock(b)}
             onDuplicate={handleDuplicate}
