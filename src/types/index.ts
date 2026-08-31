@@ -360,6 +360,14 @@ export type ContentBlockType =
   | 'promo-banner'
   | 'value-props'
   | 'video'
+  | 'smart-search'
+  | 'promo-tags'
+  | 'analytics-dashboard'
+  | 'star-ratings-qa'
+  | 'store-locator'
+  | 'gift-cards'
+  | 'referral-loyalty'
+  | 'order-tracking'
   | (string & {});
 
 export interface ContentBlock {

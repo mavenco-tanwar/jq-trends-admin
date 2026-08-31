@@ -12,6 +12,14 @@ import {
   Video,
   FileText,
   Plus,
+  Search,
+  Tag,
+  BarChart2,
+  Star,
+  Map,
+  Gift,
+  Users,
+  Truck,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { ContentBlock, ContentBlockType } from '@/types';
@@ -137,6 +145,115 @@ const PRESETS: BlockPreset[] = [
       ctaText: 'Subscribe',
     },
   },
+  {
+    type: 'smart-search',
+    title: 'Smart Search & Filters',
+    desc: 'Instant full-text search with faceted filters, autocomplete, and AI-powered product recommendations.',
+    icon: Search,
+    defaultData: {
+      placeholder: 'Search products, categories, brands...',
+      showFilters: true,
+      showAutocomplete: true,
+      showRecommendations: true,
+    },
+  },
+  {
+    type: 'promo-tags',
+    title: 'Promo Tag & Badge Engine',
+    desc: 'Configurable product badges — New, Sale, Limited Edition — with per-SKU rules and expiry timers.',
+    icon: Tag,
+    defaultData: {
+      badges: [
+        { label: 'New', color: '#22C55E', rule: 'created_within_days', value: 14 },
+        { label: 'Sale', color: '#EF4444', rule: 'has_discount', value: true },
+        { label: 'Limited', color: '#F59E0B', rule: 'stock_below', value: 10 },
+      ],
+    },
+  },
+  {
+    type: 'analytics-dashboard',
+    title: 'Sales Analytics Dashboard',
+    desc: 'Embedded revenue charts, conversion funnels, and category-level heatmaps for marketing teams.',
+    icon: BarChart2,
+    defaultData: {
+      showRevenue: true,
+      showConversionFunnel: true,
+      showTopProducts: true,
+      showCategoryHeatmap: true,
+      dateRange: '30d',
+    },
+  },
+  {
+    type: 'star-ratings-qa',
+    title: 'Star Ratings & Q&A',
+    desc: 'Product-level star ratings with photo reviews, merchant replies, and buyer Q&A threads.',
+    icon: Star,
+    defaultData: {
+      heading: 'Customer Reviews & Questions',
+      allowPhotoReviews: true,
+      allowMerchantReply: true,
+      showQASection: true,
+      minRatingToShow: 1,
+    },
+  },
+  {
+    type: 'store-locator',
+    title: 'Store Locator & Map',
+    desc: 'Interactive map block with multi-city store pins, opening hours, and click-to-navigate CTAs.',
+    icon: Map,
+    defaultData: {
+      heading: 'Find Us Near You',
+      mapZoom: 12,
+      showOpeningHours: true,
+      showDirectionsButton: true,
+      locations: [
+        { city: 'Mumbai', address: 'Linking Road, Bandra West', lat: 19.059, lng: 72.836, hours: '10am – 9pm' },
+        { city: 'Delhi', address: 'Select Citywalk, Saket', lat: 28.528, lng: 77.219, hours: '10am – 10pm' },
+      ],
+    },
+  },
+  {
+    type: 'gift-cards',
+    title: 'Gift Card & Voucher Block',
+    desc: 'Digital gift card purchase flow with custom denominations, personalized notes, and email delivery.',
+    icon: Gift,
+    defaultData: {
+      heading: 'Give the Gift of Style',
+      subtitle: 'Perfect for birthdays, anniversaries, and festivals.',
+      denominations: [500, 1000, 2000, 5000],
+      allowCustomAmount: true,
+      deliveryMethod: 'email',
+    },
+  },
+  {
+    type: 'referral-loyalty',
+    title: 'Referral & Loyalty Module',
+    desc: 'Friend referral widgets, loyalty point trackers, and tiered reward milestones for repeat buyers.',
+    icon: Users,
+    defaultData: {
+      heading: 'Earn Rewards with Every Order',
+      pointsPerRupee: 1,
+      tiers: [
+        { name: 'Silver', minPoints: 0, benefit: '5% cashback' },
+        { name: 'Gold', minPoints: 2000, benefit: '10% cashback + early access' },
+        { name: 'Platinum', minPoints: 5000, benefit: '15% cashback + free shipping' },
+      ],
+      referralBonusPoints: 500,
+    },
+  },
+  {
+    type: 'order-tracking',
+    title: 'Order Tracking Timeline',
+    desc: 'Real-time shipment status with courier API integration, ETA countdown, and delivery confirmation.',
+    icon: Truck,
+    defaultData: {
+      heading: 'Track Your Order',
+      showEtaCountdown: true,
+      showCourierDetails: true,
+      showDeliveryMap: false,
+      supportEmail: 'support@jqtrends.com',
+    },
+  },
 ];
 
 export function BlockLibraryModal({ isOpen, onClose, onAddBlock }: BlockLibraryModalProps) {
@@ -156,7 +273,7 @@ export function BlockLibraryModal({ isOpen, onClose, onAddBlock }: BlockLibraryM
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add New Homepage Section" subtitle="Choose from 12+ pre-built dynamic ecommerce block presets" maxWidth="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Add New Homepage Section" subtitle="Choose from 16+ pre-built dynamic ecommerce block presets" maxWidth="2xl">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[70vh] overflow-y-auto p-1 text-xs select-none">
         {PRESETS.map((preset) => {
           const Icon = preset.icon;
