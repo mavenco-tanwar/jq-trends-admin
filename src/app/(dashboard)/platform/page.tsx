@@ -635,6 +635,33 @@ function PlatformContent() {
     printWindow.document.close();
   };
 
+  const handleDownloadDbSnapshot = (tenant: TenantStore) => {
+    const snapshot = {
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      tenantName: tenant.name,
+      databaseName: tenant.databaseName,
+      snapshotTimestamp: new Date().toISOString(),
+      version: '2.0.0',
+      schema: {
+        theme: tenant.theme,
+        primaryDomain: tenant.primaryDomain,
+        adminCustomDomain: tenant.adminCustomDomain,
+        planId: tenant.planId,
+        features: (tenant as any).features || {},
+      },
+      exportedBy: 'Mavenco Superadmin Console',
+    };
+
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snapshot_${tenant.slug}_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    showToast(`📦 Full DB Snapshot downloaded for ${tenant.name}!`, 'success');
+  };
+
   // Edit Tenant Modal State
   const [editingTenant, setEditingTenant] = useState<TenantStore | null>(null);
   const [editName, setEditName] = useState('');
@@ -1892,6 +1919,15 @@ function PlatformContent() {
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                       <span>Seed DB</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDownloadDbSnapshot(tenant)}
+                      className="py-2 px-3 bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 text-xs font-bold rounded-xl border border-purple-500/30 flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+                      title="Download Full Database Partition JSON Snapshot"
+                    >
+                      <Download className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Snapshot</span>
                     </button>
                   </div>
 

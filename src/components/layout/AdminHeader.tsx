@@ -77,8 +77,32 @@ export function AdminHeader({
     window.location.href = '/platform';
   };
 
+  const [broadcast, setBroadcast] = useState<{ id: string; message: string; type: 'info' | 'warning' } | null>({
+    id: 'bcast_1',
+    message: '🚀 Platform Notice: Scheduled global edge maintenance on Sunday at 2:00 AM IST. Storefront checkout and sub-50ms CDN routing will remain 100% uninterrupted.',
+    type: 'info',
+  });
+  const [isBroadcastDismissed, setIsBroadcastDismissed] = useState(false);
+
   return (
     <>
+      {/* Global Superadmin Broadcast Banner */}
+      {broadcast && !isBroadcastDismissed && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-[#161822] to-amber-500/15 border-b border-amber-500/30 text-amber-200 px-4 py-2 text-xs flex items-center justify-between z-30 sticky top-0 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span className="font-medium text-[11px] sm:text-xs">{broadcast.message}</span>
+          </div>
+
+          <button
+            onClick={() => setIsBroadcastDismissed(true)}
+            className="text-amber-400 hover:text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded hover:bg-amber-500/20 transition-all shrink-0"
+          >
+            Dismiss ✕
+          </button>
+        </div>
+      )}
+
       {/* Superadmin Impersonation Banner */}
       {impersonationState.isImpersonating && !isSuperadminRoute && (
         <div className="bg-gradient-to-r from-amber-600 to-rose-600 text-white px-4 py-2 text-xs font-bold flex items-center justify-between shadow-md z-30 sticky top-0">
