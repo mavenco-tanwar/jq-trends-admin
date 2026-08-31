@@ -186,6 +186,81 @@ function PlatformContent() {
     window.location.href = `mailto:${tenant.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
+  const handleExportStoreBackup = (tenant: TenantStore) => {
+    const backupData = {
+      version: '3.4.0',
+      exportTimestamp: new Date().toISOString(),
+      store: {
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        tagline: tenant.tagline,
+        databaseName: tenant.databaseName,
+        primaryDomain: tenant.primaryDomain,
+        adminDomain: (tenant as any).adminDomain || `admin.${tenant.slug}.com`,
+        currency: tenant.currency,
+        status: tenant.status,
+        planId: tenant.planId,
+        planName: tenant.planName,
+        ownerName: tenant.ownerName,
+        ownerEmail: tenant.ownerEmail,
+        theme: tenant.theme,
+        customFeatures: (tenant as any).customFeatures || {},
+        metrics: tenant.metrics,
+      },
+      systemNotes: 'Mavenco Isolated Database Snapshot. Can be restored into any Mavenco Commerce cluster.',
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mavenco-backup-${tenant.slug}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`Exported JSON database backup for ${tenant.name}!`, 'success');
+  };
+
+  const handleGenerateMagicLink = (tenant: TenantStore) => {
+    const token = `mv_magic_${tenant.slug}_${Math.random().toString(36).substring(2, 10)}`;
+    const magicUrl = `https://mavenco-admin.vercel.app/login?magic_auth=${token}&email=${encodeURIComponent(tenant.ownerEmail)}&tenant=${tenant.slug}`;
+
+    navigator.clipboard.writeText(magicUrl);
+    showToast(`1-Hour Magic Login Link generated & copied for ${tenant.ownerName}!`, 'success');
+
+    const confirmShare = window.confirm(
+      `Magic Login Link Copied to Clipboard!\n\nLink: ${magicUrl}\n\nClick OK to open WhatsApp and send this magic link directly to ${tenant.ownerName}.`
+    );
+    if (confirmShare) {
+      const msg = `Hi ${tenant.ownerName},\n\nHere is your secure 1-hour Magic Login Link to access your merchant dashboard for *${tenant.name}*:\n\n${magicUrl}\n\nValid for 60 minutes.\n\nBest regards,\nMavenco Cloud Support`;
+      const cleanPhone = '918239019096';
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleSendWelcomeKit = (tenant: TenantStore) => {
+    const storeUrl = `https://mavenco-storefront.vercel.app/stores/${tenant.slug}`;
+    const adminUrl = `https://mavenco-admin.vercel.app/login`;
+    const subject = `Welcome to Mavenco Commerce: ${tenant.name} is Provisioned & Live! 🚀`;
+    const body = `Hi ${tenant.ownerName},\n\nCongratulations! Your modern headless commerce store is now fully provisioned and live on the Mavenco Cloud Engine.\n\n` +
+      `🏬 Public Storefront: ${storeUrl}\n` +
+      `👑 Merchant Admin Console: ${adminUrl}\n` +
+      `👤 Admin Login Email: ${tenant.ownerEmail}\n` +
+      `⚡ Plan Tier: ${tenant.planName}\n\n` +
+      `Next Steps:\n` +
+      `1. Log in to your Admin Console to review your product catalog and lookbook.\n` +
+      `2. Customize your announcement ribbon and color themes in the Visual CMS Studio.\n` +
+      `3. Connect your Razorpay or custom domain when ready.\n\n` +
+      `Need immediate assistance? Reply to this email or ping our Solutions Team on WhatsApp at +91 82390 19096.\n\n` +
+      `Welcome aboard,\nMavenco Commerce Team`;
+
+    window.location.href = `mailto:${tenant.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    showToast(`Prepared official Welcome Onboarding Kit email for ${tenant.ownerEmail}!`, 'info');
+  };
+
   const handlePublishBroadcast = () => {
     if (!broadcastMsg.trim()) return;
     setActiveBroadcast(broadcastMsg);
@@ -1279,6 +1354,30 @@ function PlatformContent() {
                       title="Generate & Download Official GST / Tax Invoice"
                     >
                       <FileText className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleExportStoreBackup(tenant)}
+                      className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-950/30 border border-purple-500/20 rounded-lg transition-all"
+                      title="Export Store Database Backup (.JSON Snapshot)"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleGenerateMagicLink(tenant)}
+                      className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/30 border border-emerald-500/20 rounded-lg transition-all"
+                      title="Generate 1-Hour Magic Login Link for Merchant"
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleSendWelcomeKit(tenant)}
+                      className="p-1.5 text-rose-400 hover:text-white hover:bg-rose-950/30 border border-rose-500/20 rounded-lg transition-all"
+                      title="Dispatch Official Onboarding Welcome Kit Email"
+                    >
+                      <Send className="w-3.5 h-3.5" />
                     </button>
 
                     <a
