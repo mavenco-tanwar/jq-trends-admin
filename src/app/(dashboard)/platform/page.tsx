@@ -1555,146 +1555,146 @@ function PlatformContent() {
                       <ExternalLink className="w-3.5 h-3.5" />
                       <span>Storefront</span>
                     </a>
+
+                    <button
+                      onClick={() => handleOpenSeederModal(tenant)}
+                      className="py-2 px-3 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 text-xs font-bold rounded-xl border border-amber-500/30 flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+                      title="Seed 12 Sample Starter Products & Lookbooks"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Seed DB</span>
+                    </button>
                   </div>
 
-                  {/* Tier 2: Responsive Quick Tools Strip */}
-                  <div className="bg-[#0C0E15] p-2 rounded-xl border border-slate-800/80 flex items-center justify-between gap-1 flex-wrap">
-                    {/* Quick Comms & Billing */}
-                    <div className="flex items-center gap-1">
+                  {/* Tier 2: Developer, Ingress & Growth Action Center */}
+                  <div className="bg-[#0C0E15] p-3 rounded-2xl border border-slate-800/80 space-y-2.5">
+                    {/* Developer & Edge Strip */}
+                    <div className="flex items-center justify-between gap-1 text-[11px] pb-2 border-b border-slate-800/60 flex-wrap">
                       <button
-                        onClick={() => handleSendPaymentReminderWhatsApp(tenant)}
-                        className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/60 rounded-lg transition-all"
-                        title="Send WhatsApp Server Renewal Reminder"
+                        onClick={() => handleOpenWebhookSimulator(tenant)}
+                        className="px-2 py-1 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/20 rounded-lg flex items-center gap-1 font-mono transition-all"
+                        title="Simulate & Dispatch Live Webhook Integration Event"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleSendPaymentReminderEmail(tenant)}
-                        className="p-1.5 text-sky-400 hover:text-white hover:bg-sky-950/60 rounded-lg transition-all"
-                        title="Send Email Server Renewal Reminder"
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => setInvoiceTenant(tenant)}
-                        className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/60 rounded-lg transition-all"
-                        title="Generate & Download Official GST / Tax Invoice"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleExportStoreBackup(tenant)}
-                        className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-950/60 rounded-lg transition-all"
-                        title="Export Store Database Backup (.JSON Snapshot)"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleGenerateMagicLink(tenant)}
-                        className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/60 rounded-lg transition-all"
-                        title="Generate 1-Hour Magic Login Link for Merchant"
-                      >
-                        <Key className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleSendWelcomeKit(tenant)}
-                        className="p-1.5 text-rose-400 hover:text-white hover:bg-rose-950/60 rounded-lg transition-all"
-                        title="Dispatch Official Onboarding Welcome Kit Email"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenSeederModal(tenant)}
-                        className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/60 rounded-lg transition-all"
-                        title="Seed 12 Sample Starter Products & Lookbooks"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenApiTokenModal(tenant)}
-                        className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-950/60 rounded-lg transition-all"
-                        title="Manage Scoped Developer API & Webhook Tokens"
-                      >
-                        <Key className="w-3.5 h-3.5" />
+                        <Zap className="w-3 h-3 text-teal-400" />
+                        <span>Webhook</span>
                       </button>
 
                       <button
                         onClick={() => handleRunDnsDiagnostic(tenant)}
-                        className="p-1.5 text-sky-400 hover:text-white hover:bg-sky-950/60 rounded-lg transition-all"
+                        className="px-2 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/20 rounded-lg flex items-center gap-1 font-mono transition-all"
                         title="Run Live Custom Domain DNS & SSL Diagnostic"
                       >
-                        <Globe className="w-3.5 h-3.5" />
+                        <Globe className="w-3 h-3 text-sky-400" />
+                        <span>DNS</span>
                       </button>
 
                       <button
-                        onClick={() => handleOpenWebhookSimulator(tenant)}
-                        className="p-1.5 text-teal-400 hover:text-white hover:bg-teal-950/60 rounded-lg transition-all"
-                        title="Simulate & Dispatch Live Webhook Integration Event"
+                        onClick={() => handleOpenApiTokenModal(tenant)}
+                        className="px-2 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 rounded-lg flex items-center gap-1 font-mono transition-all"
+                        title="Manage Scoped Developer API & Webhook Tokens"
                       >
-                        <Zap className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenProposalModal(tenant)}
-                        className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-950/60 rounded-lg transition-all"
-                        title="Generate Client 3-Year ROI Savings Proposal PDF"
-                      >
-                        <DollarSign className="w-3.5 h-3.5" />
+                        <Key className="w-3 h-3 text-purple-400" />
+                        <span>API Keys</span>
                       </button>
 
                       <button
                         onClick={() => handleToggleSurgeMode(tenant.id, tenant.name)}
-                        className={`p-1.5 rounded-lg transition-all ${
+                        className={`px-2 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 ${
                           surgeModeStores[tenant.id]
-                            ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/50 animate-pulse'
-                            : 'text-orange-400 hover:text-white hover:bg-orange-950/60'
+                            ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-900/40 animate-pulse'
+                            : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border-orange-500/20'
                         }`}
-                        title={
-                          surgeModeStores[tenant.id]
-                            ? 'Deactivate High-Throughput Surge Mode'
-                            : 'Activate High-Throughput Flash Sale Surge Mode (100% Edge ISR)'
-                        }
+                        title="Toggle High-Throughput Flash Sale Surge Mode"
                       >
-                        <Flame className="w-3.5 h-3.5" />
+                        <Flame className="w-3 h-3 text-orange-400" />
+                        <span>{surgeModeStores[tenant.id] ? 'Surge ON' : 'Surge'}</span>
                       </button>
                     </div>
 
-                    {/* Store Lifecycle Actions */}
-                    <div className="flex items-center gap-1.5">
+                    {/* Merchant Onboarding, Invoicing & Comms Strip */}
+                    <div className="flex items-center justify-between gap-1 text-[11px] flex-wrap">
+                      <button
+                        onClick={() => handleOpenProposalModal(tenant)}
+                        className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 rounded-lg flex items-center gap-1 font-mono transition-all"
+                        title="Generate Client 3-Year ROI Savings Proposal PDF"
+                      >
+                        <DollarSign className="w-3 h-3 text-emerald-400" />
+                        <span>Proposal</span>
+                      </button>
+
+                      <button
+                        onClick={() => setInvoiceTenant(tenant)}
+                        className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 rounded-lg flex items-center gap-1 font-mono transition-all"
+                        title="Generate & Download Official GST / Tax Invoice"
+                      >
+                        <FileText className="w-3 h-3 text-amber-400" />
+                        <span>GST Bill</span>
+                      </button>
+
+                      <div className="flex items-center gap-1 bg-[#10121A] p-0.5 rounded-lg border border-slate-800">
+                        <button
+                          onClick={() => handleSendPaymentReminderWhatsApp(tenant)}
+                          className="p-1 text-emerald-400 hover:text-white hover:bg-emerald-950/60 rounded transition-all"
+                          title="Send WhatsApp Server Renewal Reminder"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleSendPaymentReminderEmail(tenant)}
+                          className="p-1 text-sky-400 hover:text-white hover:bg-sky-950/60 rounded transition-all"
+                          title="Send Email Server Renewal Reminder"
+                        >
+                          <Mail className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleSendWelcomeKit(tenant)}
+                          className="p-1 text-rose-400 hover:text-white hover:bg-rose-950/60 rounded transition-all"
+                          title="Dispatch Official Onboarding Welcome Kit Email"
+                        >
+                          <Send className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleExportStoreBackup(tenant)}
+                          className="p-1 text-purple-400 hover:text-white hover:bg-purple-950/60 rounded transition-all"
+                          title="Export Store Database Backup (.JSON Snapshot)"
+                        >
+                          <Download className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Store Lifecycle Control Strip */}
+                    <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
                       <button
                         onClick={() => handleOpenEdit(tenant)}
-                        className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-all flex items-center gap-1.5 text-[11px] font-bold"
                         title="Edit Tenant Configuration"
                       >
-                        <Edit className="w-3.5 h-3.5" />
+                        <Edit className="w-3 h-3" />
+                        <span>Edit Config</span>
                       </button>
 
-                      <button
-                        onClick={() => handleToggleTenantStatus(tenant)}
-                        className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
-                          tenant.status === 'active'
-                            ? 'text-amber-400 hover:bg-amber-950/40 border border-amber-500/30'
-                            : 'text-emerald-400 hover:bg-emerald-950/40 border border-emerald-500/30'
-                        }`}
-                        title={tenant.status === 'active' ? 'Suspend Store' : 'Activate Store'}
-                      >
-                        {tenant.status === 'active' ? 'Pause' : 'Activate'}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleToggleTenantStatus(tenant)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                            tenant.status === 'active'
+                              ? 'text-amber-400 hover:bg-amber-950/40 border border-amber-500/30'
+                              : 'text-emerald-400 hover:bg-emerald-950/40 border border-emerald-500/30'
+                          }`}
+                          title={tenant.status === 'active' ? 'Suspend Store' : 'Activate Store'}
+                        >
+                          {tenant.status === 'active' ? 'Pause' : 'Activate'}
+                        </button>
 
-                      <button
-                        onClick={() => setDeletingTenant(tenant)}
-                        className="p-1.5 text-red-400 hover:text-white hover:bg-red-950/60 rounded-lg transition-all"
-                        title="Archive Store"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                        <button
+                          onClick={() => setDeletingTenant(tenant)}
+                          className="p-1 text-red-400 hover:text-white hover:bg-red-950/60 rounded-lg transition-all"
+                          title="Archive Store"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
