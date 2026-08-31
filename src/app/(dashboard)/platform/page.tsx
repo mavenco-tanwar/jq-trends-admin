@@ -1046,33 +1046,12 @@ function PlatformContent() {
   };
 
   const handleDownloadTenantBackup = async (tenant: TenantStore) => {
-    showToast(`Generating isolated database snapshot for ${tenant.name}...`, 'info');
+    showToast(`Exporting live MongoDB Atlas partition for ${tenant.name}...`, 'info');
     try {
-      const snapshot = {
-        meta: {
-          tenantId: tenant.id,
-          tenantSlug: tenant.slug,
-          tenantName: tenant.name,
-          plan: tenant.planName,
-          databaseName: tenant.databaseName,
-          exportedAt: new Date().toISOString(),
-          cluster: 'MongoDB Atlas (Isolated Partition)',
-          version: '3.4.0',
-        },
-        storeConfig: tenant,
-      };
-
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(snapshot, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute('href', dataStr);
-      downloadAnchor.setAttribute('download', `mavenco_backup_${tenant.slug}_${new Date().toISOString().split('T')[0]}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-
-      showToast(`Snapshot for ${tenant.name} exported successfully!`, 'success');
+      window.open(`/api/v1/platform/tenants/backup?slug=${encodeURIComponent(tenant.slug)}`, '_blank');
+      showToast(`Snapshot for ${tenant.name} generated from MongoDB Atlas!`, 'success');
     } catch (e) {
-      showToast('Failed to export snapshot', 'error');
+      showToast('Failed to export snapshot from database', 'error');
     }
   };
 
