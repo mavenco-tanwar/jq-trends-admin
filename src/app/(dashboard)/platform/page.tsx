@@ -41,6 +41,7 @@ import {
   Copy,
   Key,
   Clock,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   PlatformService,
@@ -105,6 +106,30 @@ function PlatformContent() {
   const [selectedPlanId, setSelectedPlanId] = useState('plan_pro');
   const [primaryColor, setPrimaryColor] = useState('#0F172A');
   const [accentColor, setAccentColor] = useState('#6366F1');
+  const [customFeatures, setCustomFeatures] = useState<Record<string, boolean>>({
+    customDomains: true,
+    advancedAnalytics: true,
+    richCms: true,
+    productReviews: true,
+    abandonedCart: true,
+    aiFeatures: true,
+    apiAccess: true,
+  });
+
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlanId(planId);
+    const plan = plans.find((p) => p.id === planId);
+    if (plan?.features) {
+      setCustomFeatures({ ...plan.features });
+    }
+  };
+
+  const handleToggleCustomFeature = (featureKey: string) => {
+    setCustomFeatures((prev) => ({
+      ...prev,
+      [featureKey]: !prev[featureKey],
+    }));
+  };
 
   // Edit Tenant Modal State
   const [editingTenant, setEditingTenant] = useState<TenantStore | null>(null);
@@ -335,6 +360,7 @@ function PlatformContent() {
         primaryColor,
         accentColor,
         temporaryPassword: tempPassword,
+        features: customFeatures,
       });
 
       setProvisionedDetails({
@@ -377,6 +403,16 @@ function PlatformContent() {
     setCurrency('INR');
     setStoreStatus('active');
     setCustomDomain('');
+    setSelectedPlanId('plan_pro');
+    setCustomFeatures({
+      customDomains: true,
+      advancedAnalytics: true,
+      richCms: true,
+      productReviews: true,
+      abandonedCart: true,
+      aiFeatures: true,
+      apiAccess: true,
+    });
   };
 
   const handleToggleTenantStatus = async (tenant: TenantStore) => {
@@ -1499,148 +1535,304 @@ function PlatformContent() {
       {/* PROVISIONING WIZARD MODAL (5-STEP) */}
       {/* ========================================================================= */}
       {isProvisionModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#161822] border border-slate-700 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl space-y-6 p-6 sm:p-8">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#161822] border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-rose-400" />
-                <h3 className="text-lg font-bold text-white">Store Provisioning Wizard</h3>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Store Provisioning Wizard</h3>
+                  <p className="text-xs text-slate-400">Configure client tenant branding, SaaS plan, and active feature flags</p>
+                </div>
               </div>
-              <button onClick={resetWizard} className="p-1 rounded-lg text-slate-400 hover:text-white">
+              <button onClick={resetWizard} className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {wizardStep < 5 && (
-              <form onSubmit={handleStartProvisioning} className="space-y-4">
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs text-slate-300 font-bold">Store Brand Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Zenith Outdoor"
-                      value={storeName}
-                      onChange={(e) => handleNameChange(e.target.value)}
-                      className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-300 font-bold">Store Slug (Routing)</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="zenith-outdoor"
-                      value={storeSlug}
-                      onChange={(e) => setStoreSlug(e.target.value)}
-                      className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white font-mono"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-slate-300 font-bold">Currency</label>
-                      <select
-                        value={currency}
-                        onChange={(e) => setCurrency(e.target.value)}
-                        className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
-                      >
-                        <option value="INR">INR (₹)</option>
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                      </select>
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              {wizardStep < 5 && (
+                <form onSubmit={handleStartProvisioning} className="space-y-6">
+                  {/* Step 1: Brand & Basic Identity */}
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Store className="w-3.5 h-3.5 text-rose-400" />
+                      <span>1. Brand Identity &amp; Routing</span>
                     </div>
-                    <div>
-                      <label className="text-xs text-slate-300 font-bold">Initial Store Status</label>
-                      <select
-                        value={storeStatus}
-                        onChange={(e) => setStoreStatus(e.target.value as any)}
-                        className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
-                      >
-                        <option value="active">Active (Production Live)</option>
-                        <option value="trial">Trial (14-Day Trial)</option>
-                        <option value="suspended">Suspended (Paused)</option>
-                      </select>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-300 font-bold">Store Brand Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Zenith Outdoor"
+                          value={storeName}
+                          onChange={(e) => handleNameChange(e.target.value)}
+                          className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-600 focus:border-rose-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-slate-300 font-bold">Store Slug (Routing) *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="zenith-outdoor"
+                          value={storeSlug}
+                          onChange={(e) => setStoreSlug(e.target.value)}
+                          className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white font-mono placeholder:text-slate-600 focus:border-rose-500 focus:outline-none"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-xs text-slate-300 font-bold">Tagline</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. High-performance alpine mountaineering"
-                      value={tagline}
-                      onChange={(e) => setTagline(e.target.value)}
-                      className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
-                    />
-                  </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-300 font-bold">Store Currency</label>
+                        <select
+                          value={currency}
+                          onChange={(e) => setCurrency(e.target.value)}
+                          className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white focus:border-rose-500 focus:outline-none"
+                        >
+                          <option value="INR">INR (₹)</option>
+                          <option value="USD">USD ($)</option>
+                          <option value="EUR">EUR (€)</option>
+                          <option value="GBP">GBP (£)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-300 font-bold">Initial Store Status</label>
+                        <select
+                          value={storeStatus}
+                          onChange={(e) => setStoreStatus(e.target.value as any)}
+                          className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white focus:border-rose-500 focus:outline-none"
+                        >
+                          <option value="active">Active (Production Live)</option>
+                          <option value="trial">Trial (14-Day Sandbox)</option>
+                          <option value="suspended">Suspended (Paused)</option>
+                        </select>
+                      </div>
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-slate-300 font-bold">Owner Name</label>
+                      <label className="text-xs text-slate-300 font-bold">Store Tagline / Slogan</label>
                       <input
                         type="text"
-                        required
-                        placeholder="e.g. Alex Hunter"
-                        value={ownerName}
-                        onChange={(e) => setOwnerName(e.target.value)}
-                        className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-300 font-bold">Owner Email</label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="alex@zenith.com"
-                        value={ownerEmail}
-                        onChange={(e) => setOwnerEmail(e.target.value)}
-                        className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
+                        placeholder="e.g. High-performance alpine mountaineering & essentials"
+                        value={tagline}
+                        onChange={(e) => setTagline(e.target.value)}
+                        className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-600 focus:border-rose-500 focus:outline-none"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-slate-300 font-bold">Primary Brand Color</label>
-                      <input
-                        type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="w-full h-10 mt-1 p-1 bg-[#10121A] border border-slate-700 rounded-xl cursor-pointer"
-                      />
+                  {/* Step 2: Merchant Administrator */}
+                  <div className="space-y-3 pt-4 border-t border-slate-800">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-sky-400" />
+                      <span>2. Store Owner &amp; Admin Credentials</span>
                     </div>
-                    <div>
-                      <label className="text-xs text-slate-300 font-bold">Accent CTA Color</label>
-                      <input
-                        type="color"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="w-full h-10 mt-1 p-1 bg-[#10121A] border border-slate-700 rounded-xl cursor-pointer"
-                      />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-300 font-bold">Owner Full Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Alex Hunter"
+                          value={ownerName}
+                          onChange={(e) => setOwnerName(e.target.value)}
+                          className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-600 focus:border-rose-500 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-300 font-bold">Owner Email (Admin Login) *</label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="alex@zenith.com"
+                          value={ownerEmail}
+                          onChange={(e) => setOwnerEmail(e.target.value)}
+                          className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-600 focus:border-rose-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-300 font-bold">Primary Brand Color</label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="color"
+                            value={primaryColor}
+                            onChange={(e) => setPrimaryColor(e.target.value)}
+                            className="w-10 h-9 p-0.5 bg-[#10121A] border border-slate-700 rounded-xl cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={primaryColor}
+                            onChange={(e) => setPrimaryColor(e.target.value)}
+                            className="w-full p-2 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white font-mono"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-300 font-bold">Accent CTA Color</label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="color"
+                            value={accentColor}
+                            onChange={(e) => setAccentColor(e.target.value)}
+                            className="w-10 h-9 p-0.5 bg-[#10121A] border border-slate-700 rounded-xl cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={accentColor}
+                            onChange={(e) => setAccentColor(e.target.value)}
+                            className="w-full p-2 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white font-mono"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={resetWizard}
-                    className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg"
-                  >
-                    Start Provisioning Pipeline →
-                  </button>
-                </div>
-              </form>
-            )}
+                  {/* Step 3: SaaS Billing Plan Tier Selection */}
+                  <div className="space-y-3 pt-4 border-t border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>3. SaaS Billing Plan Tier *</span>
+                      </div>
+                      <span className="text-[11px] text-slate-400">Select commercial plan</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {plans.map((p) => {
+                        const isSelected = selectedPlanId === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handleSelectPlan(p.id)}
+                            className={`p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
+                              isSelected
+                                ? 'bg-amber-500/15 border-amber-500/60 shadow-lg shadow-amber-950/30'
+                                : 'bg-[#10121A] border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            {isSelected && (
+                              <div className="absolute top-3 right-3 flex items-center gap-1 bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[9px] font-bold">
+                                <Check className="w-2.5 h-2.5" />
+                                <span>ACTIVE</span>
+                              </div>
+                            )}
+
+                            <div>
+                              <div className="text-xs font-bold text-white">{p.name}</div>
+                              <div className="text-sm font-bold text-amber-400 mt-1 font-mono">
+                                ₹{p.oneTimeFeeInr.toLocaleString('en-IN')}
+                              </div>
+                              <div className="text-[10px] text-slate-400">
+                                + ₹{p.monthlyEquivalentInr.toLocaleString('en-IN')}/mo server
+                              </div>
+                            </div>
+
+                            <div className="pt-2 mt-2 border-t border-slate-800/80 text-[10px] text-slate-400 flex items-center justify-between">
+                              <span>Max {p.maxProducts} Prods</span>
+                              <span>{p.maxStaff} Staff</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Step 4: Active SaaS Feature Flags Studio */}
+                  <div className="p-4 bg-[#10121A] rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
+                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                        <span>4. Feature Flags &amp; Capabilities Studio</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400">
+                        Toggle client features on/off
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        { key: 'customDomains', label: 'Custom Domains & SSL Ingress', desc: 'White-label CNAME & TLS certificates', icon: Globe },
+                        { key: 'abandonedCart', label: 'Abandoned Cart Recovery', desc: 'SMS/Email recovery workflows', icon: ShoppingBag },
+                        { key: 'aiFeatures', label: 'AI Copywriting & SEO Studio', desc: 'Generative descriptions & SEO meta', icon: Sparkles },
+                        { key: 'advancedAnalytics', label: 'Advanced Funnel Analytics', desc: 'Cohort retention & conversion rates', icon: BarChart3 },
+                        { key: 'richCms', label: 'Visual Drag-Drop CMS Studio', desc: 'Dynamic lookbooks & promo banners', icon: LayoutDashboard },
+                        { key: 'productReviews', label: 'Verified Customer Reviews', desc: 'Photo reviews & star ratings', icon: CheckSquare },
+                        { key: 'apiAccess', label: 'Headless REST API & Webhooks', desc: 'Developer API tokens & webhooks', icon: Key },
+                      ].map((item) => {
+                        const Icon = item.icon || Zap;
+                        const isEnabled = !!customFeatures[item.key];
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => handleToggleCustomFeature(item.key)}
+                            className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                              isEnabled
+                                ? 'bg-emerald-500/10 border-emerald-500/40 text-slate-200'
+                                : 'bg-[#0B0D13] border-slate-800/80 text-slate-500'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                              <Icon
+                                className={`w-4 h-4 shrink-0 ${
+                                  isEnabled ? 'text-emerald-400' : 'text-slate-600'
+                                }`}
+                              />
+                              <div className="min-w-0">
+                                <div className="text-[11px] font-semibold truncate text-white">
+                                  {item.label}
+                                </div>
+                                <div className="text-[9px] text-slate-400 truncate">
+                                  {item.desc}
+                                </div>
+                              </div>
+                            </div>
+                            <span
+                              className={`text-[9px] font-bold px-2 py-0.5 rounded font-mono shrink-0 ${
+                                isEnabled
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-slate-800 text-slate-500'
+                              }`}
+                            >
+                              {isEnabled ? 'ENABLED' : 'DISABLED'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={resetWizard}
+                      className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all flex items-center gap-1.5"
+                    >
+                      <span>Start Provisioning Pipeline</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </form>
+              )}
 
             {wizardStep === 5 && (
               <div className="space-y-5 text-center py-4">
@@ -1763,6 +1955,7 @@ function PlatformContent() {
                 )}
               </div>
             )}
+            </div>
           </div>
         </div>
       )}

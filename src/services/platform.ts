@@ -682,10 +682,12 @@ export class PlatformService {
     subdomain?: string;
     customDomain?: string;
     temporaryPassword?: string;
+    features?: Record<string, boolean>;
   }): Promise<TenantStore> {
     const tenantId = `store_${payload.slug.replace(/[^a-z0-9]/g, '_')}_${Date.now().toString().slice(-4)}`;
     const plan = this.plans.find((p) => p.id === payload.planId) || this.plans[1];
     const tempPass = payload.temporaryPassword || `Mavenco@2026!${payload.slug.toLowerCase().trim()}`;
+    const storeFeatures = payload.features || plan.features;
 
     const domains: TenantDomain[] = [
       {
@@ -720,6 +722,7 @@ export class PlatformService {
       status: payload.status || 'active',
       planId: plan.id,
       planName: plan.name,
+      features: storeFeatures,
       databaseName: `tenant_${payload.slug.toLowerCase()}`,
       currency: payload.currency || 'USD',
       ownerEmail: payload.ownerEmail,
