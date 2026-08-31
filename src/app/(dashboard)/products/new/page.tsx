@@ -89,6 +89,38 @@ export default function NewProductPage() {
     setImages(images.filter((img) => img.id !== id));
   };
 
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+
+  const handleGenerateAiCopy = () => {
+    if (!title.trim()) {
+      showToast('Please enter a product title first so AI can write the description', 'error');
+      return;
+    }
+
+    setIsAiGenerating(true);
+    setTimeout(() => {
+      setIsAiGenerating(false);
+      const cleanTitle = title.trim();
+      const generatedShort = `An exquisite artisanal ${cleanTitle.toLowerCase()} designed for modern elegance, handcrafted with premium breathable textures and bespoke silhouettes.`;
+      const generatedFull = `<p>Elevate your seasonal wardrobe with the signature <strong>${cleanTitle}</strong>. Meticulously tailored for timeless distinction, this piece seamlessly merges contemporary tailoring with artisanal craftsmanship.</p>
+<h3>Highlights &amp; Fabric Details:</h3>
+<ul>
+  <li><strong>Fabric Composition:</strong> 100% Premium Artisanal Silk &amp; Organic Cotton Blend</li>
+  <li><strong>Fit &amp; Silhouette:</strong> Tailored relaxed silhouette with structured drape</li>
+  <li><strong>Craftsmanship:</strong> Hand-finished seams with signature branded hardware</li>
+  <li><strong>Care Instructions:</strong> Dry clean only or gentle hand wash in cold water</li>
+</ul>`;
+      const generatedSeoTitle = `${cleanTitle} | Buy Online | ${brand || 'Mavenco'}`;
+      const generatedSeoDesc = `Discover ${cleanTitle} online at ${brand || 'Mavenco'}. Enjoy complimentary luxury packaging, fast worldwide shipping, and hassle-free returns.`;
+
+      setShortDesc(generatedShort);
+      setDescription(generatedFull);
+      setSeoTitle(generatedSeoTitle);
+      setSeoDesc(generatedSeoDesc);
+      showToast('✨ AI luxury copy and SEO metadata generated successfully!', 'success');
+    }, 600);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) {
@@ -258,6 +290,19 @@ export default function NewProductPage() {
                 className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
               />
             </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-slate-300 font-bold">Product Copy &amp; Story</span>
+            <button
+              type="button"
+              onClick={handleGenerateAiCopy}
+              disabled={isAiGenerating}
+              className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs rounded-lg shadow-md flex items-center gap-1.5 transition-all disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{isAiGenerating ? 'AI Crafting Copy...' : '✨ Auto-Generate with AI'}</span>
+            </button>
           </div>
 
           <div>

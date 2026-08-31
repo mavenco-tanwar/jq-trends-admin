@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShoppingBag, Mail, RefreshCw, Send, DollarSign, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Mail, RefreshCw, Send, DollarSign, Clock, CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
 import { FeatureGate } from '@/components/ui/FeatureGate';
 import { useToast } from '@/lib/toast-context';
 
@@ -167,21 +167,36 @@ export default function AbandonedCartPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
                   {cart.recoveryStatus === 'recovered' ? (
                     <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20 flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Order Completed</span>
                     </span>
                   ) : (
-                    <button
-                      onClick={() => handleSendRecoveryEmail(cart)}
-                      disabled={sendingId === cart.id}
-                      className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>{sendingId === cart.id ? 'Dispatching...' : cart.recoveryStatus === 'email_sent' ? 'Resend Reminder' : 'Send Recovery Email'}</span>
-                    </button>
+                    <>
+                      <a
+                        href={`https://wa.me/918239019096?text=${encodeURIComponent(
+                          `Hi ${cart.customerName}! We noticed you left ${cart.items[0]?.title} in your shopping bag. Complete your order now with coupon VIP10 for an extra 10% off: https://mavenco-storefront.vercel.app/cart`
+                        )}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5"
+                        title="Send Instant WhatsApp Recovery Message"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>WhatsApp VIP</span>
+                      </a>
+
+                      <button
+                        onClick={() => handleSendRecoveryEmail(cart)}
+                        disabled={sendingId === cart.id}
+                        className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>{sendingId === cart.id ? 'Dispatching...' : cart.recoveryStatus === 'email_sent' ? 'Resend Email' : 'Send Email'}</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

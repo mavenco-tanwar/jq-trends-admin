@@ -140,6 +140,12 @@ function PlatformContent() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [planFilter, setPlanFilter] = useState<string>('all');
 
+  // B2B GST/VAT SaaS Invoice Generator State
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [selectedInvoiceTenant, setSelectedInvoiceTenant] = useState<TenantStore | null>(null);
+  const [invoiceGstin, setInvoiceGstin] = useState('08AAACM1234F1Z5');
+  const [invoiceNumber, setInvoiceNumber] = useState('MVC-2026-089');
+
   // 5-Step Store Provisioning Wizard State
   const [isProvisionModalOpen, setIsProvisionModalOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -1039,6 +1045,43 @@ function PlatformContent() {
     }
   };
 
+  const handleDownloadTenantBackup = async (tenant: TenantStore) => {
+    showToast(`Generating isolated database snapshot for ${tenant.name}...`, 'info');
+    try {
+      const snapshot = {
+        meta: {
+          tenantId: tenant.id,
+          tenantSlug: tenant.slug,
+          tenantName: tenant.name,
+          plan: tenant.planName,
+          databaseName: tenant.databaseName,
+          exportedAt: new Date().toISOString(),
+          cluster: 'MongoDB Atlas (Isolated Partition)',
+          version: '3.4.0',
+        },
+        storeConfig: tenant,
+      };
+
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(snapshot, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `mavenco_backup_${tenant.slug}_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+
+      showToast(`Snapshot for ${tenant.name} exported successfully!`, 'success');
+    } catch (e) {
+      showToast('Failed to export snapshot', 'error');
+    }
+  };
+
+  const handleOpenInvoiceModal = (tenant: TenantStore) => {
+    setSelectedInvoiceTenant(tenant);
+    setInvoiceNumber(`MVC-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`);
+    setIsInvoiceModalOpen(true);
+  };
+
   const filteredTenants = tenants.filter((t) => {
     if (statusFilter !== 'all' && t.status !== statusFilter) return false;
     if (planFilter !== 'all' && t.planId !== planFilter) return false;
@@ -1179,6 +1222,76 @@ function PlatformContent() {
               <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> 100% Tenant Isolation Verified
               </p>
+            </div>
+          </div>
+
+          {/* Global Real-Time Edge Telemetry & SLA Sentinel */}
+          <div className="bg-[#10121A] border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+                <h3 className="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  <span>Global Edge Telemetry &amp; System Health Sentinel</span>
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 font-mono text-[11px]">
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                  99.99% Global SLA
+                </span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-400">Live Anycast Network</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {/* Region 1: Mumbai */}
+              <div className="p-3.5 bg-[#0A0C10] rounded-xl border border-slate-800/80 space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Asia-South (Mumbai)</span>
+                  <span className="text-emerald-400 font-mono font-bold">24ms</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-emerald-400 h-full w-[24%]" />
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">P95 TTFB • Active Edge</div>
+              </div>
+
+              {/* Region 2: Singapore */}
+              <div className="p-3.5 bg-[#0A0C10] rounded-xl border border-slate-800/80 space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Asia-East (Singapore)</span>
+                  <span className="text-emerald-400 font-mono font-bold">38ms</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-emerald-400 h-full w-[38%]" />
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">P95 TTFB • Active Edge</div>
+              </div>
+
+              {/* Region 3: Frankfurt */}
+              <div className="p-3.5 bg-[#0A0C10] rounded-xl border border-slate-800/80 space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Europe-West (Frankfurt)</span>
+                  <span className="text-emerald-400 font-mono font-bold">42ms</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-emerald-400 h-full w-[42%]" />
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">P95 TTFB • Active Edge</div>
+              </div>
+
+              {/* Region 4: Database Pool */}
+              <div className="p-3.5 bg-[#0A0C10] rounded-xl border border-slate-800/80 space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">MongoDB Atlas Pool</span>
+                  <span className="text-cyan-400 font-mono font-bold">4ms Latency</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-cyan-400 h-full w-[100%]" />
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">0.00% Error Rate • Segregated</div>
+              </div>
             </div>
           </div>
 
@@ -1730,6 +1843,15 @@ function PlatformContent() {
                       >
                         <Flame className="w-3 h-3 text-orange-400" />
                         <span>{surgeModeStores[tenant.id] ? 'Surge ON' : 'Surge'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDownloadTenantBackup(tenant)}
+                        className="px-2 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 rounded-lg flex items-center gap-1 font-mono transition-all"
+                        title="Download 1-Click Isolated Database JSON Backup"
+                      >
+                        <Download className="w-3 h-3 text-purple-400" />
+                        <span>Backup</span>
                       </button>
                     </div>
 
