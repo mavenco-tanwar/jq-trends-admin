@@ -247,7 +247,13 @@ function AdminSidebarInner({
     {
       title: 'MARKETING & AUTOMATION',
       items: [
-        { label: 'Abandoned Carts', href: '/marketing/abandoned-cart', icon: ShoppingBag },
+        {
+          label: 'Abandoned Carts',
+          href: '/marketing/abandoned-carts',
+          icon: ShoppingBag,
+          badge: '4 Live',
+          badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold',
+        },
         {
           label: 'AI Studio',
           href: '/marketing/ai',
