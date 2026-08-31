@@ -520,6 +520,121 @@ function PlatformContent() {
     }));
   };
 
+  const handleDownloadGstInvoicePdf = (plan: TenantPlan) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const licenseFee = plan.oneTimeFeeInr || 49999;
+    const cloudFee = (plan as any).monthlyServerFeeInr || (plan as any).monthlyFeeInr || (plan as any).priceMonthly || 4000;
+    const taxableTotal = licenseFee + cloudFee;
+    const cgst = Math.round(taxableTotal * 0.09);
+    const sgst = Math.round(taxableTotal * 0.09);
+    const grandTotal = taxableTotal + cgst + sgst;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>GST Tax Invoice - Mavenco Commerce - ${plan.name}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 32px; color: #111; max-width: 680px; margin: 0 auto; line-height: 1.5; }
+            .header { border-bottom: 2px solid #0F172A; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .badge { background: #E0E7FF; color: #3730A3; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; font-family: monospace; }
+            .info-box { display: flex; justify-content: space-between; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 14px; border-radius: 8px; font-size: 12px; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+            th { text-align: left; background: #F1F5F9; padding: 10px 8px; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #CBD5E1; }
+            td { padding: 10px 8px; border-bottom: 1px solid #E2E8F0; }
+            .footer { margin-top: 32px; padding-top: 16px; border-top: 1px dashed #CBD5E1; font-size: 11px; color: #64748B; text-align: center; }
+            @media print { button { display: none; } body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 style="margin: 0; font-size: 22px; color: #0F172A;">MAVENCO COMMERCE PRIVATE LIMITED</h1>
+              <div style="font-size: 11px; color: #64748B;">GSTIN: 29AAACM1234F1Z5 • SAC: 998313 (IT Software Licensing)</div>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge">INVOICE #MVC-TAX-${Date.now().toString().slice(-6)}</span>
+              <div style="font-size: 11px; color: #64748B; margin-top: 4px;">Date: ${new Date().toLocaleDateString('en-IN')}</div>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div>
+              <strong style="text-transform: uppercase; font-size: 10px; color: #64748B;">Billed To (Client):</strong><br/>
+              <strong>Registered Merchant Store Partner</strong><br/>
+              D2C Brand Operations Hub<br/>
+              Place of Supply: Karnataka (State Code 29)
+            </div>
+            <div style="text-align: right;">
+              <strong style="text-transform: uppercase; font-size: 10px; color: #64748B;">Subscription Tier:</strong><br/>
+              <strong>${plan.name}</strong> (${plan.code.toUpperCase()})<br/>
+              Quota: ${plan.maxProducts.toLocaleString()} Products • ${plan.maxStorageMb / 1024} GB Storage<br/>
+              Payment Status: <span style="color: #059669; font-weight: bold;">PAID / ACTIVE</span>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30px;">#</th>
+                <th>Item &amp; Description</th>
+                <th style="text-align: center;">SAC</th>
+                <th style="text-align: right;">Rate</th>
+                <th style="text-align: right;">Taxable Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td><strong>Mavenco Commerce One-Time Platform License</strong><br/><span style="color: #64748B; font-size: 10px;">Storefront + Admin Panel codebase deployment with isolated MongoDB database partition</span></td>
+                <td style="text-align: center; font-family: monospace;">998313</td>
+                <td style="text-align: right;">₹${licenseFee.toLocaleString('en-IN')}</td>
+                <td style="text-align: right;">₹${licenseFee.toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td><strong>Monthly Cloud Infrastructure &amp; Edge Maintenance</strong><br/><span style="color: #64748B; font-size: 10px;">Vercel Edge compute, MongoDB Atlas M10 Replica, Media CDN, SMTP Relay</span></td>
+                <td style="text-align: center; font-family: monospace;">998315</td>
+                <td style="text-align: right;">₹${cloudFee.toLocaleString('en-IN')}</td>
+                <td style="text-align: right;">₹${cloudFee.toLocaleString('en-IN')}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" style="text-align: right; font-weight: bold;">Total Taxable Value:</td>
+                <td style="text-align: right; font-weight: bold;">₹${taxableTotal.toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td colspan="4" style="text-align: right; color: #64748B;">CGST @ 9%:</td>
+                <td style="text-align: right; color: #64748B;">₹${cgst.toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td colspan="4" style="text-align: right; color: #64748B;">SGST @ 9%:</td>
+                <td style="text-align: right; color: #64748B;">₹${sgst.toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td colspan="4" style="text-align: right; font-weight: bold; font-size: 14px;">Total Invoice Value:</td>
+                <td style="text-align: right; font-weight: bold; font-size: 14px; color: #059669;">₹${grandTotal.toLocaleString('en-IN')}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div class="footer">
+            Computer generated official tax invoice • Mavenco Commerce Pvt Ltd • support@mavenco.com • +91 82390 19096
+          </div>
+
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   // Edit Tenant Modal State
   const [editingTenant, setEditingTenant] = useState<TenantStore | null>(null);
   const [editName, setEditName] = useState('');
@@ -2292,6 +2407,18 @@ function PlatformContent() {
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* Download Plan GST Invoice Button */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadGstInvoicePdf(p)}
+                      className="w-full py-2.5 px-3 bg-[#10121A] hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Download GST Tax Invoice (PDF)</span>
+                    </button>
                   </div>
                 </div>
               </div>
