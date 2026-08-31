@@ -89,6 +89,20 @@ export interface PlatformActivityLog {
   createdAt?: string;
 }
 
+export interface PlatformInquiry {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  brandName?: string;
+  interestedPlan?: string;
+  message?: string;
+  source: string;
+  status: 'new' | 'contacted' | 'provisioned' | 'archived';
+  createdAt: string;
+  ipAddress?: string;
+}
+
 export interface PlatformMetrics {
   totalTenants: number;
   activeTenants: number;
@@ -1001,6 +1015,45 @@ export class PlatformService {
       });
     } catch (err) {
       console.error('Failed to persist activity log to MongoDB:', err);
+    }
+  }
+
+  // Inquiries & Demo Leads Management
+  public static async listInquiries(): Promise<PlatformInquiry[]> {
+    try {
+      const res = await fetch('/api/v1/platform/inquiries').then((r) => (r.ok ? r.json() : null));
+      if (res?.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch inquiries from DB:', err);
+    }
+    return [];
+  }
+
+  public static async updateInquiryStatus(id: string, status: PlatformInquiry['status']): Promise<boolean> {
+    try {
+      const res = await fetch('/api/v1/platform/inquiries', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('Failed to update inquiry status:', err);
+      return false;
+    }
+  }
+
+  public static async deleteInquiry(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/v1/platform/inquiries?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('Failed to delete inquiry:', err);
+      return false;
     }
   }
 }

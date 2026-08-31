@@ -42,6 +42,11 @@ import {
   Key,
   Clock,
   ShoppingBag,
+  MessageSquare,
+  Phone,
+  UserCheck,
+  Calendar,
+  Send,
 } from 'lucide-react';
 import {
   PlatformService,
@@ -50,12 +55,15 @@ import {
   TenantPlan,
   PlatformMetrics,
   PlatformActivityLog,
+  PlatformInquiry,
 } from '@/services/platform';
 import { useToast } from '@/lib/toast-context';
 import { Modal } from '@/components/ui/Modal';
 
 const STOREFRONT_BASE_URL = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'https://mavenco-storefront.vercel.app';
 const ADMIN_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_URL || 'https://mavenco-admin.vercel.app';
+
+type TabType = 'overview' | 'tenants' | 'plans' | 'domains' | 'inquiries' | 'activity';
 
 function PlatformContent() {
   const { showToast } = useToast();
@@ -67,17 +75,22 @@ function PlatformContent() {
   const [tenants, setTenants] = useState<TenantStore[]>([]);
   const [plans, setPlans] = useState<TenantPlan[]>([]);
   const [activities, setActivities] = useState<PlatformActivityLog[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'plans' | 'domains' | 'activity'>('overview');
+  const [inquiries, setInquiries] = useState<PlatformInquiry[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  // Inquiry filters & search
+  const [inquiryFilter, setInquiryFilter] = useState<'all' | 'new' | 'contacted' | 'provisioned' | 'archived'>('all');
+  const [inquirySearch, setInquirySearch] = useState('');
 
   useEffect(() => {
-    if (tabParam && ['overview', 'tenants', 'plans', 'domains', 'activity'].includes(tabParam)) {
+    if (tabParam && ['overview', 'tenants', 'plans', 'domains', 'inquiries', 'activity'].includes(tabParam)) {
       setActiveTab(tabParam);
     } else if (!tabParam) {
       setActiveTab('overview');
     }
   }, [tabParam]);
 
-  const handleTabChange = (tab: 'overview' | 'tenants' | 'plans' | 'domains' | 'activity') => {
+  const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     router.push(`/platform?tab=${tab}`);
   };
@@ -252,21 +265,70 @@ function PlatformContent() {
   };
 
   const loadPlatformData = async () => {
-    const [m, tList, pList, actList] = await Promise.all([
+    const [m, tList, pList, actList, inqList] = await Promise.all([
       PlatformService.getMetrics(),
       PlatformService.listTenants(),
       PlatformService.listPlans(),
       PlatformService.listActivityLogs(),
+      PlatformService.listInquiries(),
     ]);
     setMetrics(m);
     setTenants(tList);
     setPlans([...pList]);
     setActivities(actList);
+    setInquiries(inqList);
   };
 
   useEffect(() => {
     loadPlatformData();
   }, []);
+
+  const handleUpdateInquiryStatus = async (id: string, newStatus: PlatformInquiry['status']) => {
+    const success = await PlatformService.updateInquiryStatus(id, newStatus);
+    if (success) {
+      setInquiries((prev) =>
+        prev.map((inq) => (inq.id === id ? { ...inq, status: newStatus } : inq))
+      );
+      showToast(`Inquiry marked as ${newStatus.toUpperCase()}`, 'success');
+    } else {
+      showToast('Failed to update inquiry status', 'error');
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this inquiry from the database?')) return;
+    const success = await PlatformService.deleteInquiry(id);
+    if (success) {
+      setInquiries((prev) => prev.filter((inq) => inq.id !== id));
+      showToast('Inquiry deleted from database', 'info');
+    } else {
+      showToast('Failed to delete inquiry', 'error');
+    }
+  };
+
+  const handleConvertInquiryToStore = (inq: PlatformInquiry) => {
+    const brandClean = inq.brandName || 'New Brand';
+    const slugClean = brandClean.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/(^-|-$)/g, '');
+    
+    setStoreName(brandClean);
+    setStoreSlug(slugClean);
+    setTagline('Curated Modern Lifestyle Brand');
+    setOwnerName(inq.fullName);
+    setOwnerEmail(inq.email);
+
+    // Map plan
+    if (inq.interestedPlan?.includes('Starter')) {
+      setSelectedPlanId('plan_starter');
+    } else if (inq.interestedPlan?.includes('Enterprise')) {
+      setSelectedPlanId('plan_enterprise');
+    } else {
+      setSelectedPlanId('plan_pro');
+    }
+
+    setWizardStep(1);
+    setIsProvisionModalOpen(true);
+    showToast(`Pre-filled Store Provisioning Wizard for ${brandClean}!`, 'success');
+  };
 
   const handleNameChange = (name: string) => {
     setStoreName(name);
@@ -661,6 +723,19 @@ function PlatformContent() {
               >
                 <Globe className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Manage Domains</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('inquiries')}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-all relative"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Demo Inquiries</span>
+                {inquiries.filter((i) => i.status === 'new').length > 0 && (
+                  <span className="px-1.5 py-0.2 text-[9px] bg-rose-500 text-white font-extrabold rounded-full animate-pulse">
+                    {inquiries.filter((i) => i.status === 'new').length} NEW
+                  </span>
+                )}
               </button>
 
               <button
@@ -1465,7 +1540,267 @@ function PlatformContent() {
         </div>
       )}
 
-      {/* TAB 4: AUDIT TRAIL */}
+      {/* TAB 4: INQUIRIES & DEMO LEADS */}
+      {activeTab === 'inquiries' && (
+        <div className="space-y-6">
+          {/* Hero Banner for Inquiries */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-[#12141D] via-[#161822] to-[#1A1D2B] p-6 rounded-2xl border border-emerald-900/40 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="space-y-1 z-10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
+                  Prospect Inquiries &amp; Live Demo Leads
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {inquiries.filter((i) => i.status === 'new').length} New Leads Pending
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                <MessageSquare className="w-7 h-7 text-emerald-400" />
+                <span>Demo Inquiries &amp; Prospect Leads</span>
+              </h1>
+              <p className="text-xs text-slate-400 max-w-2xl">
+                Review incoming client evaluation inquiries from the storefront, connect directly via WhatsApp/Email, and convert leads into live provisioned tenant stores with 1 click.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 z-10 flex-wrap">
+              <button
+                onClick={() => loadPlatformData()}
+                className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Refresh Leads</span>
+              </button>
+              <button
+                onClick={() => setIsProvisionModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-105"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Provision New Store</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Inquiry Filters & Search Bar */}
+          <div className="bg-[#161822] p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Status Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+              {(
+                [
+                  { id: 'all', label: 'All Leads', count: inquiries.length },
+                  { id: 'new', label: 'New', count: inquiries.filter((i) => i.status === 'new').length },
+                  { id: 'contacted', label: 'Contacted', count: inquiries.filter((i) => i.status === 'contacted').length },
+                  { id: 'provisioned', label: 'Provisioned', count: inquiries.filter((i) => i.status === 'provisioned').length },
+                  { id: 'archived', label: 'Archived', count: inquiries.filter((i) => i.status === 'archived').length },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setInquiryFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                    inquiryFilter === tab.id
+                      ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/40'
+                      : 'bg-[#10121A] text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`px-1.5 py-0.2 text-[10px] rounded-full font-mono font-extrabold ${
+                      inquiryFilter === tab.id ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full md:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search leads by name, brand, email..."
+                value={inquirySearch}
+                onChange={(e) => setInquirySearch(e.target.value)}
+                className="w-full bg-[#10121A] border border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          {/* Inquiries List */}
+          <div className="space-y-3">
+            {inquiries
+              .filter((inq) => {
+                if (inquiryFilter !== 'all' && inq.status !== inquiryFilter) return false;
+                if (inquirySearch) {
+                  const q = inquirySearch.toLowerCase();
+                  return (
+                    inq.fullName.toLowerCase().includes(q) ||
+                    (inq.brandName && inq.brandName.toLowerCase().includes(q)) ||
+                    inq.email.toLowerCase().includes(q) ||
+                    (inq.phone && inq.phone.includes(q))
+                  );
+                }
+                return true;
+              })
+              .map((inq) => {
+                const cleanWhatsApp = inq.phone ? inq.phone.replace(/[^0-9]/g, '') : '';
+                return (
+                  <div
+                    key={inq.id}
+                    className="p-5 bg-[#161822] border border-slate-800 hover:border-slate-700 rounded-2xl transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-5 group shadow-lg"
+                  >
+                    {/* Left: Lead Details */}
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-base shrink-0 shadow-lg ${
+                          inq.status === 'new'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : inq.status === 'contacted'
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                            : inq.status === 'provisioned'
+                            ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                        }`}
+                      >
+                        {inq.fullName.charAt(0).toUpperCase()}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h3 className="font-bold text-white text-base">{inq.fullName}</h3>
+                          <span className="text-xs text-rose-400 font-bold px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20">
+                            {inq.brandName || 'Unspecified Brand'}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md border ${
+                              inq.status === 'new'
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                : inq.status === 'contacted'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                : inq.status === 'provisioned'
+                                ? 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                            }`}
+                          >
+                            {inq.status.toUpperCase()}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs text-slate-400 flex-wrap">
+                          <a
+                            href={`mailto:${inq.email}?subject=Mavenco%20Commerce%20Demo%20for%20${encodeURIComponent(inq.brandName || inq.fullName)}`}
+                            className="hover:text-sky-400 flex items-center gap-1 text-slate-300 font-medium"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{inq.email}</span>
+                          </a>
+
+                          {inq.phone && (
+                            <span className="flex items-center gap-1 text-slate-300 font-medium">
+                              <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{inq.phone}</span>
+                            </span>
+                          )}
+
+                          <span className="flex items-center gap-1 text-amber-300 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            <CreditCard className="w-3 h-3 text-amber-400" />
+                            <span>{inq.interestedPlan || 'Professional Scale'}</span>
+                          </span>
+
+                          <span className="flex items-center gap-1 text-slate-500 text-[11px]">
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              {new Date(inq.createdAt).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </span>
+                        </div>
+
+                        {inq.message && inq.message !== 'No custom note attached' && (
+                          <p className="text-xs text-slate-400 italic bg-[#10121A] p-2 rounded-lg border border-slate-800 max-w-2xl mt-1">
+                            "{inq.message}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right: Actions & Status Controls */}
+                    <div className="flex items-center gap-2.5 shrink-0 flex-wrap lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-800">
+                      {/* Status Selector */}
+                      <select
+                        value={inq.status}
+                        onChange={(e) => handleUpdateInquiryStatus(inq.id, e.target.value as any)}
+                        className="bg-[#10121A] border border-slate-700 text-xs text-slate-200 rounded-xl px-2.5 py-2 font-medium focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="new">🟢 Status: New Lead</option>
+                        <option value="contacted">🟡 Status: Contacted</option>
+                        <option value="provisioned">🔵 Status: Provisioned</option>
+                        <option value="archived">⚪ Status: Archived</option>
+                      </select>
+
+                      {/* WhatsApp Button */}
+                      {cleanWhatsApp && (
+                        <a
+                          href={`https://wa.me/${cleanWhatsApp}?text=Hi%20${encodeURIComponent(inq.fullName)}%2C%20thank%20you%20for%20requesting%20a%20demo%20of%20Mavenco%20Commerce%20Platform%20for%20${encodeURIComponent(inq.brandName || inq.fullName)}.`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold text-xs rounded-xl border border-emerald-500/30 flex items-center gap-1.5 transition-all"
+                          title="Chat on WhatsApp"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>WhatsApp</span>
+                        </a>
+                      )}
+
+                      {/* Convert to Store Button */}
+                      <button
+                        onClick={() => handleConvertInquiryToStore(inq)}
+                        className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/40 flex items-center gap-1.5 transition-all hover:scale-105"
+                        title="Provision new tenant store from this inquiry"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Convert to Store</span>
+                      </button>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteInquiry(inq.id)}
+                        className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Delete Inquiry from Database"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {inquiries.length === 0 && (
+              <div className="p-12 text-center bg-[#161822] rounded-3xl border border-slate-800 space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
+                  <MessageSquare className="w-6 h-6" />
+                </div>
+                <h4 className="text-base font-bold text-white">No Prospect Inquiries Yet</h4>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  When prospects click <strong>"Contact Us for Demo"</strong> on your public storefront, their inquiries will automatically populate here in real-time.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: AUDIT TRAIL */}
       {activeTab === 'activity' && (
         <div className="space-y-6">
           {/* Hero Banner for Activity Logs */}

@@ -139,6 +139,14 @@ function AdminSidebarInner({
           badgeColor: 'bg-amber-500/20 text-amber-300 font-bold',
         },
         {
+          label: 'Inquiries & Demo Leads',
+          href: '/platform?tab=inquiries',
+          tabKey: 'inquiries',
+          icon: MessageSquare,
+          badge: 'Prospects',
+          badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold',
+        },
+        {
           label: 'Platform Audit Trail',
           href: '/platform?tab=activity',
           tabKey: 'activity',
