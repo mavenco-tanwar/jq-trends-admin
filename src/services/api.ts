@@ -4,7 +4,7 @@ export function getApiBaseUrl(): string {
     process.env.NEXT_PUBLIC_API_URL ||
     (typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:')
       ? 'https://mavenco-storefront.vercel.app'
-      : 'http://localhost:4000');
+      : 'http://localhost:3000');
 
   raw = raw.trim().replace(/\/+$/, '');
   if (raw && !raw.startsWith('http://') && !raw.startsWith('https://')) {
@@ -22,7 +22,7 @@ export function getStorefrontBaseUrl(): string {
     ) {
       raw = 'https://mavenco-storefront.vercel.app';
     } else {
-      raw = 'http://localhost:3005';
+      raw = 'http://localhost:3000';
     }
   }
   raw = raw.trim().replace(/\/+$/, '');
