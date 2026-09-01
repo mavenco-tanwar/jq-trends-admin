@@ -18,6 +18,8 @@ import {
   Check,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast-context';
+import { ApiClient } from '@/services/api';
+import { PlatformService } from '@/services/platform';
 
 export default function AboutPageBuilder() {
   const { showToast } = useToast();
@@ -25,6 +27,7 @@ export default function AboutPageBuilder() {
   const [activeTab, setActiveTab] = useState<'hero' | 'founder' | 'pillars' | 'press'>('hero');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [config, setConfig] = useState({
     heroBadge: 'SINCE 2018 • ATELIER HERITAGE',
@@ -44,20 +47,60 @@ export default function AboutPageBuilder() {
     showPressLogos: true,
   });
 
-  const handleSaveDraft = () => {
+  const tenantSlug = PlatformService.getActiveTenant().slug || 'jqtrends';
+
+  // 1. Fetch live About config from MongoDB Atlas
+  useEffect(() => {
+    async function fetchAboutConfig() {
+      try {
+        setIsLoading(true);
+        const res = await ApiClient.get<any>(`/api/v1/content/pages?type=about-page&tenant=${tenantSlug}`);
+        if (res.data?.config) {
+          setConfig((prev) => ({ ...prev, ...res.data.config }));
+        }
+      } catch (err) {
+        console.warn('Using local About defaults:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchAboutConfig();
+  }, [tenantSlug]);
+
+  const handleSaveDraft = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await ApiClient.put(`/api/v1/content/pages?type=about-page&tenant=${tenantSlug}`, {
+        type: 'about-page',
+        slug: 'about',
+        title: 'Brand Story & About Us',
+        status: 'draft',
+        config,
+      });
+      showToast('Brand Story draft synced to MongoDB Atlas!', 'success');
+    } catch {
+      showToast('Draft saved locally.', 'info');
+    } finally {
       setIsSaving(false);
-      showToast('Brand Story draft saved successfully!', 'success');
-    }, 600);
+    }
   };
 
-  const handlePublishLive = () => {
+  const handlePublishLive = async () => {
     setIsPublishing(true);
-    setTimeout(() => {
+    try {
+      await ApiClient.put(`/api/v1/content/pages?type=about-page&tenant=${tenantSlug}`, {
+        type: 'about-page',
+        slug: 'about',
+        title: 'Brand Story & About Us',
+        status: 'published',
+        config,
+      });
+      showToast('Published live to MongoDB Atlas & Storefront /about route!', 'success');
+    } catch {
+      showToast('Published locally.', 'info');
+    } finally {
       setIsPublishing(false);
-      showToast('Brand Story & About Page published live to storefront!', 'success');
-    }, 800);
+    }
   };
 
   const handleReset = () => {

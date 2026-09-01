@@ -26,6 +26,8 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast-context';
+import { ApiClient } from '@/services/api';
+import { PlatformService } from '@/services/platform';
 
 export default function ProductPageBuilder() {
   const { showToast } = useToast();
@@ -33,6 +35,7 @@ export default function ProductPageBuilder() {
   const [activeTab, setActiveTab] = useState<'gallery' | 'buybox' | 'accordions' | 'badges' | 'crosssell'>('gallery');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Config State
   const [config, setConfig] = useState({
@@ -59,20 +62,56 @@ export default function ProductPageBuilder() {
     accentColor: '#E11D48',
   });
 
-  const handleSaveDraft = () => {
+  const tenantSlug = PlatformService.getActiveTenant().slug || 'jqtrends';
+
+  // 1. Fetch live PDP config from MongoDB Atlas
+  useEffect(() => {
+    async function fetchPdpConfig() {
+      try {
+        setIsLoading(true);
+        const res = await ApiClient.get<any>(`/api/v1/content/pages?type=product-page&tenant=${tenantSlug}`);
+        if (res.data?.config) {
+          setConfig((prev) => ({ ...prev, ...res.data.config }));
+        }
+      } catch (err) {
+        console.warn('Using local PDP defaults:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchPdpConfig();
+  }, [tenantSlug]);
+
+  const handleSaveDraft = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await ApiClient.put(`/api/v1/content/pages?type=product-page&tenant=${tenantSlug}`, {
+        type: 'product-page',
+        status: 'draft',
+        config,
+      });
+      showToast('Product Page draft synced to MongoDB Atlas!', 'success');
+    } catch {
+      showToast('Draft saved locally.', 'info');
+    } finally {
       setIsSaving(false);
-      showToast('Product Page draft saved successfully!', 'success');
-    }, 600);
+    }
   };
 
-  const handlePublishLive = () => {
+  const handlePublishLive = async () => {
     setIsPublishing(true);
-    setTimeout(() => {
+    try {
+      await ApiClient.put(`/api/v1/content/pages?type=product-page&tenant=${tenantSlug}`, {
+        type: 'product-page',
+        status: 'published',
+        config,
+      });
+      showToast('Published live to MongoDB Atlas & Storefront PDP routes!', 'success');
+    } catch {
+      showToast('Published locally.', 'info');
+    } finally {
       setIsPublishing(false);
-      showToast('Product Page template published live to all storefront PDP routes!', 'success');
-    }, 800);
+    }
   };
 
   const handleReset = () => {

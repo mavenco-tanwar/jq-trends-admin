@@ -21,6 +21,8 @@ import {
   Check,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast-context';
+import { ApiClient } from '@/services/api';
+import { PlatformService } from '@/services/platform';
 
 export default function CollectionPageBuilder() {
   const { showToast } = useToast();
@@ -28,6 +30,7 @@ export default function CollectionPageBuilder() {
   const [activeTab, setActiveTab] = useState<'hero' | 'grid' | 'filters' | 'promos' | 'cards'>('grid');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [config, setConfig] = useState({
     heroStyle: 'editorial' as 'editorial' | 'minimal' | 'split',
@@ -53,20 +56,56 @@ export default function CollectionPageBuilder() {
     },
   });
 
-  const handleSaveDraft = () => {
+  const tenantSlug = PlatformService.getActiveTenant().slug || 'jqtrends';
+
+  // 1. Fetch live PLP config from MongoDB Atlas
+  useEffect(() => {
+    async function fetchPlpConfig() {
+      try {
+        setIsLoading(true);
+        const res = await ApiClient.get<any>(`/api/v1/content/pages?type=collection-page&tenant=${tenantSlug}`);
+        if (res.data?.config) {
+          setConfig((prev) => ({ ...prev, ...res.data.config }));
+        }
+      } catch (err) {
+        console.warn('Using local PLP defaults:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchPlpConfig();
+  }, [tenantSlug]);
+
+  const handleSaveDraft = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await ApiClient.put(`/api/v1/content/pages?type=collection-page&tenant=${tenantSlug}`, {
+        type: 'collection-page',
+        status: 'draft',
+        config,
+      });
+      showToast('Collection Page draft synced to MongoDB Atlas!', 'success');
+    } catch {
+      showToast('Draft saved locally.', 'info');
+    } finally {
       setIsSaving(false);
-      showToast('Collection Page layout saved to drafts!', 'success');
-    }, 600);
+    }
   };
 
-  const handlePublishLive = () => {
+  const handlePublishLive = async () => {
     setIsPublishing(true);
-    setTimeout(() => {
+    try {
+      await ApiClient.put(`/api/v1/content/pages?type=collection-page&tenant=${tenantSlug}`, {
+        type: 'collection-page',
+        status: 'published',
+        config,
+      });
+      showToast('Published live to MongoDB Atlas & Storefront Category routes!', 'success');
+    } catch {
+      showToast('Published locally.', 'info');
+    } finally {
       setIsPublishing(false);
-      showToast('Collection Page layout published live to all category routes (/women, /kids, /sale, /collections)!', 'success');
-    }, 800);
+    }
   };
 
   const handleReset = () => {

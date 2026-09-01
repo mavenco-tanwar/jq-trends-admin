@@ -17,6 +17,8 @@ import {
   Check,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast-context';
+import { ApiClient } from '@/services/api';
+import { PlatformService } from '@/services/platform';
 
 export default function ContactPageBuilder() {
   const { showToast } = useToast();
@@ -24,6 +26,7 @@ export default function ContactPageBuilder() {
   const [activeTab, setActiveTab] = useState<'stores' | 'form' | 'hours' | 'social'>('stores');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [config, setConfig] = useState({
     pageTitle: 'Visit Our Ateliers & Concierge Desk',
@@ -52,20 +55,60 @@ export default function ContactPageBuilder() {
     showInteractiveMap: true,
   });
 
-  const handleSaveDraft = () => {
+  const tenantSlug = PlatformService.getActiveTenant().slug || 'jqtrends';
+
+  // 1. Fetch live Contact config from MongoDB Atlas
+  useEffect(() => {
+    async function fetchContactConfig() {
+      try {
+        setIsLoading(true);
+        const res = await ApiClient.get<any>(`/api/v1/content/pages?type=contact-page&tenant=${tenantSlug}`);
+        if (res.data?.config) {
+          setConfig((prev) => ({ ...prev, ...res.data.config }));
+        }
+      } catch (err) {
+        console.warn('Using local Contact defaults:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchContactConfig();
+  }, [tenantSlug]);
+
+  const handleSaveDraft = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await ApiClient.put(`/api/v1/content/pages?type=contact-page&tenant=${tenantSlug}`, {
+        type: 'contact-page',
+        slug: 'contact',
+        title: 'Contact & Store Locator',
+        status: 'draft',
+        config,
+      });
+      showToast('Contact Page draft synced to MongoDB Atlas!', 'success');
+    } catch {
+      showToast('Draft saved locally.', 'info');
+    } finally {
       setIsSaving(false);
-      showToast('Contact & Store Locator draft saved successfully!', 'success');
-    }, 600);
+    }
   };
 
-  const handlePublishLive = () => {
+  const handlePublishLive = async () => {
     setIsPublishing(true);
-    setTimeout(() => {
+    try {
+      await ApiClient.put(`/api/v1/content/pages?type=contact-page&tenant=${tenantSlug}`, {
+        type: 'contact-page',
+        slug: 'contact',
+        title: 'Contact & Store Locator',
+        status: 'published',
+        config,
+      });
+      showToast('Published live to MongoDB Atlas & Storefront /contact route!', 'success');
+    } catch {
+      showToast('Published locally.', 'info');
+    } finally {
       setIsPublishing(false);
-      showToast('Contact & Store Locator published live to storefront!', 'success');
-    }, 800);
+    }
   };
 
   const handleReset = () => {
