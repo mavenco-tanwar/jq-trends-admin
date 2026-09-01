@@ -215,232 +215,7 @@ export const INITIAL_PLANS: TenantPlan[] = [
   },
 ];
 
-export const INITIAL_TENANTS: TenantStore[] = [
-  {
-    id: 'store_demo',
-    name: 'Demo Store',
-    slug: 'demo',
-    code: 'DEMO',
-    tagline: 'Curated Modern Lifestyle & Apparel',
-    status: 'active',
-    planId: 'plan_pro',
-    planName: 'Professional Scale',
-    databaseName: 'tenant_demo',
-    currency: 'USD',
-    ownerEmail: 'demo@mavenco.com',
-    ownerName: 'Mavenco Client Demo',
-    primaryDomain: 'demo.mavenco.com',
-    domains: [
-      { id: 'dom_demo_1', domain: 'demo.mavenco.com', type: 'custom', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-08-01T00:00:00Z' },
-    ],
-    theme: {
-      logoUrl: '',
-      primaryColor: '#0F172A',
-      secondaryColor: '#F8FAFC',
-      accentColor: '#6366F1',
-      headingFont: 'Playfair Display',
-      bodyFont: 'Plus Jakarta Sans',
-      borderRadius: 'md',
-    },
-    metrics: {
-      products: 36,
-      orders: 412,
-      customers: 320,
-      monthlyRevenue: 28400,
-      storageUsedMb: 128,
-    },
-    createdAt: '2026-08-01T10:00:00Z',
-    updatedAt: '2026-08-30T12:00:00Z',
-  },
-  {
-    id: 'store_lumina_atelier',
-    name: 'Lumina Atelier',
-    slug: 'lumina',
-    code: 'LUM',
-    tagline: 'Contemporary Artisanal Lighting & Objects',
-    status: 'trial',
-    planId: 'plan_starter',
-    planName: 'Starter Boutique (14-Day Trial)',
-    databaseName: 'tenant_lumina',
-    currency: 'USD',
-    ownerEmail: 'sophia@luminaatelier.com',
-    ownerName: 'Sophia Laurent',
-    primaryDomain: 'luminaatelier.com',
-    domains: [
-      { id: 'dom_lum_1', domain: 'luminaatelier.com', type: 'custom', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-08-20T00:00:00Z' },
-      { id: 'dom_lum_2', domain: 'lumina.ourplatform.com', type: 'subdomain', isPrimary: false, status: 'connected', sslActive: true, createdAt: '2026-08-20T00:00:00Z' },
-    ],
-    theme: {
-      logoUrl: '',
-      primaryColor: '#1E1B4B',
-      secondaryColor: '#FFFDF9',
-      accentColor: '#F59E0B',
-      headingFont: 'Playfair Display',
-      bodyFont: 'Plus Jakarta Sans',
-      borderRadius: 'md',
-    },
-    metrics: {
-      products: 16,
-      orders: 48,
-      customers: 39,
-      monthlyRevenue: 34200,
-      storageUsedMb: 42,
-    },
-    createdAt: '2026-08-20T10:00:00Z',
-    updatedAt: '2026-08-30T10:00:00Z',
-  },
-  {
-    id: 'store_aura_living',
-    name: 'Aura Living',
-    slug: 'auraliving',
-    code: 'AURA',
-    tagline: 'Minimalist Scandinavian Home Decor & Lifestyle',
-    status: 'active',
-    planId: 'plan_starter',
-    planName: 'Starter Boutique',
-    databaseName: 'tenant_auraliving',
-    currency: 'USD',
-    ownerEmail: 'elena@auraliving.com',
-    ownerName: 'Elena Rostova',
-    primaryDomain: 'auraliving.com',
-    domains: [
-      { id: 'dom_3', domain: 'auraliving.com', type: 'custom', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-03-15T00:00:00Z' },
-      { id: 'dom_4', domain: 'auraliving.ourplatform.com', type: 'subdomain', isPrimary: false, status: 'connected', sslActive: true, createdAt: '2026-03-15T00:00:00Z' },
-    ],
-    theme: {
-      logoUrl: '',
-      primaryColor: '#1B4332',
-      secondaryColor: '#FAF3E0',
-      accentColor: '#74C69D',
-      headingFont: 'Cinzel',
-      bodyFont: 'Inter',
-      borderRadius: 'md',
-    },
-    metrics: {
-      products: 48,
-      orders: 198,
-      customers: 172,
-      monthlyRevenue: 14200,
-      storageUsedMb: 92,
-    },
-    createdAt: '2026-03-15T12:00:00Z',
-    updatedAt: '2026-08-28T14:30:00Z',
-  },
-  {
-    id: 'store_reset',
-    name: 'Reset',
-    slug: 'reset',
-    code: 'RESET',
-    tagline: 'Curated Modern Lifestyle & Apparel',
-    status: 'active',
-    planId: 'plan_enterprise',
-    planName: 'Enterprise Global',
-    databaseName: 'tenant_reset',
-    currency: 'INR',
-    ownerEmail: 'owner@reset.com',
-    ownerName: 'Reset Brand Studio',
-    primaryDomain: 'reset.com',
-    adminCustomDomain: 'admin.reset.com',
-    domains: [
-      { id: 'dom_reset_1', domain: 'reset.com', type: 'storefront', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-08-15T00:00:00Z' },
-      { id: 'dom_reset_2', domain: 'admin.reset.com', type: 'admin', isPrimary: false, status: 'connected', sslActive: true, createdAt: '2026-08-15T00:00:00Z' },
-    ],
-    theme: {
-      logoUrl: '',
-      primaryColor: '#0F172A',
-      secondaryColor: '#FFFFFF',
-      accentColor: '#E11D48',
-      headingFont: 'Playfair Display',
-      bodyFont: 'Plus Jakarta Sans',
-      borderRadius: 'md',
-    },
-    metrics: {
-      products: 64,
-      orders: 620,
-      customers: 540,
-      monthlyRevenue: 128000,
-      storageUsedMb: 240,
-    },
-    createdAt: '2026-08-15T10:00:00Z',
-    updatedAt: '2026-08-30T12:00:00Z',
-  },
-  {
-    id: 'store_apex_athletics',
-    name: 'Apex Athletics',
-    slug: 'apexathletics',
-    code: 'APEX',
-    tagline: 'High-Performance Activewear & Compression Gear',
-    status: 'active',
-    planId: 'plan_pro',
-    planName: 'Professional Scale',
-    databaseName: 'tenant_apexathletics',
-    currency: 'USD',
-    ownerEmail: 'marcus@apexathletics.com',
-    ownerName: 'Marcus Vance',
-    primaryDomain: 'apexathletics.com',
-    adminCustomDomain: 'admin.apexathletics.com',
-    domains: [
-      { id: 'dom_5', domain: 'apexathletics.com', type: 'storefront', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-05-01T00:00:00Z' },
-      { id: 'dom_6', domain: 'admin.apexathletics.com', type: 'admin', isPrimary: false, status: 'connected', sslActive: true, createdAt: '2026-05-01T00:00:00Z' },
-    ],
-    theme: {
-      logoUrl: '',
-      primaryColor: '#0A0A0A',
-      secondaryColor: '#161822',
-      accentColor: '#00F5D4',
-      headingFont: 'Montserrat',
-      bodyFont: 'Inter',
-      borderRadius: 'lg',
-    },
-    metrics: {
-      products: 112,
-      orders: 890,
-      customers: 750,
-      monthlyRevenue: 78900,
-      storageUsedMb: 420,
-    },
-    createdAt: '2026-05-01T09:00:00Z',
-    updatedAt: '2026-08-29T16:00:00Z',
-  },
-  {
-    id: 'store_muskan_clothing',
-    name: 'Muskan Clothing',
-    slug: 'muskan-clothing',
-    code: 'MUSK',
-    tagline: 'Meets Perfection In Apparel',
-    status: 'active',
-    planId: 'plan_starter',
-    planName: 'Starter Boutique',
-    databaseName: 'tenant_muskan_clothing',
-    currency: 'INR',
-    ownerEmail: 'ammar.tanwar.dev@gmail.com',
-    ownerName: 'Ammar Tanwar',
-    primaryDomain: 'muskanclothing.com',
-    adminCustomDomain: 'admin.muskanclothing.com',
-    domains: [
-      { id: 'dom_musk_1', domain: 'muskanclothing.com', type: 'storefront', isPrimary: true, status: 'connected', sslActive: true, createdAt: '2026-08-30T00:00:00Z' },
-      { id: 'dom_musk_2', domain: 'admin.muskanclothing.com', type: 'admin', isPrimary: false, status: 'connected', sslActive: true, createdAt: '2026-08-30T00:00:00Z' },
-    ],
-    theme: {
-      logoUrl: '',
-      primaryColor: '#DB1F1F',
-      secondaryColor: '#FFFFFF',
-      accentColor: '#151523',
-      headingFont: 'Playfair Display',
-      bodyFont: 'Plus Jakarta Sans',
-      borderRadius: 'md',
-    },
-    metrics: {
-      products: 12,
-      orders: 18,
-      customers: 14,
-      monthlyRevenue: 24500,
-      storageUsedMb: 28,
-    },
-    createdAt: '2026-08-30T10:00:00Z',
-    updatedAt: '2026-08-31T00:00:00Z',
-  },
-];
+export const INITIAL_TENANTS: TenantStore[] = [];
 
 export const INITIAL_ACTIVITY_LOGS: PlatformActivityLog[] = [
   { id: 'act_1', event: 'Superadmin provisioned new tenant Apex Athletics', actor: 'superadmin@platform.com', tenantId: 'store_apex_athletics', tenantName: 'Apex Athletics', ipAddress: '103.21.244.12', severity: 'info', timestamp: '10m ago' },
@@ -460,7 +235,7 @@ export class PlatformService {
   private static activities: PlatformActivityLog[] = INITIAL_ACTIVITY_LOGS;
 
   private static loadTenants(): TenantStore[] {
-    if (typeof window === 'undefined') return INITIAL_TENANTS;
+    if (typeof window === 'undefined') return [];
     try {
       const stored = localStorage.getItem(PLATFORM_STORAGE_KEY);
       if (stored) {
@@ -468,7 +243,7 @@ export class PlatformService {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    return INITIAL_TENANTS;
+    return [];
   }
 
   private static saveTenants(list: TenantStore[]) {
@@ -505,9 +280,23 @@ export class PlatformService {
 
   // Active Store Context (Tenant Switcher)
   public static getActiveTenantId(): string {
-    if (typeof window === 'undefined') return 'store_jq_trends';
+    if (typeof window === 'undefined') return 'store_demo';
 
-    // 1. Check URL path for /stores/[slug] or /tenant/[slug]
+    // 1. Check logged-in user tenant affiliation
+    try {
+      const userRaw = localStorage.getItem('jq_admin_user');
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        if (u.tenantSlug && u.tenantSlug !== 'all') {
+          const match = this.tenants.find(
+            (t) => t.slug.toLowerCase() === u.tenantSlug.toLowerCase() || t.id.toLowerCase() === u.tenantSlug.toLowerCase()
+          );
+          if (match) return match.id;
+        }
+      }
+    } catch {}
+
+    // 2. Check URL path for /stores/[slug] or /tenant/[slug]
     const pathMatch = window.location.pathname.match(/^\/(stores|tenant)\/([a-zA-Z0-9_-]+)/);
     if (pathMatch) {
       const slug = pathMatch[2].toLowerCase();
@@ -518,7 +307,7 @@ export class PlatformService {
       }
     }
 
-    // 2. Check search params ?tenant=[slug]
+    // 3. Check search params ?tenant=[slug]
     const params = new URLSearchParams(window.location.search);
     const tenantParam = params.get('tenant');
     if (tenantParam) {
@@ -531,7 +320,7 @@ export class PlatformService {
       }
     }
 
-    return localStorage.getItem(CURRENT_STORE_KEY) || 'store_jq_trends';
+    return localStorage.getItem(CURRENT_STORE_KEY) || 'store_demo';
   }
 
   public static setActiveTenantId(tenantId: string): void {
@@ -542,7 +331,39 @@ export class PlatformService {
 
   public static getActiveTenant(): TenantStore {
     const activeId = this.getActiveTenantId();
-    return this.tenants.find((t) => t.id === activeId) || this.tenants[0] || INITIAL_TENANTS[0];
+    return this.tenants.find((t) => t.id === activeId || t.slug === activeId) || this.tenants[0] || {
+      id: 'store_demo',
+      name: 'Demo Store',
+      slug: 'demo',
+      code: 'DEMO',
+      tagline: 'Curated Modern Lifestyle & Apparel',
+      status: 'active',
+      planId: 'plan_pro',
+      planName: 'Enterprise Cloud Scale',
+      databaseName: 'tenant_demo',
+      currency: 'INR',
+      ownerEmail: 'demo@mavenco.com',
+      ownerName: 'Store Manager',
+      primaryDomain: 'demo.mavenco.com',
+      domains: [],
+      theme: {
+        primaryColor: '#0F172A',
+        secondaryColor: '#F8FAFC',
+        accentColor: '#E11D48',
+        headingFont: 'Playfair Display',
+        bodyFont: 'Plus Jakarta Sans',
+        borderRadius: 'md',
+      },
+      metrics: {
+        products: 36,
+        orders: 412,
+        customers: 320,
+        monthlyRevenue: 28400,
+        storageUsedMb: 128,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   // Impersonation Support
@@ -621,7 +442,7 @@ export class PlatformService {
 
   public static async listTenants(): Promise<TenantStore[]> {
     try {
-      const res = await fetch('/api/v1/platform/tenants').then((r) => (r.ok ? r.json() : null));
+      const res = await ApiClient.get<any>('/api/v1/platform/tenants');
       if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
         const dbTenants: TenantStore[] = res.data.map((t: any) => ({
           id: t.id || `store_${t.slug}`,
