@@ -100,14 +100,54 @@ export default function HeaderBuilderStudio() {
       const slug = tenant.slug || 'lumina';
 
       const res = await ApiClient.get<any>(`/api/v1/content/header?tenant=${slug}&_t=${Date.now()}`);
-      const headerData = res?.data || res;
-      if (headerData && (headerData.navigationMenu || headerData.mainHeader || headerData.announcementBar)) {
-        setConfig(headerData);
-        pushHistory(headerData);
+      const raw = res?.data || res;
+      const base = getDefaultHeaderConfig(slug);
+
+      if (raw && (raw.navigationMenu || raw.mainHeader || raw.announcementBar)) {
+        const merged: HeaderConfig = {
+          ...base,
+          ...raw,
+          tenantSlug: slug,
+          announcementBar: {
+            ...base.announcementBar,
+            ...(raw?.announcementBar || {}),
+            styles: {
+              ...base.announcementBar.styles,
+              ...(raw?.announcementBar?.styles || {}),
+            },
+            blocks: Array.isArray(raw?.announcementBar?.blocks)
+              ? raw.announcementBar.blocks
+              : base.announcementBar.blocks,
+          },
+          mainHeader: {
+            ...base.mainHeader,
+            ...(raw?.mainHeader || {}),
+            styles: {
+              ...base.mainHeader.styles,
+              ...(raw?.mainHeader?.styles || {}),
+            },
+            blocks: Array.isArray(raw?.mainHeader?.blocks)
+              ? raw.mainHeader.blocks
+              : base.mainHeader.blocks,
+          },
+          sticky: {
+            ...base.sticky,
+            ...(raw?.sticky || {}),
+          },
+          mobile: {
+            ...base.mobile,
+            ...(raw?.mobile || {}),
+          },
+          navigationMenu: Array.isArray(raw?.navigationMenu)
+            ? raw.navigationMenu
+            : base.navigationMenu,
+        };
+
+        setConfig(merged);
+        pushHistory(merged);
       } else {
-        const def = getDefaultHeaderConfig(slug);
-        setConfig(def);
-        pushHistory(def);
+        setConfig(base);
+        pushHistory(base);
       }
     } catch {
       const def = getDefaultHeaderConfig(activeTenant.slug || 'lumina');
@@ -134,7 +174,15 @@ export default function HeaderBuilderStudio() {
       };
 
       const res = await ApiClient.put(`/api/v1/content/header?tenant=${slug}`, payload);
-      const savedConfig = res?.data || payload;
+      const raw = res?.data || res || payload;
+      const base = getDefaultHeaderConfig(slug);
+      const savedConfig: HeaderConfig = {
+        ...base,
+        ...raw,
+        tenantSlug: slug,
+        navigationMenu: Array.isArray(raw.navigationMenu) ? raw.navigationMenu : payload.navigationMenu,
+      };
+
       setConfig(savedConfig);
       pushHistory(savedConfig);
       showToast(`Header configuration for ${slug.toUpperCase()} published live to MongoDB Atlas!`, 'success');
