@@ -100,7 +100,7 @@ export default function HeaderBuilderStudio() {
       const slug = tenant.slug || 'lumina';
 
       const res = await ApiClient.get<any>(`/api/v1/content/header?tenant=${slug}&_t=${Date.now()}`);
-      const raw = res?.data || res;
+      const raw = res?.data?.config || res?.data?.data || res?.data || res;
       const base = getDefaultHeaderConfig(slug);
 
       if (raw && (raw.navigationMenu || raw.mainHeader || raw.announcementBar)) {
@@ -174,7 +174,7 @@ export default function HeaderBuilderStudio() {
       };
 
       const res = await ApiClient.put(`/api/v1/content/header?tenant=${slug}`, payload);
-      const raw = res?.data || res || payload;
+      const raw = res?.data?.config || res?.data?.data || res?.data || res || payload;
       const base = getDefaultHeaderConfig(slug);
       const savedConfig: HeaderConfig = {
         ...base,
@@ -348,6 +348,17 @@ export default function HeaderBuilderStudio() {
     }
     showToast(`Added ${type} block to ${zone}`, 'success');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[70vh] bg-[#0A0C10] flex flex-col items-center justify-center text-slate-100 p-8 space-y-4">
+        <div className="w-10 h-10 rounded-full border-3 border-rose-500/20 border-t-rose-500 animate-spin" />
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          Loading Header &amp; Navigation from MongoDB Atlas...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0C10] text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6">
