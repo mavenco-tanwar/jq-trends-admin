@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
+  LayoutTemplate,
   Package,
   Layers,
   Sparkles,
@@ -233,6 +234,13 @@ function AdminSidebarInner({
     {
       title: 'CONTENT & CMS',
       items: [
+        {
+          label: 'Header & Navbar Builder',
+          href: '/content/header',
+          icon: LayoutTemplate,
+          badge: 'Navbar',
+          badgeColor: 'bg-indigo-600 text-white font-bold',
+        },
         {
           label: 'Homepage Builder',
           href: '/content/homepage',
