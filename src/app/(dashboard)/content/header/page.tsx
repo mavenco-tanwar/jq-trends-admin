@@ -158,8 +158,21 @@ export default function HeaderBuilderStudio() {
     }
   };
 
+  const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
+
   useEffect(() => {
     fetchHeaderConfig();
+
+    const handleTenantUpdate = () => {
+      fetchHeaderConfig();
+    };
+
+    window.addEventListener('storage', handleTenantUpdate);
+    window.addEventListener('tenantChanged', handleTenantUpdate);
+    return () => {
+      window.removeEventListener('storage', handleTenantUpdate);
+      window.removeEventListener('tenantChanged', handleTenantUpdate);
+    };
   }, []);
 
   const handlePublishLive = async () => {
@@ -217,6 +230,7 @@ export default function HeaderBuilderStudio() {
 
       setConfig(savedConfig);
       pushHistory(savedConfig);
+      setHasUnpublishedChanges(false);
       showToast(`Header configuration for ${slug.toUpperCase()} published live to MongoDB Atlas!`, 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to publish header', 'error');
