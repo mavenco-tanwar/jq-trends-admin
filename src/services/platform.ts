@@ -215,7 +215,116 @@ export const INITIAL_PLANS: TenantPlan[] = [
   },
 ];
 
-export const INITIAL_TENANTS: TenantStore[] = [];
+export const INITIAL_TENANTS: TenantStore[] = [
+  {
+    id: 'store_lumina',
+    name: 'Lumina Atelier',
+    slug: 'lumina',
+    code: 'LUMINA',
+    tagline: 'Contemporary Artisanal Lighting & Objects',
+    status: 'active',
+    planId: 'plan_starter',
+    planName: 'Starter Boutique Plan',
+    databaseName: 'mavenco_platform',
+    currency: 'USD',
+    ownerEmail: 'lumina@mavenco.com',
+    ownerName: 'Lumina Store Manager',
+    primaryDomain: 'lumina.mavenco.com',
+    domains: [],
+    theme: {
+      primaryColor: '#1E1B4B',
+      secondaryColor: '#FFFDFC',
+      accentColor: '#F59E0B',
+      headingFont: 'Playfair Display',
+      bodyFont: 'Plus Jakarta Sans',
+      borderRadius: 'md',
+    },
+    metrics: { products: 24, orders: 120, customers: 98, monthlyRevenue: 18500, storageUsedMb: 64 },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'store_demo',
+    name: 'Demo Store',
+    slug: 'demo',
+    code: 'DEMO',
+    tagline: 'Curated Modern Lifestyle & Apparel',
+    status: 'active',
+    planId: 'plan_pro',
+    planName: 'Enterprise Cloud Scale',
+    databaseName: 'mavenco_platform',
+    currency: 'INR',
+    ownerEmail: 'demo@mavenco.com',
+    ownerName: 'Store Manager',
+    primaryDomain: 'demo.mavenco.com',
+    domains: [],
+    theme: {
+      primaryColor: '#0F172A',
+      secondaryColor: '#F8FAFC',
+      accentColor: '#E11D48',
+      headingFont: 'Playfair Display',
+      bodyFont: 'Plus Jakarta Sans',
+      borderRadius: 'md',
+    },
+    metrics: { products: 36, orders: 412, customers: 320, monthlyRevenue: 28400, storageUsedMb: 128 },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'store_auraliving',
+    name: 'Aura Living',
+    slug: 'auraliving',
+    code: 'AURA',
+    tagline: 'Organic Home Accents & Sustainable Decor',
+    status: 'active',
+    planId: 'plan_starter',
+    planName: 'Starter Boutique Plan',
+    databaseName: 'mavenco_platform',
+    currency: 'USD',
+    ownerEmail: 'elena@auraliving.com',
+    ownerName: 'Elena Rostova',
+    primaryDomain: 'auraliving.com',
+    domains: [],
+    theme: {
+      primaryColor: '#2D3748',
+      secondaryColor: '#F7FAFC',
+      accentColor: '#38A169',
+      headingFont: 'Playfair Display',
+      bodyFont: 'Plus Jakarta Sans',
+      borderRadius: 'lg',
+    },
+    metrics: { products: 18, orders: 84, customers: 62, monthlyRevenue: 9200, storageUsedMb: 45 },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'store_apex_athletics',
+    name: 'Apex Athletics',
+    slug: 'apexathletics',
+    code: 'APEX',
+    tagline: 'High-Performance Activewear & Equipment',
+    status: 'active',
+    planId: 'plan_enterprise',
+    planName: 'Enterprise Cloud Scale',
+    databaseName: 'mavenco_platform',
+    currency: 'USD',
+    ownerEmail: 'marcus@apexathletics.com',
+    ownerName: 'Marcus Vance',
+    primaryDomain: 'apexathletics.com',
+    domains: [],
+    theme: {
+      primaryColor: '#000000',
+      secondaryColor: '#FFFFFF',
+      accentColor: '#FF3B30',
+      headingFont: 'Inter',
+      bodyFont: 'Inter',
+      borderRadius: 'none',
+    },
+    metrics: { products: 52, orders: 630, customers: 510, monthlyRevenue: 47800, storageUsedMb: 210 },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
 
 export const INITIAL_ACTIVITY_LOGS: PlatformActivityLog[] = [
   { id: 'act_1', event: 'Superadmin provisioned new tenant Apex Athletics', actor: 'superadmin@platform.com', tenantId: 'store_apex_athletics', tenantName: 'Apex Athletics', ipAddress: '103.21.244.12', severity: 'info', timestamp: '10m ago' },
@@ -235,7 +344,7 @@ export class PlatformService {
   private static activities: PlatformActivityLog[] = INITIAL_ACTIVITY_LOGS;
 
   private static loadTenants(): TenantStore[] {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') return INITIAL_TENANTS;
     try {
       const stored = localStorage.getItem(PLATFORM_STORAGE_KEY);
       if (stored) {
@@ -243,7 +352,7 @@ export class PlatformService {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    return [];
+    return INITIAL_TENANTS;
   }
 
   private static saveTenants(list: TenantStore[]) {
@@ -330,40 +439,14 @@ export class PlatformService {
   }
 
   public static getActiveTenant(): TenantStore {
+    const list = this.loadTenants();
     const activeId = this.getActiveTenantId();
-    return this.tenants.find((t) => t.id === activeId || t.slug === activeId) || this.tenants[0] || {
-      id: 'store_demo',
-      name: 'Demo Store',
-      slug: 'demo',
-      code: 'DEMO',
-      tagline: 'Curated Modern Lifestyle & Apparel',
-      status: 'active',
-      planId: 'plan_pro',
-      planName: 'Enterprise Cloud Scale',
-      databaseName: 'tenant_demo',
-      currency: 'INR',
-      ownerEmail: 'demo@mavenco.com',
-      ownerName: 'Store Manager',
-      primaryDomain: 'demo.mavenco.com',
-      domains: [],
-      theme: {
-        primaryColor: '#0F172A',
-        secondaryColor: '#F8FAFC',
-        accentColor: '#E11D48',
-        headingFont: 'Playfair Display',
-        bodyFont: 'Plus Jakarta Sans',
-        borderRadius: 'md',
-      },
-      metrics: {
-        products: 36,
-        orders: 412,
-        customers: 320,
-        monthlyRevenue: 28400,
-        storageUsedMb: 128,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    return (
+      list.find((t) => t.id === activeId || t.slug === activeId) ||
+      INITIAL_TENANTS.find((t) => t.id === activeId || t.slug === activeId) ||
+      list[0] ||
+      INITIAL_TENANTS[0]
+    );
   }
 
   // Impersonation Support
