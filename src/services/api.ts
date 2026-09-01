@@ -62,11 +62,19 @@ export class ApiClient {
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
     const token = this.getToken();
+    let currentTenantSlug = 'lumina';
+    try {
+      const storedTenantId = localStorage.getItem('jq_saas_active_tenant_id') || '';
+      if (storedTenantId) {
+        currentTenantSlug = storedTenantId.startsWith('store_') ? storedTenantId.replace('store_', '') : storedTenantId;
+      }
+    } catch {}
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Store-ID': STORE_ID,
       'X-API-Key': 'sk_live_master_admin_key_9921',
+      'x-tenant-slug': currentTenantSlug,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...((options.headers as Record<string, string>) || {}),
     };
