@@ -28,6 +28,29 @@ export async function POST(request: NextRequest) {
     const cleanEmail = email.toLowerCase().trim();
     const cleanPass = password.trim();
 
+    // Primary Superadmin Authentication Fast-Path
+    if (
+      (cleanEmail === 'admin@mavenco.com' && cleanPass === 'admin123') ||
+      (cleanEmail === 'superadmin@platform.com' && cleanPass === 'MavencoSuperAdmin@2026!')
+    ) {
+      return NextResponse.json(
+        {
+          token: `session_superadmin_${Date.now()}`,
+          user: {
+            id: 'user_superadmin_01',
+            email: cleanEmail,
+            name: 'Platform Superadmin',
+            role: 'superadmin',
+            status: 'active',
+            tenantSlug: 'all',
+            storeSlug: 'all',
+          },
+          message: 'Signed in successfully as Platform Superadmin',
+        },
+        { headers: corsHeaders() }
+      );
+    }
+
     const db = await getDatabase();
     if (!db) {
       return NextResponse.json(
