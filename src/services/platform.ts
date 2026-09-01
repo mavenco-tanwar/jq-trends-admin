@@ -340,12 +340,36 @@ export class PlatformService {
   public static getActiveTenant(): TenantStore {
     const list = this.loadTenants();
     const activeId = this.getActiveTenantId();
-    return (
-      list.find((t) => t.id === activeId || t.slug === activeId) ||
-      INITIAL_TENANTS.find((t) => t.id === activeId || t.slug === activeId) ||
-      list[0] ||
-      INITIAL_TENANTS[0]
-    );
+    const found = list.find((t) => t.id === activeId || t.slug === activeId) || list[0];
+    if (found) return found;
+
+    return {
+      id: 'store_lumina',
+      name: 'Lumina Atelier',
+      slug: 'lumina',
+      code: 'LUMINA',
+      tagline: 'Contemporary Artisanal Lighting & Objects',
+      status: 'active',
+      planId: 'plan_starter',
+      planName: 'Starter Boutique Plan',
+      databaseName: 'mavenco_platform',
+      currency: 'USD',
+      ownerEmail: 'lumina@mavenco.com',
+      ownerName: 'Lumina Store Manager',
+      primaryDomain: 'lumina.mavenco.com',
+      domains: [],
+      theme: {
+        primaryColor: '#1E1B4B',
+        secondaryColor: '#FFFDFC',
+        accentColor: '#F59E0B',
+        headingFont: 'Playfair Display',
+        bodyFont: 'Plus Jakarta Sans',
+        borderRadius: 'md',
+      },
+      metrics: { products: 24, orders: 120, customers: 98, monthlyRevenue: 18500, storageUsedMb: 64 },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   // Impersonation Support
