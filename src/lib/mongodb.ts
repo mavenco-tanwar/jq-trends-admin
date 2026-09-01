@@ -15,30 +15,42 @@ export function isMongoConfigured(): boolean {
 }
 
 export async function getMongoClient(): Promise<MongoClient | null> {
-  if (!isMongoConfigured()) {
+  const currentUri = process.env.MONGODB_URI || process.env.MONGO_URI || uri;
+  if (!currentUri || (!currentUri.startsWith('mongodb://') && !currentUri.startsWith('mongodb+srv://'))) {
     return null;
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    if (!global._mongoClientPromise) {
-      client = new MongoClient(uri, { serverSelectionTimeoutMS: 8000 });
-      global._mongoClientPromise = client.connect();
+  try {
+    if (process.env.NODE_ENV === 'development') {
+      if (!global._mongoClientPromise) {
+        const devClient = new MongoClient(currentUri, { serverSelectionTimeoutMS: 10000 });
+        global._mongoClientPromise = devClient.connect().catch((err) => {
+          global._mongoClientPromise = undefined;
+          throw err;
+        });
+      }
+      return await global._mongoClientPromise;
+    } else {
+      if (!clientPromise) {
+        const prodClient = new MongoClient(currentUri, { serverSelectionTimeoutMS: 10000 });
+        clientPromise = prodClient.connect().catch((err) => {
+          clientPromise = null;
+          throw err;
+        });
+      }
+      return await clientPromise;
     }
-    return global._mongoClientPromise;
-  } else {
-    if (!clientPromise) {
-      client = new MongoClient(uri, { serverSelectionTimeoutMS: 8000 });
-      clientPromise = client.connect();
-    }
-    return clientPromise;
+  } catch (err) {
+    console.error('MongoDB connection error in admin:', err);
+    return null;
   }
 }
 
 export async function getDatabase(dbName: string = 'mavenco_platform'): Promise<Db | null> {
   try {
-    const client = await getMongoClient();
-    if (!client) return null;
-    return client.db(dbName);
+    const mongoClient = await getMongoClient();
+    if (!mongoClient) return null;
+    return mongoClient.db(dbName);
   } catch (err) {
     console.error('getDatabase error in admin:', err);
     return null;
