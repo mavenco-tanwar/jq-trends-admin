@@ -80,6 +80,7 @@ function AdminSidebarInner({
   const activeTabParam = searchParams.get('tab') || 'overview';
 
   const { user, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getActiveTenant());
   const [allTenants, setAllTenants] = useState<TenantStore[]>([]);
@@ -89,6 +90,7 @@ function AdminSidebarInner({
   const isSuperadminRoute = pathname === '/platform' || pathname.startsWith('/platform');
 
   useEffect(() => {
+    setMounted(true);
     PlatformService.listTenants().then((list) => {
       setAllTenants(list);
       setActiveTenant(PlatformService.getActiveTenant());
@@ -198,7 +200,7 @@ function AdminSidebarInner({
           label: 'Products',
           href: '/products',
           icon: Package,
-          badge: `${activeTenant.metrics?.products || 8}`,
+          badge: mounted ? `${activeTenant.metrics?.products || 16}` : undefined,
           badgeColor: 'bg-emerald-500/20 text-emerald-300',
         },
         { label: 'Categories', href: '/categories', icon: FolderTree },
@@ -453,7 +455,10 @@ function AdminSidebarInner({
                     <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-rose-400' : 'text-slate-400'}`} />
                     {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
                     {!isCollapsed && item.badge && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.badgeColor || 'bg-slate-800 text-slate-300'}`}>
+                      <span
+                        suppressHydrationWarning
+                        className={`text-[10px] px-1.5 py-0.5 rounded ${item.badgeColor || 'bg-slate-800 text-slate-300'}`}
+                      >
                         {item.badge}
                       </span>
                     )}
