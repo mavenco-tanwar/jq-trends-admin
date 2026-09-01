@@ -95,9 +95,18 @@ export default function HeaderBuilderStudio() {
   const fetchHeaderConfig = async () => {
     try {
       setIsLoading(true);
-      const tenant = PlatformService.getActiveTenant();
-      setActiveTenant(tenant);
-      const slug = tenant.slug || 'lumina';
+      const liveTenants = await PlatformService.fetchTenantsFromDb();
+      const currentTenantId = PlatformService.getActiveTenantId();
+      const matched =
+        liveTenants.find((t) => t.id === currentTenantId || t.slug === currentTenantId) ||
+        liveTenants[0] ||
+        PlatformService.getActiveTenant();
+
+      if (matched) {
+        setActiveTenant(matched);
+      }
+
+      const slug = matched?.slug || 'lumina';
 
       const res = await ApiClient.get<any>(`/api/v1/content/header?tenant=${slug}&_t=${Date.now()}`);
       const raw = res?.data?.config || res?.data?.data || res?.data || res;

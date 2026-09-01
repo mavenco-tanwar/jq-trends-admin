@@ -215,124 +215,9 @@ export const INITIAL_PLANS: TenantPlan[] = [
   },
 ];
 
-export const INITIAL_TENANTS: TenantStore[] = [
-  {
-    id: 'store_lumina',
-    name: 'Lumina Atelier',
-    slug: 'lumina',
-    code: 'LUMINA',
-    tagline: 'Contemporary Artisanal Lighting & Objects',
-    status: 'active',
-    planId: 'plan_starter',
-    planName: 'Starter Boutique Plan',
-    databaseName: 'mavenco_platform',
-    currency: 'USD',
-    ownerEmail: 'lumina@mavenco.com',
-    ownerName: 'Lumina Store Manager',
-    primaryDomain: 'lumina.mavenco.com',
-    domains: [],
-    theme: {
-      primaryColor: '#1E1B4B',
-      secondaryColor: '#FFFDFC',
-      accentColor: '#F59E0B',
-      headingFont: 'Playfair Display',
-      bodyFont: 'Plus Jakarta Sans',
-      borderRadius: 'md',
-    },
-    metrics: { products: 24, orders: 120, customers: 98, monthlyRevenue: 18500, storageUsedMb: 64 },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'store_demo',
-    name: 'Demo Store',
-    slug: 'demo',
-    code: 'DEMO',
-    tagline: 'Curated Modern Lifestyle & Apparel',
-    status: 'active',
-    planId: 'plan_pro',
-    planName: 'Enterprise Cloud Scale',
-    databaseName: 'mavenco_platform',
-    currency: 'INR',
-    ownerEmail: 'demo@mavenco.com',
-    ownerName: 'Store Manager',
-    primaryDomain: 'demo.mavenco.com',
-    domains: [],
-    theme: {
-      primaryColor: '#0F172A',
-      secondaryColor: '#F8FAFC',
-      accentColor: '#E11D48',
-      headingFont: 'Playfair Display',
-      bodyFont: 'Plus Jakarta Sans',
-      borderRadius: 'md',
-    },
-    metrics: { products: 36, orders: 412, customers: 320, monthlyRevenue: 28400, storageUsedMb: 128 },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'store_auraliving',
-    name: 'Aura Living',
-    slug: 'auraliving',
-    code: 'AURA',
-    tagline: 'Organic Home Accents & Sustainable Decor',
-    status: 'active',
-    planId: 'plan_starter',
-    planName: 'Starter Boutique Plan',
-    databaseName: 'mavenco_platform',
-    currency: 'USD',
-    ownerEmail: 'elena@auraliving.com',
-    ownerName: 'Elena Rostova',
-    primaryDomain: 'auraliving.com',
-    domains: [],
-    theme: {
-      primaryColor: '#2D3748',
-      secondaryColor: '#F7FAFC',
-      accentColor: '#38A169',
-      headingFont: 'Playfair Display',
-      bodyFont: 'Plus Jakarta Sans',
-      borderRadius: 'lg',
-    },
-    metrics: { products: 18, orders: 84, customers: 62, monthlyRevenue: 9200, storageUsedMb: 45 },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'store_apex_athletics',
-    name: 'Apex Athletics',
-    slug: 'apexathletics',
-    code: 'APEX',
-    tagline: 'High-Performance Activewear & Equipment',
-    status: 'active',
-    planId: 'plan_enterprise',
-    planName: 'Enterprise Cloud Scale',
-    databaseName: 'mavenco_platform',
-    currency: 'USD',
-    ownerEmail: 'marcus@apexathletics.com',
-    ownerName: 'Marcus Vance',
-    primaryDomain: 'apexathletics.com',
-    domains: [],
-    theme: {
-      primaryColor: '#000000',
-      secondaryColor: '#FFFFFF',
-      accentColor: '#FF3B30',
-      headingFont: 'Inter',
-      bodyFont: 'Inter',
-      borderRadius: 'none',
-    },
-    metrics: { products: 52, orders: 630, customers: 510, monthlyRevenue: 47800, storageUsedMb: 210 },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+export const INITIAL_TENANTS: TenantStore[] = [];
 
-export const INITIAL_ACTIVITY_LOGS: PlatformActivityLog[] = [
-  { id: 'act_1', event: 'Superadmin provisioned new tenant Apex Athletics', actor: 'superadmin@platform.com', tenantId: 'store_apex_athletics', tenantName: 'Apex Athletics', ipAddress: '103.21.244.12', severity: 'info', timestamp: '10m ago' },
-  { id: 'act_2', event: 'Custom domain apexathletics.com SSL auto-renewed', actor: 'System SSL Daemon', tenantId: 'store_apex_athletics', tenantName: 'Apex Athletics', ipAddress: '127.0.0.1', severity: 'info', timestamp: '1h ago' },
-  { id: 'act_3', event: 'Aura Living upgraded to Starter Boutique Plan', actor: 'elena@auraliving.com', tenantId: 'store_aura_living', tenantName: 'Aura Living', ipAddress: '49.207.198.54', severity: 'info', timestamp: '4h ago' },
-  { id: 'act_4', event: 'Superadmin impersonated JQ Trends for technical audit', actor: 'superadmin@platform.com', tenantId: 'store_jq_trends', tenantName: 'JQ Trends', ipAddress: '103.21.244.12', severity: 'warning', timestamp: '1d ago' },
-  { id: 'act_5', event: 'Database migration tenant_jqtrends upgraded to Schema v2', actor: 'Platform DB Engine', tenantId: 'store_jq_trends', tenantName: 'JQ Trends', ipAddress: '127.0.0.1', severity: 'info', timestamp: '2d ago' },
-];
+export const INITIAL_ACTIVITY_LOGS: PlatformActivityLog[] = [];
 
 const PLATFORM_STORAGE_KEY = 'jq_saas_platform_tenants_v1';
 const CURRENT_STORE_KEY = 'jq_saas_active_tenant_id';
@@ -344,7 +229,7 @@ export class PlatformService {
   private static activities: PlatformActivityLog[] = INITIAL_ACTIVITY_LOGS;
 
   private static loadTenants(): TenantStore[] {
-    if (typeof window === 'undefined') return INITIAL_TENANTS;
+    if (typeof window === 'undefined') return [];
     try {
       const stored = localStorage.getItem(PLATFORM_STORAGE_KEY);
       if (stored) {
@@ -352,7 +237,21 @@ export class PlatformService {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    return INITIAL_TENANTS;
+    return [];
+  }
+
+  public static async fetchTenantsFromDb(): Promise<TenantStore[]> {
+    try {
+      const res = await ApiClient.get<TenantStore[]>('/api/v1/platform/tenants');
+      const list = res?.data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        this.saveTenants(list);
+        return list;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch tenants from MongoDB Atlas:', err);
+    }
+    return this.loadTenants();
   }
 
   private static saveTenants(list: TenantStore[]) {
