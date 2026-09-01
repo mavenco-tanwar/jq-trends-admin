@@ -99,10 +99,11 @@ export default function HeaderBuilderStudio() {
       setActiveTenant(tenant);
       const slug = tenant.slug || 'lumina';
 
-      const res = await ApiClient.get<HeaderConfig>(`/api/v1/content/header?tenant=${slug}`);
-      if (res?.data?.id) {
-        setConfig(res.data);
-        pushHistory(res.data);
+      const res = await ApiClient.get<any>(`/api/v1/content/header?tenant=${slug}&_t=${Date.now()}`);
+      const headerData = res?.data || res;
+      if (headerData && (headerData.navigationMenu || headerData.mainHeader || headerData.announcementBar)) {
+        setConfig(headerData);
+        pushHistory(headerData);
       } else {
         const def = getDefaultHeaderConfig(slug);
         setConfig(def);
@@ -125,7 +126,7 @@ export default function HeaderBuilderStudio() {
     try {
       setIsPublishing(true);
       const slug = activeTenant.slug || config.tenantSlug || 'lumina';
-      const payload = {
+      const payload: HeaderConfig = {
         ...config,
         tenantSlug: slug,
         status: 'published',
@@ -133,12 +134,10 @@ export default function HeaderBuilderStudio() {
       };
 
       const res = await ApiClient.put(`/api/v1/content/header?tenant=${slug}`, payload);
-      if (res?.data) {
-        setConfig(res.data);
-        showToast(`Header configuration for ${slug.toUpperCase()} published live to MongoDB Atlas!`, 'success');
-      } else {
-        showToast('Header configuration saved!', 'success');
-      }
+      const savedConfig = res?.data || payload;
+      setConfig(savedConfig);
+      pushHistory(savedConfig);
+      showToast(`Header configuration for ${slug.toUpperCase()} published live to MongoDB Atlas!`, 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to publish header', 'error');
     } finally {
