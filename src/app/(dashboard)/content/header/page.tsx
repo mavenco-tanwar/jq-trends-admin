@@ -92,7 +92,7 @@ export default function HeaderBuilderStudio() {
     }
   };
 
-  const fetchHeaderConfig = async () => {
+  const fetchHeaderConfig = async (overrideSlug?: string) => {
     try {
       setIsLoading(true);
       const liveTenants = await PlatformService.fetchTenantsFromDb();
@@ -113,7 +113,7 @@ export default function HeaderBuilderStudio() {
         setActiveTenant(matched);
       }
 
-      const slug = matched?.slug || 'lumina';
+      const slug = overrideSlug || matched?.slug || 'lumina';
 
       const res = await ApiClient.get<any>(`/api/v1/content/header?tenant=${slug}&_t=${Date.now()}`);
       const raw = res?.data?.config || res?.data?.data || res?.data || res;
@@ -127,6 +127,10 @@ export default function HeaderBuilderStudio() {
           announcementBar: {
             ...base.announcementBar,
             ...(raw?.announcementBar || {}),
+            enabled:
+              raw?.announcementBar?.enabled !== undefined
+                ? raw.announcementBar.enabled
+                : base.announcementBar.enabled,
             styles: {
               ...base.announcementBar.styles,
               ...(raw?.announcementBar?.styles || {}),
@@ -138,6 +142,10 @@ export default function HeaderBuilderStudio() {
           mainHeader: {
             ...base.mainHeader,
             ...(raw?.mainHeader || {}),
+            enabled:
+              raw?.mainHeader?.enabled !== undefined
+                ? raw.mainHeader.enabled
+                : base.mainHeader.enabled,
             styles: {
               ...base.mainHeader.styles,
               ...(raw?.mainHeader?.styles || {}),
@@ -165,7 +173,8 @@ export default function HeaderBuilderStudio() {
         setConfig(base);
         pushHistory(base);
       }
-    } catch {
+    } catch (err: any) {
+      console.error('[HeaderBuilder] Failed to fetch header from MongoDB Atlas:', err);
       const def = getDefaultHeaderConfig(activeTenant.slug || 'lumina');
       setConfig(def);
       pushHistory(def);
