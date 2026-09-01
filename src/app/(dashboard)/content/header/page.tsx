@@ -98,9 +98,16 @@ export default function HeaderBuilderStudio() {
       const liveTenants = await PlatformService.fetchTenantsFromDb();
       const currentTenantId = PlatformService.getActiveTenantId();
       const matched =
-        liveTenants.find((t) => t.id === currentTenantId || t.slug === currentTenantId) ||
-        liveTenants[0] ||
-        PlatformService.getActiveTenant();
+        liveTenants.find(
+          (t) =>
+            t.id === currentTenantId ||
+            t.slug === currentTenantId ||
+            currentTenantId.includes(t.slug) ||
+            t.id.includes(currentTenantId) ||
+            (t.code && t.code.toLowerCase() === currentTenantId.toLowerCase())
+        ) ||
+        PlatformService.getActiveTenant() ||
+        liveTenants[0];
 
       if (matched) {
         setActiveTenant(matched);

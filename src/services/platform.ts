@@ -340,7 +340,15 @@ export class PlatformService {
   public static getActiveTenant(): TenantStore {
     const list = this.loadTenants();
     const activeId = this.getActiveTenantId();
-    const found = list.find((t) => t.id === activeId || t.slug === activeId) || list[0];
+    const found =
+      list.find(
+        (t) =>
+          t.id === activeId ||
+          t.slug === activeId ||
+          activeId.includes(t.slug) ||
+          t.id.includes(activeId) ||
+          (t.code && t.code.toLowerCase() === activeId.toLowerCase())
+      ) || list[0];
     if (found) return found;
 
     return {
