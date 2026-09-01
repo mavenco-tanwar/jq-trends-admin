@@ -95,11 +95,23 @@ export default function HeaderBuilderStudio() {
   const fetchHeaderConfig = async (overrideSlug?: string) => {
     try {
       setIsLoading(true);
-      const liveTenants = await PlatformService.fetchTenantsFromDb();
+
+      // Step 1: Fetch tenants from DB
+      let liveTenants: any[] = [];
+      try {
+        liveTenants = await PlatformService.fetchTenantsFromDb();
+        console.log('[HeaderBuilder] Step 1 - Live tenants fetched:', liveTenants.length, liveTenants.map((t: any) => t.slug));
+      } catch (tenantErr) {
+        console.error('[HeaderBuilder] Step 1 FAILED - fetchTenantsFromDb error:', tenantErr);
+      }
+
+      // Step 2: Resolve active tenant
       const currentTenantId = PlatformService.getActiveTenantId();
+      console.log('[HeaderBuilder] Step 2 - currentTenantId:', currentTenantId);
+
       const matched =
         liveTenants.find(
-          (t) =>
+          (t: any) =>
             t.id === currentTenantId ||
             t.slug === currentTenantId ||
             currentTenantId.includes(t.slug) ||
@@ -109,14 +121,34 @@ export default function HeaderBuilderStudio() {
         PlatformService.getActiveTenant() ||
         liveTenants[0];
 
+      console.log('[HeaderBuilder] Step 2 - matched tenant:', matched?.slug, matched?.id);
+
       if (matched) {
         setActiveTenant(matched);
       }
 
       const slug = overrideSlug || matched?.slug || 'lumina';
+      console.log('[HeaderBuilder] Step 3 - Using slug:', slug);
 
-      const res = await ApiClient.get<any>(`/api/v1/content/header?tenant=${slug}&_t=${Date.now()}`);
+      // Step 3: Fetch header config from API
+      const apiUrl = `/api/v1/content/header?tenant=${slug}&_t=${Date.now()}`;
+      console.log('[HeaderBuilder] Step 3 - Fetching:', apiUrl);
+
+      const res = await ApiClient.get<any>(apiUrl);
+      console.log('[HeaderBuilder] Step 4 - API response keys:', Object.keys(res || {}));
+      console.log('[HeaderBuilder] Step 4 - res.data exists:', !!res?.data);
+      console.log('[HeaderBuilder] Step 4 - res.source:', res?.source);
+      console.log('[HeaderBuilder] Step 4 - res.data keys:', Object.keys(res?.data || {}));
+
       const raw = res?.data?.config || res?.data?.data || res?.data || res;
+      console.log('[HeaderBuilder] Step 5 - raw resolution path:', 
+        res?.data?.config ? 'res.data.config' : 
+        res?.data?.data ? 'res.data.data' : 
+        res?.data ? 'res.data' : 'res');
+      console.log('[HeaderBuilder] Step 5 - raw.announcementBar.blocks count:', raw?.announcementBar?.blocks?.length);
+      console.log('[HeaderBuilder] Step 5 - raw.mainHeader.blocks count:', raw?.mainHeader?.blocks?.length);
+      console.log('[HeaderBuilder] Step 5 - raw.navigationMenu count:', raw?.navigationMenu?.length);
+
       const base = getDefaultHeaderConfig(slug);
 
       if (raw && (raw.navigationMenu || raw.mainHeader || raw.announcementBar)) {
@@ -167,14 +199,21 @@ export default function HeaderBuilderStudio() {
             : base.navigationMenu,
         };
 
+        console.log('[HeaderBuilder] Step 6 - MERGED config blocks:',
+          'ann:', merged.announcementBar.blocks.length,
+          'main:', merged.mainHeader.blocks.length,
+          'nav:', merged.navigationMenu.length
+        );
+
         setConfig(merged);
         pushHistory(merged);
       } else {
+        console.warn('[HeaderBuilder] Step 6 - NO DB data found, using default. raw:', !!raw, 'navMenu:', !!raw?.navigationMenu, 'mainHeader:', !!raw?.mainHeader, 'annBar:', !!raw?.announcementBar);
         setConfig(base);
         pushHistory(base);
       }
     } catch (err: any) {
-      console.error('[HeaderBuilder] Failed to fetch header from MongoDB Atlas:', err);
+      console.error('[HeaderBuilder] CATCH - Failed to fetch header from MongoDB Atlas:', err?.message, err);
       const def = getDefaultHeaderConfig(activeTenant.slug || 'lumina');
       setConfig(def);
       pushHistory(def);
