@@ -180,7 +180,39 @@ export default function HeaderBuilderStudio() {
         ...base,
         ...raw,
         tenantSlug: slug,
-        navigationMenu: Array.isArray(raw.navigationMenu) ? raw.navigationMenu : payload.navigationMenu,
+        announcementBar: {
+          ...base.announcementBar,
+          ...(raw?.announcementBar || {}),
+          enabled:
+            raw?.announcementBar?.enabled !== undefined
+              ? raw.announcementBar.enabled
+              : payload.announcementBar.enabled,
+          styles: {
+            ...base.announcementBar.styles,
+            ...(raw?.announcementBar?.styles || {}),
+          },
+          blocks: Array.isArray(raw?.announcementBar?.blocks)
+            ? raw.announcementBar.blocks
+            : payload.announcementBar.blocks,
+        },
+        mainHeader: {
+          ...base.mainHeader,
+          ...(raw?.mainHeader || {}),
+          enabled:
+            raw?.mainHeader?.enabled !== undefined
+              ? raw.mainHeader.enabled
+              : payload.mainHeader.enabled,
+          styles: {
+            ...base.mainHeader.styles,
+            ...(raw?.mainHeader?.styles || {}),
+          },
+          blocks: Array.isArray(raw?.mainHeader?.blocks)
+            ? raw.mainHeader.blocks
+            : payload.mainHeader.blocks,
+        },
+        navigationMenu: Array.isArray(raw.navigationMenu)
+          ? raw.navigationMenu
+          : payload.navigationMenu,
       };
 
       setConfig(savedConfig);
