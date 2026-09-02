@@ -596,10 +596,10 @@ export default function HeaderBuilderStudio() {
 
         <div className="text-center space-y-2">
           <h3 className="text-sm font-bold uppercase tracking-widest text-white">
-            Loading Header &amp; Navigation Studio
+            Loading {activeTenant?.name || 'Store'} Header Studio
           </h3>
           <p className="text-xs text-slate-400 font-mono">
-            Fetching tenant configuration &amp; live schema from MongoDB Atlas...
+            Fetching {activeTenant?.name || 'store'} configuration &amp; live schema from MongoDB Atlas...
           </p>
         </div>
       </div>
