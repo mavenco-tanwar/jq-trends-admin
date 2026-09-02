@@ -883,14 +883,23 @@ export default function HeaderBuilderStudio() {
                         className="p-3 rounded-lg border bg-slate-800/80 border-slate-700 text-white flex items-center justify-between text-xs"
                       >
                         <div className="truncate flex items-center gap-2">
-                          <span className="font-bold">Primary Navigation Menu ({config.navigationMenu?.length} items)</span>
+                          <span className="font-bold">
+                            {block.type === 'navigation'
+                              ? `Primary Navigation Menu (${config.navigationMenu?.length || 0} items)`
+                              : block.settings?.label || 'Inline Search Bar'}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button onClick={() => setActiveTab('navigation')} className="px-2 py-1 rounded bg-indigo-600 text-white text-[10px] font-bold">
-                            Manage Links
-                          </button>
-                          <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400">
+                          {block.type === 'navigation' && (
+                            <button onClick={() => setActiveTab('navigation')} className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold">
+                              Manage Links
+                            </button>
+                          )}
+                          <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
                             <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => deleteBlock(block.id, false)} className="p-1 hover:text-rose-500" title="Delete Block">
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
                           </button>
                         </div>
                       </div>
