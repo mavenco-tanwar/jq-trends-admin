@@ -36,6 +36,9 @@ import {
   Trash2,
   Loader2,
   Info,
+  Wand2,
+  Settings2,
+  ShieldCheck,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast-context';
 import { ApiClient } from '@/services/api';
@@ -45,34 +48,28 @@ import { getDefaultTheme, THEME_PRESETS } from '@/lib/theme-presets';
 import { generateThemeCssVariables } from '@/lib/theme-engine';
 import { POPULAR_FONTS } from '@/components/builder/tokens/themeTokens';
 
-type ActiveCategory =
+type ActiveTab =
   | 'colors'
   | 'typography'
   | 'buttons'
   | 'forms'
   | 'cards'
-  | 'badges'
-  | 'links'
-  | 'icons'
-  | 'spacing'
-  | 'responsive'
-  | 'borders'
-  | 'radius'
-  | 'shadows'
-  | 'custom_css'
-  | 'import_export'
-  | 'versions';
+  | 'badges_links'
+  | 'layout_spacing'
+  | 'effects'
+  | 'advanced';
 
 export default function ThemeBuilderStudio() {
   const { showToast } = useToast();
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [activeCategory, setActiveCategory] = useState<ActiveCategory>('colors');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('colors');
   const [activeTenant, setActiveTenant] = useState(PlatformService.getActiveTenant());
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
   // Modals
+  const [isLivePreviewOpen, setIsLivePreviewOpen] = useState(false);
   const [isVersionsModalOpen, setIsVersionsModalOpen] = useState(false);
   const [isImportExportModalOpen, setIsImportExportModalOpen] = useState(false);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
@@ -158,7 +155,7 @@ export default function ThemeBuilderStudio() {
         status: 'draft',
         updatedAt: new Date().toISOString(),
       });
-      showToast('Draft theme configuration saved to MongoDB Atlas', 'success');
+      showToast('Draft theme saved to MongoDB Atlas', 'success');
     } catch (err: any) {
       showToast(err?.message || 'Failed to save draft theme', 'error');
     } finally {
@@ -184,7 +181,7 @@ export default function ThemeBuilderStudio() {
       await ApiClient.put(`/api/v1/theme?tenant=${slug}`, pubDoc);
       setTheme(pubDoc);
       pushHistory(pubDoc);
-      showToast(`Design System Version ${nextVersion} published live to storefront!`, 'success');
+      showToast(`Theme Version ${nextVersion} published live!`, 'success');
     } catch (err: any) {
       showToast(err?.message || 'Failed to publish theme', 'error');
     } finally {
@@ -236,7 +233,7 @@ export default function ThemeBuilderStudio() {
     showToast(`Applied ${preset.name} Preset`, 'info');
   };
 
-  // Dynamic CSS Variables String
+  // Dynamic CSS Variables
   const previewCss = useMemo(() => {
     return generateThemeCssVariables(theme);
   }, [theme]);
@@ -246,106 +243,78 @@ export default function ThemeBuilderStudio() {
       <div className="h-screen bg-[#07090E] flex flex-col items-center justify-center text-slate-400 gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
         <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-          Loading {activeTenant?.name ? `${activeTenant.name} ` : ''}Design System Studio...
+          Loading {activeTenant?.name ? `${activeTenant.name} ` : ''}Theme Builder Studio...
         </span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col select-none">
-      {/* Dynamic CSS Token Sandbox for Live Preview */}
-      <style dangerouslySetInnerHTML={{ __html: previewCss }} />
-
-      {/* 1. TOP STUDIO BAR */}
-      <header className="h-16 border-b border-slate-800/90 bg-[#0B0F19]/90 backdrop-blur-md px-6 flex items-center justify-between gap-4 z-30 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-600 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-rose-950/40 shrink-0">
-            <Palette className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-black text-white tracking-wide truncate">
-                Global Theme &amp; Design System Builder
-              </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
-                Studio
-              </span>
-            </div>
-            <p className="text-[11px] font-mono text-slate-400 truncate">
+    <div className="min-h-screen bg-[#07090E] text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6 select-none max-w-7xl mx-auto">
+      {/* 1. TOP HEADER STUDIO BAR (Matches Header & Navigation Builder) */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-950/80 text-rose-400 border border-rose-800/60 shadow-sm">
+              Visual Theme Studio
+            </span>
+            <span className="text-xs font-mono text-slate-400">
               Store: <strong className="text-white">{activeTenant?.name || 'Lumina Atelier'}</strong>{' '}
               <span className="text-slate-600">({activeTenant?.slug || 'lumina'})</span>
-            </p>
+            </span>
           </div>
+
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <Palette className="w-7 h-7 text-rose-500" />
+            <span>Global Theme &amp; Design System Builder</span>
+          </h1>
+
+          <p className="text-xs text-slate-400 max-w-2xl mt-1">
+            Control the complete visual design system across your entire storefront — colors, typography, buttons, cards, forms, borders, and shadows in real-time.
+          </p>
         </div>
 
-        {/* Action Controls */}
+        {/* Top Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Presets Button */}
           <button
             onClick={() => setIsPresetsModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+            className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Sparkles className="w-4 h-4 text-amber-400" />
             <span>Theme Presets</span>
           </button>
 
-          {/* Device Switcher */}
-          <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-            <button
-              onClick={() => setDevice('desktop')}
-              className={`p-1.5 rounded-lg transition-colors ${
-                device === 'desktop' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Desktop Preview"
-            >
-              <Monitor className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setDevice('tablet')}
-              className={`p-1.5 rounded-lg transition-colors ${
-                device === 'tablet' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Tablet Preview (768px)"
-            >
-              <Tablet className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setDevice('mobile')}
-              className={`p-1.5 rounded-lg transition-colors ${
-                device === 'mobile' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Mobile Preview (390px)"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            onClick={() => setIsLivePreviewOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-2 transition-all"
+          >
+            <Eye className="w-4 h-4 text-emerald-400" />
+            <span>Live Preview</span>
+          </button>
 
-          {/* Undo / Redo */}
           <div className="flex items-center gap-1 border-l border-slate-800 pl-2">
             <button
               onClick={handleUndo}
               disabled={historyIdx <= 0}
-              className={`p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors ${
-                historyIdx <= 0 ? 'opacity-30 cursor-not-allowed' : ''
+              className={`p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors ${
+                historyIdx <= 0 ? 'opacity-40 cursor-not-allowed' : ''
               }`}
               title="Undo"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-4 h-4" />
             </button>
             <button
               onClick={handleRedo}
               disabled={historyIdx >= history.length - 1}
-              className={`p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors ${
-                historyIdx >= history.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
+              className={`p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors ${
+                historyIdx >= history.length - 1 ? 'opacity-40 cursor-not-allowed' : ''
               }`}
               title="Redo"
             >
-              <RotateCcw className="w-3.5 h-3.5 scale-x-[-1]" />
+              <RotateCcw className="w-4 h-4 scale-x-[-1]" />
             </button>
           </div>
 
-          {/* Version History Button */}
           <button
             onClick={handleOpenVersions}
             className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-bold transition-all"
@@ -354,719 +323,790 @@ export default function ThemeBuilderStudio() {
             <Clock className="w-4 h-4 text-sky-400" />
           </button>
 
-          {/* Save Draft */}
           <button
             onClick={handleSaveDraft}
             disabled={isSaving}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all"
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-2 transition-all"
           >
-            <Save className="w-3.5 h-3.5 text-amber-400" />
+            <Save className="w-4 h-4 text-amber-400" />
             <span>{isSaving ? 'Saving...' : 'Save Draft'}</span>
           </button>
 
-          {/* Publish Live */}
           <button
             onClick={handlePublish}
             disabled={isPublishing}
-            className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Check className="w-3.5 h-3.5" />
+            <Check className="w-4 h-4" />
             <span>{isPublishing ? 'Publishing...' : 'Publish Live'}</span>
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* 2. THREE-PANE STUDIO WORKSPACE */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* LEFT SIDEBAR: CATEGORY NAVIGATION */}
-        <aside className="w-64 border-r border-slate-800/80 bg-[#090D15] p-4 flex flex-col gap-6 overflow-y-auto shrink-0">
-          {/* DESIGN CATEGORY */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-3">
-              Design System
-            </span>
-            <button
-              onClick={() => setActiveCategory('colors')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'colors'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Palette className="w-4 h-4 text-rose-400" />
-              <span>Colors &amp; Gradients</span>
-            </button>
+      {/* 2. NAVIGATION TABS BAR (Pill Tabs matching Header & Footer Builder) */}
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+        <button
+          onClick={() => setActiveTab('colors')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'colors'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Palette className="w-4 h-4" />
+          <span>Colors &amp; Gradients</span>
+        </button>
 
-            <button
-              onClick={() => setActiveCategory('typography')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'typography'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Type className="w-4 h-4 text-indigo-400" />
-              <span>Typography &amp; Scale</span>
-            </button>
+        <button
+          onClick={() => setActiveTab('typography')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'typography'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Type className="w-4 h-4" />
+          <span>Typography &amp; Scale</span>
+        </button>
 
-            <button
-              onClick={() => setActiveCategory('buttons')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'buttons'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Square className="w-4 h-4 text-amber-400" />
-              <span>Buttons &amp; CTAs</span>
-            </button>
+        <button
+          onClick={() => setActiveTab('buttons')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'buttons'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Square className="w-4 h-4" />
+          <span>Buttons &amp; CTAs</span>
+        </button>
 
-            <button
-              onClick={() => setActiveCategory('forms')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'forms'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Sliders className="w-4 h-4 text-emerald-400" />
-              <span>Forms &amp; Inputs</span>
-            </button>
+        <button
+          onClick={() => setActiveTab('forms')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'forms'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Sliders className="w-4 h-4" />
+          <span>Forms &amp; Inputs</span>
+        </button>
 
-            <button
-              onClick={() => setActiveCategory('cards')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'cards'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <LayoutTemplate className="w-4 h-4 text-sky-400" />
-              <span>Cards &amp; Product Cards</span>
-            </button>
+        <button
+          onClick={() => setActiveTab('cards')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'cards'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <LayoutTemplate className="w-4 h-4" />
+          <span>Cards &amp; Product Tiles</span>
+        </button>
 
-            <button
-              onClick={() => setActiveCategory('badges')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'badges'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Tag className="w-4 h-4 text-pink-400" />
-              <span>Badges &amp; Tags</span>
-            </button>
+        <button
+          onClick={() => setActiveTab('badges_links')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'badges_links'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Tag className="w-4 h-4" />
+          <span>Badges, Links &amp; Icons</span>
+        </button>
 
-            <button
-              onClick={() => setActiveCategory('links')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'links'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <ExternalLink className="w-4 h-4 text-cyan-400" />
-              <span>Links &amp; Hover States</span>
-            </button>
-          </div>
+        <button
+          onClick={() => setActiveTab('layout_spacing')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'layout_spacing'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Boxes className="w-4 h-4" />
+          <span>Spacing &amp; Containers</span>
+        </button>
 
-          {/* LAYOUT CATEGORY */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-3">
-              Layout &amp; Structure
-            </span>
-            <button
-              onClick={() => setActiveCategory('spacing')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'spacing'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Boxes className="w-4 h-4 text-amber-400" />
-              <span>Spacing &amp; Containers</span>
-            </button>
+        <button
+          onClick={() => setActiveTab('effects')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'effects'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Effects, Radius &amp; Shadows</span>
+        </button>
 
-            <button
-              onClick={() => setActiveCategory('responsive')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'responsive'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Smartphone className="w-4 h-4 text-teal-400" />
-              <span>Responsive Breakpoints</span>
-            </button>
-          </div>
+        <button
+          onClick={() => setActiveTab('advanced')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'advanced'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Code className="w-4 h-4" />
+          <span>Custom CSS &amp; JSON</span>
+        </button>
+      </div>
 
-          {/* EFFECTS CATEGORY */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-3">
-              Effects &amp; Elevation
-            </span>
-            <button
-              onClick={() => setActiveCategory('borders')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'borders'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Minus className="w-4 h-4 text-violet-400" />
-              <span>Borders &amp; Strokes</span>
-            </button>
-
-            <button
-              onClick={() => setActiveCategory('radius')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'radius'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Corner Radius Scale</span>
-            </button>
-
-            <button
-              onClick={() => setActiveCategory('shadows')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'shadows'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Layers className="w-4 h-4 text-sky-400" />
-              <span>Elevation &amp; Shadows</span>
-            </button>
-          </div>
-
-          {/* ADVANCED CATEGORY */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-3">
-              Advanced &amp; Dev
-            </span>
-            <button
-              onClick={() => setActiveCategory('custom_css')}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                activeCategory === 'custom_css'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-              }`}
-            >
-              <Code className="w-4 h-4 text-amber-400" />
-              <span>Tenant Custom CSS</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setJsonExportString(JSON.stringify(theme, null, 2));
-                setIsImportExportModalOpen(true);
-              }}
-              className="w-full px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 flex items-center gap-2.5 transition-all text-left"
-            >
-              <Share2 className="w-4 h-4 text-purple-400" />
-              <span>Import / Export JSON</span>
-            </button>
-          </div>
-        </aside>
-
-        {/* CENTER PANE: LIVE STOREFRONT PREVIEW SANDBOX */}
-        <main className="flex-1 bg-[#05070B] overflow-y-auto p-6 sm:p-8 flex flex-col items-center justify-start relative">
-          <div
-            className={`transition-all duration-300 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden ${
-              device === 'desktop'
-                ? 'w-full max-w-5xl'
-                : device === 'tablet'
-                ? 'w-[768px]'
-                : 'w-[390px]'
-            }`}
-            style={{
-              backgroundColor: 'var(--theme-color-background)',
-              color: 'var(--theme-color-text)',
-              fontFamily: 'var(--theme-font-body)',
-            }}
-          >
-            {/* Storefront Header Sample */}
-            <div
-              className="px-6 py-4 border-b flex items-center justify-between"
-              style={{
-                backgroundColor: 'var(--theme-color-surface)',
-                borderColor: 'var(--theme-color-border)',
-              }}
-            >
-              <span
-                className="font-black tracking-widest uppercase text-base"
-                style={{
-                  fontFamily: 'var(--theme-font-heading)',
-                  color: 'var(--theme-color-heading)',
-                }}
-              >
-                {activeTenant?.name || 'STOREFRONT'}
-              </span>
-
-              <div className="hidden sm:flex items-center gap-4 text-xs font-semibold">
-                <span style={{ color: 'var(--theme-color-text)' }}>New Arrivals</span>
-                <span style={{ color: 'var(--theme-color-text)' }}>Women</span>
-                <span style={{ color: 'var(--theme-color-text)' }}>Men</span>
-                <span style={{ color: 'var(--theme-color-accent)' }}>Sale</span>
+      {/* 3. TAB 1: COLORS & GRADIENTS */}
+      {activeTab === 'colors' && (
+        <div className="space-y-6">
+          {/* Card 1: Core Brand & Surface Palette */}
+          <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+            <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+              <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-rose-400">
+                C
               </div>
-
-              <div className="flex items-center gap-3">
-                <Heart className="w-4 h-4" style={{ color: 'var(--theme-color-text)' }} />
-                <ShoppingBag className="w-4 h-4" style={{ color: 'var(--theme-color-text)' }} />
-              </div>
-            </div>
-
-            {/* Hero Campaign Sample Banner */}
-            <div className="p-8 sm:p-12 text-center space-y-4">
-              <span
-                className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider inline-block rounded"
-                style={{
-                  backgroundColor: 'var(--theme-color-accent)',
-                  color: '#FFFFFF',
-                  borderRadius: 'var(--theme-radius-sm)',
-                }}
-              >
-                Spring Drop 2026
-              </span>
-
-              <h2
-                className="font-black tracking-tight"
-                style={{
-                  fontFamily: 'var(--theme-font-heading)',
-                  fontSize: 'var(--theme-h1-size)',
-                  lineHeight: 'var(--theme-h1-line-height)',
-                  color: 'var(--theme-color-heading)',
-                }}
-              >
-                Elegance Designed For You.
-              </h2>
-
-              <p
-                className="max-w-lg mx-auto text-xs sm:text-sm"
-                style={{ color: 'var(--theme-color-text-secondary)' }}
-              >
-                Discover precision tailoring, handcrafted essentials, and seamless shopping engineered by Mavenco Commerce.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-center gap-3 pt-2">
-                <button
-                  className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider shadow-lg transition-transform hover:scale-105"
-                  style={{
-                    backgroundColor: 'var(--theme-btn-primary-bg)',
-                    color: 'var(--theme-btn-primary-text)',
-                    borderRadius: 'var(--theme-btn-radius)',
-                  }}
-                >
-                  Shop The Collection
-                </button>
-                <button
-                  className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider border transition-colors"
-                  style={{
-                    backgroundColor: 'var(--theme-color-surface)',
-                    color: 'var(--theme-color-text)',
-                    borderColor: 'var(--theme-color-border)',
-                    borderRadius: 'var(--theme-btn-radius)',
-                  }}
-                >
-                  Explore Lookbook
-                </button>
-              </div>
-            </div>
-
-            {/* Sample Product Cards Grid */}
-            <div className="p-6 sm:p-8 border-t" style={{ borderColor: 'var(--theme-color-border)' }}>
-              <div className="flex items-center justify-between mb-6">
-                <h3
-                  className="font-bold text-lg"
-                  style={{
-                    fontFamily: 'var(--theme-font-heading)',
-                    color: 'var(--theme-color-heading)',
-                  }}
-                >
-                  Featured Essentials
-                </h3>
-                <span className="text-xs font-bold cursor-pointer" style={{ color: 'var(--theme-color-accent)' }}>
-                  View All &rarr;
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[
-                  { id: '1', title: 'Silk Organza Co-Ord Set', price: '$280.00', compare: '$340.00', badge: 'NEW' },
-                  { id: '2', title: 'Artisanal Chanderi Blazer', price: '$420.00', compare: '', badge: 'FEATURED' },
-                  { id: '3', title: 'Merino Wool Trench Coat', price: '$590.00', compare: '$750.00', badge: 'SALE' },
-                ].map((item) => (
-                  <div
-                    key={item.id}
-                    className="border p-4 transition-all"
-                    style={{
-                      backgroundColor: 'var(--theme-card-bg)',
-                      borderColor: 'var(--theme-card-border)',
-                      borderRadius: 'var(--theme-card-radius)',
-                      boxShadow: 'var(--theme-card-shadow)',
-                    }}
-                  >
-                    <div
-                      className="h-44 w-full bg-slate-200 dark:bg-slate-800 relative mb-4 flex items-center justify-center font-bold text-xs uppercase text-slate-400"
-                      style={{ borderRadius: 'var(--theme-radius-md)' }}
-                    >
-                      Product Preview Image
-                      {item.badge && (
-                        <span
-                          className="absolute top-2 left-2 px-2 py-0.5 text-[9px] font-black uppercase"
-                          style={{
-                            backgroundColor: item.badge === 'SALE' ? 'var(--theme-color-accent)' : 'var(--theme-color-primary)',
-                            color: '#FFFFFF',
-                            borderRadius: 'var(--theme-radius-xs)',
-                          }}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-
-                    <h4
-                      className="text-xs font-bold truncate mb-1"
-                      style={{ color: 'var(--theme-color-text)' }}
-                    >
-                      {item.title}
-                    </h4>
-
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-black" style={{ color: 'var(--theme-color-heading)' }}>
-                        {item.price}
-                      </span>
-                      {item.compare && (
-                        <span className="text-[11px] line-through" style={{ color: 'var(--theme-color-text-muted)' }}>
-                          {item.compare}
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      className="w-full py-2 text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-90"
-                      style={{
-                        backgroundColor: 'var(--theme-color-primary)',
-                        color: '#FFFFFF',
-                        borderRadius: 'var(--theme-radius-sm)',
-                      }}
-                    >
-                      Add To Bag
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Newsletter & Footer Sample */}
-            <div
-              className="p-8 border-t text-center space-y-3"
-              style={{
-                backgroundColor: 'var(--theme-color-surface-secondary)',
-                borderColor: 'var(--theme-color-border)',
-              }}
-            >
-              <h4
-                className="font-bold text-sm"
-                style={{
-                  fontFamily: 'var(--theme-font-heading)',
-                  color: 'var(--theme-color-heading)',
-                }}
-              >
-                Subscribe to Atelier VIP Updates
-              </h4>
-              <div className="max-w-md mx-auto flex gap-2">
-                <input
-                  type="email"
-                  placeholder="Enter email address..."
-                  className="flex-1 px-4 text-xs border"
-                  style={{
-                    backgroundColor: 'var(--theme-form-bg)',
-                    color: 'var(--theme-form-text)',
-                    borderColor: 'var(--theme-form-border)',
-                    borderRadius: 'var(--theme-form-radius)',
-                    height: 'var(--theme-form-height)',
-                  }}
-                  disabled
-                />
-                <button
-                  className="px-5 text-xs font-bold uppercase tracking-wider text-white"
-                  style={{
-                    backgroundColor: 'var(--theme-color-accent)',
-                    borderRadius: 'var(--theme-form-radius)',
-                  }}
-                >
-                  Join
-                </button>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {/* RIGHT PANEL: INSPECTOR & CONTROLS */}
-        <aside className="w-80 sm:w-96 border-l border-slate-800/80 bg-[#090D15] p-5 overflow-y-auto shrink-0 space-y-6">
-          {/* CATEGORY 1: COLORS */}
-          {activeCategory === 'colors' && (
-            <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Semantic Colors</h3>
-                <p className="text-xs text-slate-400">Global palette tokens inherited by all compatible storefront elements.</p>
+                <h3 className="text-sm font-bold text-white tracking-wide">Brand &amp; Surface Palette</h3>
+                <p className="text-xs text-slate-400">Primary brand identity, contrast accents, background canvas, and card surface tones.</p>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                {[
-                  { key: 'primary', label: 'Primary Brand Color', val: theme.colors.primary },
-                  { key: 'accent', label: 'Accent / CTA Color', val: theme.colors.accent },
-                  { key: 'background', label: 'Page Background', val: theme.colors.background },
-                  { key: 'surface', label: 'Card Surface', val: theme.colors.surface },
-                  { key: 'surfaceSecondary', label: 'Surface Secondary', val: theme.colors.surfaceSecondary },
-                  { key: 'text', label: 'Body Text Color', val: theme.colors.text },
-                  { key: 'heading', label: 'Heading Title Color', val: theme.colors.heading },
-                  { key: 'border', label: 'Border / Stroke Color', val: theme.colors.border },
-                  { key: 'success', label: 'Success / In-Stock', val: theme.colors.success },
-                  { key: 'error', label: 'Error / Alert', val: theme.colors.error },
-                ].map((item) => (
-                  <div key={item.key} className="space-y-1.5">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { key: 'primary', label: 'Primary Brand', val: theme.colors.primary, desc: 'Headers, key buttons, main accents' },
+                { key: 'accent', label: 'Accent / CTA', val: theme.colors.accent, desc: 'Highlights, sales badges, conversion links' },
+                { key: 'background', label: 'Page Background', val: theme.colors.background, desc: 'Overall storefront canvas backdrop' },
+                { key: 'surface', label: 'Card Surface', val: theme.colors.surface, desc: 'Product tiles, dropdowns, modal boxes' },
+                { key: 'surfaceSecondary', label: 'Secondary Surface', val: theme.colors.surfaceSecondary, desc: 'Footer background, subtle banners' },
+                { key: 'text', label: 'Body Text', val: theme.colors.text, desc: 'Paragraphs, descriptions, general labels' },
+                { key: 'heading', label: 'Headings & Titles', val: theme.colors.heading, desc: 'H1-H6 headlines and product titles' },
+                { key: 'border', label: 'Border & Divider', val: theme.colors.border, desc: 'Separators, subtle card strokes' },
+              ].map((item) => (
+                <div key={item.key} className="p-4 rounded-xl bg-[#090D15] border border-slate-800/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300 truncate">
                       {item.label}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={item.val}
-                        onChange={(e) => {
-                          const updated = { ...theme, colors: { ...theme.colors, [item.key]: e.target.value } };
-                          setTheme(updated);
-                          pushHistory(updated);
-                        }}
-                        className="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={item.val}
-                        onChange={(e) => {
-                          const updated = { ...theme, colors: { ...theme.colors, [item.key]: e.target.value } };
-                          setTheme(updated);
-                          pushHistory(updated);
-                        }}
-                        className="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono"
-                      />
-                    </div>
+                    </span>
+                    <div
+                      className="w-6 h-6 rounded-lg border border-white/20 shadow-inner"
+                      style={{ backgroundColor: item.val }}
+                    />
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* CATEGORY 2: TYPOGRAPHY */}
-          {activeCategory === 'typography' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Typography &amp; Scale</h3>
-                <p className="text-xs text-slate-400">Heading, body, and UI fonts with responsive scales.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                    Heading Font Family
-                  </label>
-                  <select
-                    value={theme.typography.headingFont}
-                    onChange={(e) => {
-                      const updated = {
-                        ...theme,
-                        typography: { ...theme.typography, headingFont: e.target.value },
-                      };
-                      setTheme(updated);
-                      pushHistory(updated);
-                    }}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-sans"
-                  >
-                    {POPULAR_FONTS.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                    Body Font Family
-                  </label>
-                  <select
-                    value={theme.typography.bodyFont}
-                    onChange={(e) => {
-                      const updated = {
-                        ...theme,
-                        typography: { ...theme.typography, bodyFont: e.target.value },
-                      };
-                      setTheme(updated);
-                      pushHistory(updated);
-                    }}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-sans"
-                  >
-                    {POPULAR_FONTS.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* H1 Heading Size */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-800">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-bold text-slate-300">H1 Desktop Font Size</span>
-                    <span className="font-mono text-slate-400">{theme.typography.h1.fontSize}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="28"
-                    max="72"
-                    value={parseInt(theme.typography.h1.fontSize) || 48}
-                    onChange={(e) => {
-                      const updated = {
-                        ...theme,
-                        typography: {
-                          ...theme.typography,
-                          h1: { ...theme.typography.h1, fontSize: `${e.target.value}px` },
-                        },
-                      };
-                      setTheme(updated);
-                      pushHistory(updated);
-                    }}
-                    className="w-full accent-rose-500"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CATEGORY 3: BUTTONS */}
-          {activeCategory === 'buttons' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Button Styling</h3>
-                <p className="text-xs text-slate-400">Global button radius shapes and primary/secondary variant presets.</p>
-              </div>
-
-              {/* Shape Selector */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Button Shape
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'square', label: 'Square (0px)', r: '0px' },
-                    { id: 'slight', label: 'Slight (4px)', r: '4px' },
-                    { id: 'rounded', label: 'Rounded (10px)', r: '10px' },
-                    { id: 'pill', label: 'Pill (9999px)', r: '9999px' },
-                  ].map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => {
-                        const updated = {
-                          ...theme,
-                          buttons: { ...theme.buttons, shape: s.id as any, borderRadius: s.r },
-                        };
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={item.val}
+                      onChange={(e) => {
+                        const updated = { ...theme, colors: { ...theme.colors, [item.key]: e.target.value } };
                         setTheme(updated);
                         pushHistory(updated);
                       }}
-                      className={`p-2.5 text-xs font-bold border rounded-xl transition-all ${
-                        theme.buttons.borderRadius === s.r
-                          ? 'border-rose-500 bg-rose-950/30 text-white'
-                          : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
+                      className="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={item.val}
+                      onChange={(e) => {
+                        const updated = { ...theme, colors: { ...theme.colors, [item.key]: e.target.value } };
+                        setTheme(updated);
+                        pushHistory(updated);
+                      }}
+                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-tight">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 2: Semantic System & Status Colors */}
+          <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+            <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+              <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-emerald-400">
+                S
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white tracking-wide">System &amp; Feedback Colors</h3>
+                <p className="text-xs text-slate-400">Status banners, inventory badges, and system notifications.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { key: 'success', label: 'Success / In-Stock', val: theme.colors.success },
+                { key: 'warning', label: 'Warning / Low Stock', val: theme.colors.warning },
+                { key: 'error', label: 'Error / Sold Out', val: theme.colors.error },
+                { key: 'info', label: 'Information Alert', val: theme.colors.info },
+              ].map((item) => (
+                <div key={item.key} className="p-4 rounded-xl bg-[#090D15] border border-slate-800/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
+                      {item.label}
+                    </span>
+                    <div
+                      className="w-5 h-5 rounded-lg border border-white/20"
+                      style={{ backgroundColor: item.val }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={item.val}
+                      onChange={(e) => {
+                        const updated = { ...theme, colors: { ...theme.colors, [item.key]: e.target.value } };
+                        setTheme(updated);
+                        pushHistory(updated);
+                      }}
+                      className="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={item.val}
+                      onChange={(e) => {
+                        const updated = { ...theme, colors: { ...theme.colors, [item.key]: e.target.value } };
+                        setTheme(updated);
+                        pushHistory(updated);
+                      }}
+                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. TAB 2: TYPOGRAPHY & SCALE */}
+      {activeTab === 'typography' && (
+        <div className="space-y-6">
+          {/* Font Families Card */}
+          <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+            <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+              <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-indigo-400">
+                T
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white tracking-wide">Font Families</h3>
+                <p className="text-xs text-slate-400">Curated web fonts applied automatically across headlines, body paragraphs, and navigation.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  Heading Font Family
+                </label>
+                <select
+                  value={theme.typography.headingFont}
+                  onChange={(e) => {
+                    const updated = { ...theme, typography: { ...theme.typography, headingFont: e.target.value } };
+                    setTheme(updated);
+                    pushHistory(updated);
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-sans"
+                >
+                  {POPULAR_FONTS.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
                   ))}
+                </select>
+                <div
+                  className="p-3 rounded-lg bg-[#090D15] border border-slate-800 text-base font-bold text-white truncate"
+                  style={{ fontFamily: theme.typography.headingFont }}
+                >
+                  Artisanal Luxury &amp; Haute Couture
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  Body Font Family
+                </label>
+                <select
+                  value={theme.typography.bodyFont}
+                  onChange={(e) => {
+                    const updated = { ...theme, typography: { ...theme.typography, bodyFont: e.target.value } };
+                    setTheme(updated);
+                    pushHistory(updated);
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-sans"
+                >
+                  {POPULAR_FONTS.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+                <div
+                  className="p-3 rounded-lg bg-[#090D15] border border-slate-800 text-xs text-slate-300 truncate"
+                  style={{ fontFamily: theme.typography.bodyFont }}
+                >
+                  Engineered with responsive design tokens for speed and clarity.
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  Button &amp; Nav Font Family
+                </label>
+                <select
+                  value={theme.typography.buttonFont}
+                  onChange={(e) => {
+                    const updated = { ...theme, typography: { ...theme.typography, buttonFont: e.target.value } };
+                    setTheme(updated);
+                    pushHistory(updated);
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-sans"
+                >
+                  {POPULAR_FONTS.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+                <div
+                  className="p-3 rounded-lg bg-[#090D15] border border-slate-800 text-xs font-extrabold uppercase tracking-widest text-slate-300 truncate"
+                  style={{ fontFamily: theme.typography.buttonFont }}
+                >
+                  SHOP NOW &bull; ADD TO CART
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* CATEGORY 4: FORMS */}
-          {activeCategory === 'forms' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Forms &amp; Inputs</h3>
-                <p className="text-xs text-slate-400">Styling for text inputs, select boxes, search bars, and newsletter captures.</p>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Input Height
-                </label>
+          {/* Heading Scale Sliders */}
+          <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+            <h3 className="text-sm font-bold text-white tracking-wide">Headline Scales (H1 - H3)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-4 rounded-xl bg-[#090D15] border border-slate-800 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-300">H1 Headline Size</span>
+                  <span className="font-mono text-rose-400">{theme.typography.h1.fontSize}</span>
+                </div>
                 <input
-                  type="text"
-                  value={theme.forms.height}
+                  type="range"
+                  min="28"
+                  max="72"
+                  value={parseInt(theme.typography.h1.fontSize) || 48}
                   onChange={(e) => {
-                    const updated = { ...theme, forms: { ...theme.forms, height: e.target.value } };
+                    const updated = {
+                      ...theme,
+                      typography: {
+                        ...theme.typography,
+                        h1: { ...theme.typography.h1, fontSize: `${e.target.value}px` },
+                      },
+                    };
                     setTheme(updated);
                     pushHistory(updated);
                   }}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  className="w-full accent-rose-500"
                 />
               </div>
-            </div>
-          )}
 
-          {/* CATEGORY 5: CARDS */}
-          {activeCategory === 'cards' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Cards &amp; Product Cards</h3>
-                <p className="text-xs text-slate-400">Default styling for catalog product tiles, blog cards, and content cards.</p>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Card Corner Radius
-                </label>
+              <div className="p-4 rounded-xl bg-[#090D15] border border-slate-800 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-300">H2 Section Title Size</span>
+                  <span className="font-mono text-rose-400">{theme.typography.h2.fontSize}</span>
+                </div>
                 <input
-                  type="text"
-                  value={theme.cards.borderRadius}
+                  type="range"
+                  min="22"
+                  max="52"
+                  value={parseInt(theme.typography.h2.fontSize) || 36}
                   onChange={(e) => {
-                    const updated = { ...theme, cards: { ...theme.cards, borderRadius: e.target.value } };
+                    const updated = {
+                      ...theme,
+                      typography: {
+                        ...theme.typography,
+                        h2: { ...theme.typography.h2, fontSize: `${e.target.value}px` },
+                      },
+                    };
                     setTheme(updated);
                     pushHistory(updated);
                   }}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  className="w-full accent-rose-500"
+                />
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#090D15] border border-slate-800 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-300">H3 Card Title Size</span>
+                  <span className="font-mono text-rose-400">{theme.typography.h3.fontSize}</span>
+                </div>
+                <input
+                  type="range"
+                  min="16"
+                  max="38"
+                  value={parseInt(theme.typography.h3.fontSize) || 28}
+                  onChange={(e) => {
+                    const updated = {
+                      ...theme,
+                      typography: {
+                        ...theme.typography,
+                        h3: { ...theme.typography.h3, fontSize: `${e.target.value}px` },
+                      },
+                    };
+                    setTheme(updated);
+                    pushHistory(updated);
+                  }}
+                  className="w-full accent-rose-500"
                 />
               </div>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {/* CATEGORY 6: CUSTOM CSS */}
-          {activeCategory === 'custom_css' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Tenant Custom CSS</h3>
-                <p className="text-xs text-slate-400">Scoped CSS rules injected automatically into your tenant storefront.</p>
+      {/* 5. TAB 3: BUTTONS & CTAS */}
+      {activeTab === 'buttons' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+            <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+              <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-amber-400">
+                B
               </div>
+              <div>
+                <h3 className="text-sm font-bold text-white tracking-wide">Global Button Shapes &amp; Radii</h3>
+                <p className="text-xs text-slate-400">Select corner shape geometry for all primary, secondary, and ghost CTA buttons.</p>
+              </div>
+            </div>
 
-              <textarea
-                rows={12}
-                value={theme.customCss || ''}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { id: 'square', label: 'Square (0px)', r: '0px' },
+                { id: 'slight', label: 'Slight Radius (4px)', r: '4px' },
+                { id: 'rounded', label: 'Rounded (10px)', r: '10px' },
+                { id: 'pill', label: 'Full Pill (9999px)', r: '9999px' },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    const updated = {
+                      ...theme,
+                      buttons: { ...theme.buttons, shape: s.id as any, borderRadius: s.r },
+                    };
+                    setTheme(updated);
+                    pushHistory(updated);
+                  }}
+                  className={`p-5 rounded-2xl border text-center transition-all cursor-pointer ${
+                    theme.buttons.borderRadius === s.r
+                      ? 'border-rose-500 bg-rose-950/30 text-white ring-2 ring-rose-500/30 shadow-lg'
+                      : 'border-slate-800 bg-[#090D15] text-slate-400 hover:text-white hover:border-slate-700'
+                  }`}
+                >
+                  <div
+                    className="h-9 w-full mb-3 flex items-center justify-center text-xs font-bold uppercase transition-all"
+                    style={{
+                      backgroundColor: theme.colors.primary,
+                      color: '#FFFFFF',
+                      borderRadius: s.r,
+                    }}
+                  >
+                    Sample CTA
+                  </div>
+                  <span className="text-xs font-bold block">{s.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. TAB 4: FORMS & INPUTS */}
+      {activeTab === 'forms' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+          <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-emerald-400">
+              F
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide">Forms &amp; Input Fields</h3>
+              <p className="text-xs text-slate-400">Default styling for text fields, select boxes, search inputs, and newsletter boxes.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Input Height
+              </label>
+              <input
+                type="text"
+                value={theme.forms.height}
                 onChange={(e) => {
-                  const updated = { ...theme, customCss: e.target.value };
+                  const updated = { ...theme, forms: { ...theme.forms, height: e.target.value } };
                   setTheme(updated);
                   pushHistory(updated);
                 }}
-                placeholder="/* Custom CSS overrides for your storefront */"
-                className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 focus:outline-none focus:border-rose-500"
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
               />
             </div>
-          )}
-        </aside>
-      </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Input Corner Radius
+              </label>
+              <input
+                type="text"
+                value={theme.forms.borderRadius}
+                onChange={(e) => {
+                  const updated = { ...theme, forms: { ...theme.forms, borderRadius: e.target.value } };
+                  setTheme(updated);
+                  pushHistory(updated);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Input Background Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={theme.forms.background}
+                  onChange={(e) => {
+                    const updated = { ...theme, forms: { ...theme.forms, background: e.target.value } };
+                    setTheme(updated);
+                    pushHistory(updated);
+                  }}
+                  className="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={theme.forms.background}
+                  onChange={(e) => {
+                    const updated = { ...theme, forms: { ...theme.forms, background: e.target.value } };
+                    setTheme(updated);
+                    pushHistory(updated);
+                  }}
+                  className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. TAB 5: CARDS & PRODUCT TILES */}
+      {activeTab === 'cards' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+          <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-sky-400">
+              P
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide">Catalog Product Cards &amp; Content Tiles</h3>
+              <p className="text-xs text-slate-400">Global defaults for product grid cards, image radii, and hover behaviors.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Card Corner Radius
+              </label>
+              <input
+                type="text"
+                value={theme.cards.borderRadius}
+                onChange={(e) => {
+                  const updated = { ...theme, cards: { ...theme.cards, borderRadius: e.target.value } };
+                  setTheme(updated);
+                  pushHistory(updated);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Product Image Radius
+              </label>
+              <input
+                type="text"
+                value={theme.cards.productCardDefaults.imageRadius}
+                onChange={(e) => {
+                  const updated = {
+                    ...theme,
+                    cards: {
+                      ...theme.cards,
+                      productCardDefaults: {
+                        ...theme.cards.productCardDefaults,
+                        imageRadius: e.target.value,
+                      },
+                    },
+                  };
+                  setTheme(updated);
+                  pushHistory(updated);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Hover Animation Effect
+              </label>
+              <select
+                value={theme.cards.productCardDefaults.hoverEffect}
+                onChange={(e) => {
+                  const updated = {
+                    ...theme,
+                    cards: {
+                      ...theme.cards,
+                      productCardDefaults: {
+                        ...theme.cards.productCardDefaults,
+                        hoverEffect: e.target.value as any,
+                      },
+                    },
+                  };
+                  setTheme(updated);
+                  pushHistory(updated);
+                }}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              >
+                <option value="zoom">Zoom on Hover</option>
+                <option value="fade">Subtle Fade</option>
+                <option value="slide">Slide Action Overlay</option>
+                <option value="none">No Animation</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. TAB 6: BADGES, LINKS & ICONS */}
+      {activeTab === 'badges_links' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+          <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-pink-400">
+              L
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide">Badges, Links &amp; Micro-Elements</h3>
+              <p className="text-xs text-slate-400">Sale badges, new arrival tags, and global hyperlink underline behaviors.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Link Underline Behavior
+              </label>
+              <select
+                value={theme.links.underlineMode}
+                onChange={(e) => {
+                  const updated = { ...theme, links: { ...theme.links, underlineMode: e.target.value as any } };
+                  setTheme(updated);
+                  pushHistory(updated);
+                }}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              >
+                <option value="hover">Underline on Hover</option>
+                <option value="always">Always Underline</option>
+                <option value="never">Never Underline</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 9. TAB 7: SPACING & LAYOUT */}
+      {activeTab === 'layout_spacing' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+          <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-teal-400">
+              M
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide">Layout Containers &amp; Page Spacing</h3>
+              <p className="text-xs text-slate-400">Max page container widths and section padding across responsive viewports.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Large Container Width
+              </label>
+              <input
+                type="text"
+                value={theme.layout.container.large}
+                onChange={(e) => {
+                  const updated = {
+                    ...theme,
+                    layout: {
+                      ...theme.layout,
+                      container: { ...theme.layout.container, large: e.target.value },
+                    },
+                  };
+                  setTheme(updated);
+                  pushHistory(updated);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 10. TAB 8: EFFECTS, RADIUS & SHADOWS */}
+      {activeTab === 'effects' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+          <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-violet-400">
+              E
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide">Elevation &amp; Corner Radii Scale</h3>
+              <p className="text-xs text-slate-400">System tokens for shadows, cards, and modal elevations.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { label: 'Radius SM', val: theme.radius.sm },
+              { label: 'Radius MD', val: theme.radius.md },
+              { label: 'Radius LG', val: theme.radius.lg },
+              { label: 'Radius XL', val: theme.radius.xl },
+            ].map((r, i) => (
+              <div key={i} className="p-4 rounded-xl bg-[#090D15] border border-slate-800 space-y-2 text-center">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">{r.label}</span>
+                <span className="font-mono text-sm font-bold text-white">{r.val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 11. TAB 9: ADVANCED & CUSTOM CSS */}
+      {activeTab === 'advanced' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5">
+          <div className="flex items-center gap-3 border-b border-slate-800/60 pb-4">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-amber-400">
+              #
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide">Tenant-Scoped Custom CSS</h3>
+              <p className="text-xs text-slate-400">Write custom CSS rules automatically injected into your storefront.</p>
+            </div>
+          </div>
+
+          <textarea
+            rows={10}
+            value={theme.customCss || ''}
+            onChange={(e) => {
+              const updated = { ...theme, customCss: e.target.value };
+              setTheme(updated);
+              pushHistory(updated);
+            }}
+            placeholder="/* Custom CSS overrides for your storefront */"
+            className="w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 focus:outline-none focus:border-rose-500"
+          />
+        </div>
+      )}
 
       {/* MODAL 1: PRESETS MODAL */}
       {isPresetsModalOpen && (
@@ -1145,36 +1185,291 @@ export default function ThemeBuilderStudio() {
         </div>
       )}
 
-      {/* MODAL 3: IMPORT / EXPORT JSON */}
-      {isImportExportModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-[#0F131D] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                Theme JSON Import / Export
-              </h3>
-              <button onClick={() => setIsImportExportModalOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
+      {/* MODAL 3: FULLSCREEN LIVE PREVIEW */}
+      {isLivePreviewOpen && (
+        <div className="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-md flex flex-col">
+          <div className="h-14 bg-slate-900/90 border-b border-slate-800 px-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                Storefront Live Theme Simulator
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold border border-emerald-800">
+                {device.toUpperCase()} MODE
+              </span>
             </div>
 
-            <textarea
-              rows={8}
-              readOnly
-              value={jsonExportString}
-              className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300"
-            />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800">
+                <button
+                  onClick={() => setDevice('desktop')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'desktop' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span>Desktop</span>
+                </button>
+                <button
+                  onClick={() => setDevice('tablet')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'tablet' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Tablet className="w-3.5 h-3.5" />
+                  <span>Tablet</span>
+                </button>
+                <button
+                  onClick={() => setDevice('mobile')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'mobile' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Mobile</span>
+                </button>
+              </div>
 
-            <div className="flex justify-end gap-2">
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(jsonExportString);
-                  showToast('Copied JSON to clipboard', 'info');
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700"
+                onClick={() => setIsLivePreviewOpen(false)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
               >
-                Copy JSON
+                <X className="w-4 h-4" />
               </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 sm:p-10 flex flex-col items-center justify-start bg-black/40">
+            {/* Dynamic CSS Variables injected inside preview sandbox */}
+            <div
+              style={{
+                backgroundColor: theme.colors.background,
+                color: theme.colors.text,
+                fontFamily: theme.typography.bodyFont,
+              }}
+              className={`transition-all duration-300 border border-white/10 rounded-2xl shadow-2xl overflow-hidden ${
+                device === 'desktop'
+                  ? 'w-full max-w-6xl'
+                  : device === 'tablet'
+                  ? 'w-[768px]'
+                  : 'w-[390px]'
+              }`}
+            >
+              {/* Header Sample */}
+              <div
+                className="px-6 py-4 border-b flex items-center justify-between"
+                style={{
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                }}
+              >
+                <span
+                  className="font-black tracking-widest uppercase text-base"
+                  style={{
+                    fontFamily: theme.typography.headingFont,
+                    color: theme.colors.heading,
+                  }}
+                >
+                  {activeTenant?.name || 'STOREFRONT'}
+                </span>
+
+                <div className="hidden sm:flex items-center gap-4 text-xs font-semibold">
+                  <span style={{ color: theme.colors.text }}>New Arrivals</span>
+                  <span style={{ color: theme.colors.text }}>Women</span>
+                  <span style={{ color: theme.colors.text }}>Men</span>
+                  <span style={{ color: theme.colors.accent }}>Sale</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Heart className="w-4 h-4" style={{ color: theme.colors.text }} />
+                  <ShoppingBag className="w-4 h-4" style={{ color: theme.colors.text }} />
+                </div>
+              </div>
+
+              {/* Hero Banner Sample */}
+              <div className="p-8 sm:p-14 text-center space-y-4">
+                <span
+                  className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider inline-block rounded"
+                  style={{
+                    backgroundColor: theme.colors.accent,
+                    color: '#FFFFFF',
+                    borderRadius: theme.radius.sm,
+                  }}
+                >
+                  Spring Drop 2026
+                </span>
+
+                <h2
+                  className="font-black tracking-tight"
+                  style={{
+                    fontFamily: theme.typography.headingFont,
+                    fontSize: theme.typography.h1.fontSize,
+                    lineHeight: theme.typography.h1.lineHeight,
+                    color: theme.colors.heading,
+                  }}
+                >
+                  Elegance Designed For You.
+                </h2>
+
+                <p
+                  className="max-w-lg mx-auto text-xs sm:text-sm"
+                  style={{ color: theme.colors.textSecondary }}
+                >
+                  Discover precision tailoring, handcrafted essentials, and seamless shopping engineered by Mavenco Commerce.
+                </p>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    className="px-6 py-3 text-xs font-bold uppercase tracking-wider shadow-lg transition-transform hover:scale-105"
+                    style={{
+                      backgroundColor: theme.buttons.variants.primary.background,
+                      color: theme.buttons.variants.primary.textColor,
+                      borderRadius: theme.buttons.borderRadius,
+                    }}
+                  >
+                    Shop The Collection
+                  </button>
+                  <button
+                    className="px-6 py-3 text-xs font-bold uppercase tracking-wider border transition-colors"
+                    style={{
+                      backgroundColor: theme.colors.surface,
+                      color: theme.colors.text,
+                      borderColor: theme.colors.border,
+                      borderRadius: theme.buttons.borderRadius,
+                    }}
+                  >
+                    Explore Lookbook
+                  </button>
+                </div>
+              </div>
+
+              {/* Product Card Grid Sample */}
+              <div className="p-6 sm:p-8 border-t" style={{ borderColor: theme.colors.border }}>
+                <div className="flex items-center justify-between mb-6">
+                  <h3
+                    className="font-bold text-lg"
+                    style={{
+                      fontFamily: theme.typography.headingFont,
+                      color: theme.colors.heading,
+                    }}
+                  >
+                    Featured Essentials
+                  </h3>
+                  <span className="text-xs font-bold cursor-pointer" style={{ color: theme.colors.accent }}>
+                    View All &rarr;
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[
+                    { id: '1', title: 'Silk Organza Co-Ord Set', price: '$280.00', compare: '$340.00', badge: 'NEW' },
+                    { id: '2', title: 'Artisanal Chanderi Blazer', price: '$420.00', compare: '', badge: 'FEATURED' },
+                    { id: '3', title: 'Merino Wool Trench Coat', price: '$590.00', compare: '$750.00', badge: 'SALE' },
+                  ].map((item) => (
+                    <div
+                      key={item.id}
+                      className="border p-4 transition-all"
+                      style={{
+                        backgroundColor: theme.cards.background,
+                        borderColor: theme.cards.border,
+                        borderRadius: theme.cards.borderRadius,
+                        boxShadow: theme.cards.shadow,
+                      }}
+                    >
+                      <div
+                        className="h-44 w-full bg-slate-200 dark:bg-slate-800 relative mb-4 flex items-center justify-center font-bold text-xs uppercase text-slate-400"
+                        style={{ borderRadius: theme.cards.productCardDefaults.imageRadius }}
+                      >
+                        Product Preview Image
+                        {item.badge && (
+                          <span
+                            className="absolute top-2 left-2 px-2 py-0.5 text-[9px] font-black uppercase"
+                            style={{
+                              backgroundColor: item.badge === 'SALE' ? theme.colors.accent : theme.colors.primary,
+                              color: '#FFFFFF',
+                              borderRadius: theme.radius.xs,
+                            }}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
+
+                      <h4
+                        className="text-xs font-bold truncate mb-1"
+                        style={{ color: theme.colors.text }}
+                      >
+                        {item.title}
+                      </h4>
+
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-black" style={{ color: theme.colors.heading }}>
+                          {item.price}
+                        </span>
+                        {item.compare && (
+                          <span className="text-[11px] line-through" style={{ color: theme.colors.textMuted }}>
+                            {item.compare}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        className="w-full py-2 text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-90"
+                        style={{
+                          backgroundColor: theme.colors.primary,
+                          color: '#FFFFFF',
+                          borderRadius: theme.radius.sm,
+                        }}
+                      >
+                        Add To Bag
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* VIP Newsletter Box */}
+              <div
+                className="p-8 border-t text-center space-y-3"
+                style={{
+                  backgroundColor: theme.colors.surfaceSecondary,
+                  borderColor: theme.colors.border,
+                }}
+              >
+                <h4
+                  className="font-bold text-sm"
+                  style={{
+                    fontFamily: theme.typography.headingFont,
+                    color: theme.colors.heading,
+                  }}
+                >
+                  Subscribe to Atelier VIP Updates
+                </h4>
+                <div className="max-w-md mx-auto flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="Enter email address..."
+                    className="flex-1 px-4 text-xs border"
+                    style={{
+                      backgroundColor: theme.forms.background,
+                      color: theme.forms.text,
+                      borderColor: theme.forms.border,
+                      borderRadius: theme.forms.borderRadius,
+                      height: theme.forms.height,
+                    }}
+                    disabled
+                  />
+                  <button
+                    className="px-5 text-xs font-bold uppercase tracking-wider text-white"
+                    style={{
+                      backgroundColor: theme.colors.accent,
+                      borderRadius: theme.forms.borderRadius,
+                    }}
+                  >
+                    Join
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
