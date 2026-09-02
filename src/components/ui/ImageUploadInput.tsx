@@ -106,6 +106,8 @@ export function ImageUploadInput({
     }
   };
 
+  const inputId = React.useId();
+
   return (
     <div className={`space-y-1.5 select-none ${className}`}>
       {label && (
@@ -155,20 +157,19 @@ export function ImageUploadInput({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-bold flex items-center gap-1 transition-colors"
+            <label
+              htmlFor={inputId}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
               title="Upload replacement image from device"
             >
               <Upload className="w-3.5 h-3.5 text-rose-400" />
               <span>Replace</span>
-            </button>
+            </label>
 
             <button
               type="button"
               onClick={() => setIsMediaPickerOpen(true)}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer"
               title="Pick from Media Library"
             >
               <FolderOpen className="w-3.5 h-3.5 text-sky-400" />
@@ -177,7 +178,7 @@ export function ImageUploadInput({
             <button
               type="button"
               onClick={() => onChange('')}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-800 transition-colors"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-800 transition-colors cursor-pointer"
               title="Remove image"
             >
               <X className="w-3.5 h-3.5" />
@@ -207,14 +208,13 @@ export function ImageUploadInput({
           ) : (
             <>
               <div className="flex items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                <label
+                  htmlFor={inputId}
                   className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   <span>Upload from Device</span>
-                </button>
+                </label>
 
                 <button
                   type="button"
@@ -257,14 +257,23 @@ export function ImageUploadInput({
 
       {/* Hidden Native File Input */}
       <input
+        id={inputId}
         ref={fileInputRef}
         type="file"
         accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif, image/avif"
-        className="hidden"
         onChange={(e) => {
           if (e.target.files && e.target.files[0]) {
             handleFileUpload(e.target.files[0]);
           }
+        }}
+        style={{
+          position: 'fixed',
+          top: '-1000px',
+          left: '-1000px',
+          opacity: 0,
+          width: '1px',
+          height: '1px',
+          pointerEvents: 'none',
         }}
       />
 

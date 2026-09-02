@@ -252,54 +252,57 @@ export function MediaPickerModal({
             {uploadMode === 'device' && (
               <div>
                 {!filePreview ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
+                  <label
+                    htmlFor="media-picker-native-file-upload"
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOver(true);
                     }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${
+                    className={`block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                       dragOver
                         ? 'border-rose-500 bg-rose-500/10 scale-[1.01]'
                         : 'border-slate-700 bg-slate-900/60 hover:border-rose-500 hover:bg-slate-900'
                     }`}
                   >
-                    <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
-                      <Upload className="w-6 h-6" />
+                    <div className="flex flex-col items-center justify-center gap-2.5 pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
+                        <Upload className="w-6 h-6" />
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="font-bold text-white text-xs">
+                          Click to browse from Computer / Phone or drag &amp; drop
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          High resolution JPG, PNG, WEBP, SVG, GIF or AVIF (up to 20MB)
+                        </p>
+                      </div>
+
+                      <span className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs inline-flex items-center gap-1.5 transition-all mt-1">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Browse Device Files</span>
+                      </span>
                     </div>
 
-                    <div className="space-y-1">
-                      <p className="font-bold text-white text-xs">
-                        Click to browse from Computer / Phone or drag &amp; drop
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        High resolution JPG, PNG, WEBP, SVG or GIF (up to 20MB)
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        fileInputRef.current?.click();
-                      }}
-                      className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs cursor-pointer flex items-center gap-1.5 transition-all mt-1"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Browse Device Files</span>
-                    </button>
-
-                    {/* Native hidden file input */}
+                    {/* Native hidden file input linked directly to label */}
                     <input
-                      ref={fileInputRef}
+                      id="media-picker-native-file-upload"
                       type="file"
                       accept="image/*"
                       onChange={handleFileInputChange}
-                      className="hidden"
+                      style={{
+                        position: 'fixed',
+                        top: '-1000px',
+                        left: '-1000px',
+                        opacity: 0,
+                        width: '1px',
+                        height: '1px',
+                        pointerEvents: 'none',
+                      }}
                     />
-                  </div>
+                  </label>
                 ) : (
                   <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl flex items-center gap-4">
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-black">
@@ -312,19 +315,26 @@ export function MediaPickerModal({
                       <p className="text-[11px] text-slate-400">
                         {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload'}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => changeFileInputRef.current?.click()}
+                      <label
+                        htmlFor="media-picker-change-file-upload"
                         className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer"
                       >
                         Change Image
-                      </button>
+                      </label>
                       <input
-                        ref={changeFileInputRef}
+                        id="media-picker-change-file-upload"
                         type="file"
                         accept="image/*"
                         onChange={handleFileInputChange}
-                        className="hidden"
+                        style={{
+                          position: 'fixed',
+                          top: '-1000px',
+                          left: '-1000px',
+                          opacity: 0,
+                          width: '1px',
+                          height: '1px',
+                          pointerEvents: 'none',
+                        }}
                       />
                     </div>
                     <button
