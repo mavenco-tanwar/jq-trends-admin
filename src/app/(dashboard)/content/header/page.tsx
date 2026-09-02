@@ -43,16 +43,21 @@ import {
   HeaderBlock,
   NavigationItem,
   getDefaultHeaderConfig,
+  LUXURY_PRESET_TEMPLATES,
 } from '@/lib/header-config';
 
 export default function HeaderBuilderStudio() {
   const { showToast } = useToast();
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [activeTab, setActiveTab] = useState<'canvas' | 'navigation' | 'theme' | 'sticky'>('canvas');
+  const [activeTab, setActiveTab] = useState<'canvas' | 'navigation' | 'theme' | 'mobile' | 'sticky'>('canvas');
   const [activeTenant, setActiveTenant] = useState(PlatformService.getActiveTenant());
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Live Interactive Preview & Template Presets State
+  const [isLivePreviewOpen, setIsLivePreviewOpen] = useState(false);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
 
   // Core Configuration State
   const [config, setConfig] = useState<HeaderConfig>(getDefaultHeaderConfig('lumina'));
@@ -138,7 +143,7 @@ export default function HeaderBuilderStudio() {
       const res = await ApiClient.get<any>(apiUrl);
       console.log('[HeaderBuilder] Step 4 - API response keys:', Object.keys(res || {}));
       console.log('[HeaderBuilder] Step 4 - res.data exists:', !!res?.data);
-      console.log('[HeaderBuilder] Step 4 - res.source:', res?.source);
+      console.log('[HeaderBuilder] Step 4 - res.source:', (res as any)?.source);
       console.log('[HeaderBuilder] Step 4 - res.data keys:', Object.keys(res?.data || {}));
 
       const raw = res?.data?.config || res?.data?.data || res?.data || res;
@@ -626,6 +631,28 @@ export default function HeaderBuilderStudio() {
         {/* Action Controls */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
+            onClick={() => setIsTemplatesModalOpen(true)}
+            title="Choose from curated luxury header templates"
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Layout Templates</span>
+          </button>
+
+          <button
+            onClick={() => setIsLivePreviewOpen(!isLivePreviewOpen)}
+            title="Toggle Live Storefront Preview"
+            className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              isLivePreviewOpen
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/40'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>{isLivePreviewOpen ? 'Hide Live Preview' : 'Live Preview'}</span>
+          </button>
+
+          <button
             onClick={handleUndo}
             disabled={historyIdx <= 0}
             title="Undo"
@@ -701,6 +728,18 @@ export default function HeaderBuilderStudio() {
         </button>
 
         <button
+          onClick={() => setActiveTab('mobile')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'mobile'
+              ? 'bg-rose-600 text-white shadow-md'
+              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <Smartphone className="w-3.5 h-3.5" />
+          <span>Mobile Drawer Studio</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('sticky')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
             activeTab === 'sticky'
@@ -709,9 +748,202 @@ export default function HeaderBuilderStudio() {
           }`}
         >
           <Sliders className="w-3.5 h-3.5" />
-          <span>Sticky &amp; Responsive Behavior</span>
+          <span>Sticky, Device &amp; Campaigns</span>
         </button>
       </div>
+
+      {/* Embedded Live Real-Time Interactive Header Preview */}
+      {isLivePreviewOpen && (
+        <div className="p-5 rounded-2xl bg-[#0F1117] border-2 border-emerald-500/50 shadow-2xl space-y-3 animate-in slide-in-from-top duration-300">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
+                Live Storefront Real-Time Preview
+              </h3>
+              <span className="text-[11px] text-slate-400">
+                (Interactive WYSIWYG render of current canvas &amp; theme draft)
+              </span>
+            </div>
+            <button
+              onClick={() => setIsLivePreviewOpen(false)}
+              className="text-xs text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="rounded-xl overflow-hidden border border-slate-800 shadow-inner">
+            {/* Announcement Bar Live Preview */}
+            {config.announcementBar?.enabled !== false && (
+              <div
+                className="w-full text-xs py-2 px-4 select-none relative overflow-hidden transition-colors"
+                style={{
+                  backgroundColor: config.announcementBar.styles?.backgroundColor || '#1E1B4B',
+                  color: config.announcementBar.styles?.textColor || '#FFFFFF',
+                  borderColor: config.announcementBar.styles?.borderColor || 'rgba(255,255,255,0.1)',
+                  fontSize: config.announcementBar.styles?.fontSize || '11px',
+                  fontFamily: config.announcementBar.styles?.fontFamily,
+                  letterSpacing: config.announcementBar.styles?.letterSpacing || '0.05em',
+                }}
+              >
+                {config.announcementBar.mode === 'marquee' ? (
+                  <div className="flex w-max items-center animate-marquee">
+                    <span className="px-6 font-semibold uppercase tracking-wider">
+                      {config.announcementBar.blocks.map((b) => b.settings?.text).filter(Boolean).join('   ✦   ') ||
+                        'COMPLIMENTARY WORLDWIDE EXPRESS DELIVERY • EXCLUSIVE ATELIER LUXURY PACKAGING'}
+                    </span>
+                    <span className="px-6 font-semibold uppercase tracking-wider">
+                      {config.announcementBar.blocks.map((b) => b.settings?.text).filter(Boolean).join('   ✦   ') ||
+                        'COMPLIMENTARY WORLDWIDE EXPRESS DELIVERY • EXCLUSIVE ATELIER LUXURY PACKAGING'}
+                    </span>
+                  </div>
+                ) : config.announcementBar.mode === 'countdown' ? (
+                  <div className="flex items-center justify-center gap-3 font-mono font-bold">
+                    <span className="font-sans font-semibold tracking-wider text-xs uppercase">
+                      {config.announcementBar.countdown?.label || 'FLASH SALE'}
+                    </span>
+                    <div className="flex items-center gap-1 text-[11px] bg-black/20 px-2.5 py-0.5 rounded-full border border-white/10">
+                      <span>03d</span>
+                      <span>14h</span>
+                      <span>:</span>
+                      <span>22m</span>
+                      <span>:</span>
+                      <span className="text-amber-300">45s</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                      {config.announcementBar.blocks
+                        .filter((b) => b.zone === 'announcement.left')
+                        .map((b) => (
+                          <span key={b.id} className="opacity-90">{b.settings?.text || b.settings?.label || b.type.toUpperCase()}</span>
+                        ))}
+                    </div>
+                    <div className="flex-1 text-center font-medium">
+                      {config.announcementBar.blocks
+                        .filter((b) => b.zone === 'announcement.center')
+                        .map((b) => (
+                          <span key={b.id} className="font-bold">{b.settings?.text || 'Announcement Text'}</span>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {config.announcementBar.blocks
+                        .filter((b) => b.zone === 'announcement.right')
+                        .map((b) => (
+                          <span key={b.id} className="opacity-90">{b.settings?.text || b.settings?.label || b.type.toUpperCase()}</span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Main Header Live Preview */}
+            <div
+              className="w-full px-6 py-4 flex items-center justify-between transition-colors"
+              style={{
+                backgroundColor: config.mainHeader.styles?.backgroundColor || '#FFFDFC',
+                color: config.mainHeader.styles?.textColor || '#111111',
+                borderBottom: `${config.mainHeader.styles?.borderBottomWidth || '1px'} solid ${config.mainHeader.styles?.borderColor || '#E8DED8'}`,
+                fontFamily: config.mainHeader.styles?.fontFamily,
+              }}
+            >
+              {/* Left Zone */}
+              <div className="flex items-center gap-4 flex-1">
+                {config.mainHeader.blocks
+                  .filter((b) => b.zone === 'main.left')
+                  .map((b) => {
+                    if (b.type === 'logo') {
+                      return (
+                        <div key={b.id} className="font-serif font-black text-lg tracking-wider">
+                          {b.settings?.logoText || activeTenant.name.toUpperCase()}
+                        </div>
+                      );
+                    }
+                    if (b.type === 'navigation') {
+                      const split = b.settings?.splitSide;
+                      const list =
+                        split === 'first-half'
+                          ? config.navigationMenu.slice(0, Math.ceil(config.navigationMenu.length / 2))
+                          : split === 'second-half'
+                          ? config.navigationMenu.slice(Math.ceil(config.navigationMenu.length / 2))
+                          : config.navigationMenu;
+                      return (
+                        <div key={b.id} className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider">
+                          {list.map((item) => (
+                            <span key={item.id} className="hover:opacity-75 cursor-pointer">{item.label}</span>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return <span key={b.id} className="text-xs">{b.settings?.label || b.type.toUpperCase()}</span>;
+                  })}
+              </div>
+
+              {/* Center Zone */}
+              <div className="flex items-center justify-center gap-4 flex-1">
+                {config.mainHeader.blocks
+                  .filter((b) => b.zone === 'main.center')
+                  .map((b) => {
+                    if (b.type === 'logo') {
+                      return (
+                        <div key={b.id} className="text-center">
+                          <div className="font-serif font-black text-xl tracking-wider">
+                            {b.settings?.logoText || activeTenant.name.toUpperCase()}
+                          </div>
+                          {b.settings?.badgeText && (
+                            <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-rose-600 block">
+                              {b.settings.badgeText}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (b.type === 'navigation') {
+                      return (
+                        <div key={b.id} className="flex items-center gap-5 text-xs font-bold uppercase tracking-wider">
+                          {config.navigationMenu.map((item) => (
+                            <span key={item.id} className="hover:opacity-75 cursor-pointer">{item.label}</span>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return <span key={b.id} className="text-xs">{b.settings?.text || b.type.toUpperCase()}</span>;
+                  })}
+              </div>
+
+              {/* Right Zone */}
+              <div className="flex items-center justify-end gap-4 flex-1">
+                {config.mainHeader.blocks
+                  .filter((b) => b.zone === 'main.right')
+                  .map((b) => {
+                    if (b.type === 'navigation') {
+                      const split = b.settings?.splitSide;
+                      const list =
+                        split === 'second-half'
+                          ? config.navigationMenu.slice(Math.ceil(config.navigationMenu.length / 2))
+                          : config.navigationMenu;
+                      return (
+                        <div key={b.id} className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider">
+                          {list.map((item) => (
+                            <span key={item.id} className="hover:opacity-75 cursor-pointer">{item.label}</span>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return (
+                      <span key={b.id} className="text-xs font-semibold uppercase tracking-wider">
+                        {b.settings?.label || b.type.toUpperCase()}
+                      </span>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab 1: Zone Layout & Canvas */}
       {activeTab === 'canvas' && (
@@ -1082,6 +1314,168 @@ export default function HeaderBuilderStudio() {
                     })}
                 </div>
               </div>
+            </div>
+
+            {/* Announcement Mode Settings: Static vs Rotate vs Marquee vs Countdown */}
+            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Announcement Display Mode</h4>
+                  <p className="text-[11px] text-slate-400">Choose between static display, auto-rotation, smooth marquee ticker, or live countdown timer.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = {
+                      ...config,
+                      announcementBar: {
+                        ...config.announcementBar,
+                        mode: 'static' as const,
+                        rotationEnabled: false,
+                      },
+                    };
+                    setConfig(next);
+                    pushHistory(next);
+                  }}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
+                    (!config.announcementBar.mode || config.announcementBar.mode === 'static') && !config.announcementBar.rotationEnabled
+                      ? 'bg-rose-600/20 border-rose-500 text-white'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="block">📌 Static Banner</span>
+                  <span className="text-[10px] opacity-75 font-normal">Fixed central alert</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = {
+                      ...config,
+                      announcementBar: {
+                        ...config.announcementBar,
+                        mode: 'rotate' as const,
+                        rotationEnabled: true,
+                      },
+                    };
+                    setConfig(next);
+                    pushHistory(next);
+                  }}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
+                    config.announcementBar.mode === 'rotate' || config.announcementBar.rotationEnabled
+                      ? 'bg-rose-600/20 border-rose-500 text-white'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="block">🔄 Auto-Rotate</span>
+                  <span className="text-[10px] opacity-75 font-normal">Cycles every 5s</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = {
+                      ...config,
+                      announcementBar: {
+                        ...config.announcementBar,
+                        mode: 'marquee' as const,
+                        rotationEnabled: false,
+                      },
+                    };
+                    setConfig(next);
+                    pushHistory(next);
+                  }}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
+                    config.announcementBar.mode === 'marquee'
+                      ? 'bg-rose-600/20 border-rose-500 text-white'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="block">⚡ Marquee Ticker</span>
+                  <span className="text-[10px] opacity-75 font-normal">Smooth infinite scroll</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = {
+                      ...config,
+                      announcementBar: {
+                        ...config.announcementBar,
+                        mode: 'countdown' as const,
+                        rotationEnabled: false,
+                        countdown: config.announcementBar.countdown || {
+                          targetDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                          label: 'FLASH SALE: 25% OFF APPAREL',
+                        },
+                      },
+                    };
+                    setConfig(next);
+                    pushHistory(next);
+                  }}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
+                    config.announcementBar.mode === 'countdown'
+                      ? 'bg-rose-600/20 border-rose-500 text-white'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="block">⏳ Countdown Clock</span>
+                  <span className="text-[10px] opacity-75 font-normal">Live flash sale timer</span>
+                </button>
+              </div>
+
+              {/* Countdown Configuration */}
+              {config.announcementBar.mode === 'countdown' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800 animate-in fade-in">
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-bold">Campaign Label / Headline</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. FLASH SALE: 25% OFF APPAREL"
+                      value={config.announcementBar.countdown?.label || ''}
+                      onChange={(e) => {
+                        const next = {
+                          ...config,
+                          announcementBar: {
+                            ...config.announcementBar,
+                            countdown: {
+                              ...(config.announcementBar.countdown || { targetDate: new Date().toISOString() }),
+                              label: e.target.value,
+                            },
+                          },
+                        };
+                        setConfig(next);
+                      }}
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-bold">Expiry Date &amp; Time</label>
+                    <input
+                      type="datetime-local"
+                      value={config.announcementBar.countdown?.targetDate ? new Date(config.announcementBar.countdown.targetDate).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => {
+                        const dateStr = e.target.value ? new Date(e.target.value).toISOString() : new Date().toISOString();
+                        const next = {
+                          ...config,
+                          announcementBar: {
+                            ...config.announcementBar,
+                            countdown: {
+                              ...(config.announcementBar.countdown || { label: 'FLASH SALE' }),
+                              targetDate: dateStr,
+                            },
+                          },
+                        };
+                        setConfig(next);
+                      }}
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1977,24 +2371,425 @@ export default function HeaderBuilderStudio() {
                 <span>Show Currency Selector in Drawer</span>
               </label>
 
-              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.mobile.drawer.showSocialIcons}
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        mobile: {
+                          ...config.mobile,
+                          drawer: { ...config.mobile.drawer, showSocialIcons: e.target.checked },
+                        },
+                      };
+                      setConfig(next);
+                    }}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                  />
+                  <span>Show Social Icons in Drawer</span>
+                </label>
+              </div>
+
+              {/* Scheduled Seasonal Campaign Headers */}
+              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-4 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Scheduled Campaign Header Window</h4>
+                      <p className="text-[11px] text-slate-400">Schedule header themes to automatically activate and revert during seasonal drops or flash sales.</p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={config.campaign?.enabled || false}
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        campaign: {
+                          enabled: e.target.checked,
+                          name: config.campaign?.name || 'Seasonal Haute Drop 2026',
+                          startDate: config.campaign?.startDate || new Date().toISOString().slice(0, 16),
+                          endDate: config.campaign?.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                    }}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                  />
+                </div>
+
+                {config.campaign?.enabled && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-xs">
+                    <div>
+                      <label className="text-[10px] text-slate-400 font-bold">Campaign Name</label>
+                      <input
+                        type="text"
+                        value={config.campaign?.name || ''}
+                        placeholder="e.g. Black Friday Haute Drop"
+                        onChange={(e) => {
+                          const next = {
+                            ...config,
+                            campaign: { ...config.campaign!, name: e.target.value },
+                          };
+                          setConfig(next);
+                        }}
+                        className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 font-bold">Start Date &amp; Time</label>
+                      <input
+                        type="datetime-local"
+                        value={config.campaign?.startDate ? new Date(config.campaign.startDate).toISOString().slice(0, 16) : ''}
+                        onChange={(e) => {
+                          const next = {
+                            ...config,
+                            campaign: { ...config.campaign!, startDate: e.target.value },
+                          };
+                          setConfig(next);
+                        }}
+                        className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 font-bold">End Date &amp; Time</label>
+                      <input
+                        type="datetime-local"
+                        value={config.campaign?.endDate ? new Date(config.campaign.endDate).toISOString().slice(0, 16) : ''}
+                        onChange={(e) => {
+                          const next = {
+                            ...config,
+                            campaign: { ...config.campaign!, endDate: e.target.value },
+                          };
+                          setConfig(next);
+                        }}
+                        className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+      )}
+
+      {/* Tab 5: Mobile Drawer Studio */}
+      {activeTab === 'mobile' && (
+        <div className="p-6 rounded-2xl bg-[#12141D] border border-slate-800 space-y-6 shadow-xl">
+          <div className="pb-4 border-b border-slate-800 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-rose-400" />
+                Mobile Navigation Drawer Studio
+              </h3>
+              <p className="text-xs text-slate-400">Customize what customers see when opening the sliding mobile menu.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Mobile Drawer Colors */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-4">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Drawer Theme &amp; Colors</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-slate-400">Background Color</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="color"
+                      value={config.mobile.drawer.background || '#FFFDFC'}
+                      onChange={(e) => {
+                        const next = {
+                          ...config,
+                          mobile: {
+                            ...config.mobile,
+                            drawer: { ...config.mobile.drawer, background: e.target.value },
+                          },
+                        };
+                        setConfig(next);
+                      }}
+                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                    />
+                    <input
+                      type="text"
+                      value={config.mobile.drawer.background || '#FFFDFC'}
+                      onChange={(e) => {
+                        const next = {
+                          ...config,
+                          mobile: {
+                            ...config.mobile,
+                            drawer: { ...config.mobile.drawer, background: e.target.value },
+                          },
+                        };
+                        setConfig(next);
+                      }}
+                      className="px-2.5 py-1 rounded bg-slate-950 border border-slate-700 text-xs font-mono text-white flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400">Text Color</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="color"
+                      value={config.mobile.drawer.textColor || '#111111'}
+                      onChange={(e) => {
+                        const next = {
+                          ...config,
+                          mobile: {
+                            ...config.mobile,
+                            drawer: { ...config.mobile.drawer, textColor: e.target.value },
+                          },
+                        };
+                        setConfig(next);
+                      }}
+                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                    />
+                    <input
+                      type="text"
+                      value={config.mobile.drawer.textColor || '#111111'}
+                      onChange={(e) => {
+                        const next = {
+                          ...config,
+                          mobile: {
+                            ...config.mobile,
+                            drawer: { ...config.mobile.drawer, textColor: e.target.value },
+                          },
+                        };
+                        setConfig(next);
+                      }}
+                      className="px-2.5 py-1 rounded bg-slate-950 border border-slate-700 text-xs font-mono text-white flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Links in Drawer */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-4">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Social Media Links</h4>
+              <div className="space-y-2 text-xs">
+                <div>
+                  <label className="text-[10px] text-slate-400">Instagram Handle / URL</label>
+                  <input
+                    type="text"
+                    value={config.mobile.drawer.socialLinks?.instagram || ''}
+                    placeholder="https://instagram.com/lumina.atelier"
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        mobile: {
+                          ...config.mobile,
+                          drawer: {
+                            ...config.mobile.drawer,
+                            socialLinks: { ...(config.mobile.drawer.socialLinks || {}), instagram: e.target.value },
+                          },
+                        },
+                      };
+                      setConfig(next);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400">TikTok Handle / URL</label>
+                  <input
+                    type="text"
+                    value={config.mobile.drawer.socialLinks?.tiktok || ''}
+                    placeholder="https://tiktok.com/@lumina"
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        mobile: {
+                          ...config.mobile,
+                          drawer: {
+                            ...config.mobile.drawer,
+                            socialLinks: { ...(config.mobile.drawer.socialLinks || {}), tiktok: e.target.value },
+                          },
+                        },
+                      };
+                      setConfig(next);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400">WhatsApp Phone Number</label>
+                  <input
+                    type="text"
+                    value={config.mobile.drawer.socialLinks?.whatsapp || ''}
+                    placeholder="e.g. 18004125864"
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        mobile: {
+                          ...config.mobile,
+                          drawer: {
+                            ...config.mobile.drawer,
+                            socialLinks: { ...(config.mobile.drawer.socialLinks || {}), whatsapp: e.target.value },
+                          },
+                        },
+                      };
+                      setConfig(next);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Featured Lookbook Promo Card in Drawer */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-4 md:col-span-2">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div>
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Featured Promo Card in Drawer</h4>
+                  <p className="text-[11px] text-slate-400">Display a rich promotional lookbook card at the bottom of the mobile navigation.</p>
+                </div>
                 <input
                   type="checkbox"
-                  checked={config.mobile.drawer.showSocialIcons}
+                  checked={config.mobile.drawer.promoCard?.enabled !== false && !!config.mobile.drawer.promoCard?.heading}
                   onChange={(e) => {
                     const next = {
                       ...config,
                       mobile: {
                         ...config.mobile,
-                        drawer: { ...config.mobile.drawer, showSocialIcons: e.target.checked },
+                        drawer: {
+                          ...config.mobile.drawer,
+                          promoCard: {
+                            enabled: e.target.checked,
+                            image: config.mobile.drawer.promoCard?.image || 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80',
+                            heading: config.mobile.drawer.promoCard?.heading || 'Autumn / Winter Couture 2026',
+                            description: config.mobile.drawer.promoCard?.description || 'Sculptural silhouettes in double-faced wool & artisanal silks.',
+                            ctaText: config.mobile.drawer.promoCard?.ctaText || 'Shop Collection',
+                            ctaUrl: config.mobile.drawer.promoCard?.ctaUrl || '/women',
+                          },
+                        },
                       },
                     };
                     setConfig(next);
+                    pushHistory(next);
                   }}
                   className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
                 />
-                <span>Show Social Icons in Drawer</span>
-              </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="text-[10px] text-slate-400">Card Image URL</label>
+                  <input
+                    type="text"
+                    value={config.mobile.drawer.promoCard?.image || ''}
+                    placeholder="https://images.unsplash.com/..."
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        mobile: {
+                          ...config.mobile,
+                          drawer: {
+                            ...config.mobile.drawer,
+                            promoCard: { ...(config.mobile.drawer.promoCard || { enabled: true, heading: '', description: '', ctaText: '', ctaUrl: '' }), image: e.target.value },
+                          },
+                        },
+                      };
+                      setConfig(next);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400">Card Headline</label>
+                  <input
+                    type="text"
+                    value={config.mobile.drawer.promoCard?.heading || ''}
+                    placeholder="e.g. Autumn / Winter Couture 2026"
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        mobile: {
+                          ...config.mobile,
+                          drawer: {
+                            ...config.mobile.drawer,
+                            promoCard: { ...(config.mobile.drawer.promoCard || { enabled: true, image: '', description: '', ctaText: '', ctaUrl: '' }), heading: e.target.value },
+                          },
+                        },
+                      };
+                      setConfig(next);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400">Card Subtitle / Description</label>
+                  <input
+                    type="text"
+                    value={config.mobile.drawer.promoCard?.description || ''}
+                    placeholder="e.g. Sculptural silhouettes in double-faced wool & silks."
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        mobile: {
+                          ...config.mobile,
+                          drawer: {
+                            ...config.mobile.drawer,
+                            promoCard: { ...(config.mobile.drawer.promoCard || { enabled: true, image: '', heading: '', ctaText: '', ctaUrl: '' }), description: e.target.value },
+                          },
+                        },
+                      };
+                      setConfig(next);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-400">CTA Button Text</label>
+                    <input
+                      type="text"
+                      value={config.mobile.drawer.promoCard?.ctaText || ''}
+                      placeholder="Shop Collection"
+                      onChange={(e) => {
+                        const next = {
+                          ...config,
+                          mobile: {
+                            ...config.mobile,
+                            drawer: {
+                              ...config.mobile.drawer,
+                              promoCard: { ...(config.mobile.drawer.promoCard || { enabled: true, image: '', heading: '', description: '', ctaUrl: '' }), ctaText: e.target.value },
+                            },
+                          },
+                        };
+                        setConfig(next);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400">CTA Target URL</label>
+                    <input
+                      type="text"
+                      value={config.mobile.drawer.promoCard?.ctaUrl || ''}
+                      placeholder="/women"
+                      onChange={(e) => {
+                        const next = {
+                          ...config,
+                          mobile: {
+                            ...config.mobile,
+                            drawer: {
+                              ...config.mobile.drawer,
+                              promoCard: { ...(config.mobile.drawer.promoCard || { enabled: true, image: '', heading: '', description: '', ctaText: '' }), ctaUrl: e.target.value },
+                            },
+                          },
+                        };
+                        setConfig(next);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2884,6 +3679,88 @@ export default function HeaderBuilderStudio() {
               >
                 Save Navigation Settings
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1-Click Luxury Layout Templates Modal */}
+      {isTemplatesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="w-full max-w-3xl rounded-2xl bg-[#12141D] border border-slate-700 p-6 space-y-5 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-extrabold text-white uppercase tracking-wider">
+                  Luxury Header Archetypes &amp; Layout Presets
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsTemplatesModalOpen(false)}
+                className="p-1 hover:text-white text-slate-400 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Select a pre-engineered luxury layout archetype to immediately configure your zones, blocks, color palettes, and typography:
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
+              {Object.entries(LUXURY_PRESET_TEMPLATES).map(([key, template]) => (
+                <div
+                  key={key}
+                  className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-800/80 transition-all space-y-3 flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">{template.icon}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {template.name}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-white">{template.name}</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">{template.description}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const partial = template.getConfig(activeTenant.slug, activeTenant.name);
+                      const next = {
+                        ...config,
+                        ...partial,
+                        announcementBar: {
+                          ...config.announcementBar,
+                          ...(partial.announcementBar || {}),
+                          styles: {
+                            ...config.announcementBar.styles,
+                            ...(partial.announcementBar?.styles || {}),
+                          },
+                          blocks: partial.announcementBar?.blocks || config.announcementBar.blocks,
+                        },
+                        mainHeader: {
+                          ...config.mainHeader,
+                          ...(partial.mainHeader || {}),
+                          styles: {
+                            ...config.mainHeader.styles,
+                            ...(partial.mainHeader?.styles || {}),
+                          },
+                          blocks: partial.mainHeader?.blocks || config.mainHeader.blocks,
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                      setIsTemplatesModalOpen(false);
+                      showToast(`Applied ${template.name} preset archetype!`, 'success');
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer"
+                  >
+                    Apply {template.name}
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
