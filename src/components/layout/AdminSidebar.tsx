@@ -242,6 +242,13 @@ function AdminSidebarInner({
           badge: 'Design System',
           badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
         },
+        {
+          label: 'Product Card Builder',
+          href: '/appearance/product-cards',
+          icon: ShoppingBag,
+          badge: 'Catalog Card',
+          badgeColor: 'bg-rose-600 text-white font-bold',
+        },
       ],
     },
     {
