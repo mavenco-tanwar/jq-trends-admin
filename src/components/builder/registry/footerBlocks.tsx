@@ -31,46 +31,50 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     icon: ImageIcon,
     defaultContent: {
       logoType: 'text', // 'text' | 'image'
-      text: 'MAVENCO LUXURY',
+      text: '', // dynamically filled from tenant
       imageUrl: '',
       linkUrl: '/',
-      altText: 'Brand Logo',
+      altText: 'Storefront Logo',
       width: 180,
       height: 48,
     },
     defaultStyles: {
-      fontSize: '20px',
+      fontSize: '18px',
       fontFamily: 'Playfair Display, serif',
       fontWeight: '800',
-      letterSpacing: '0.15em',
+      letterSpacing: '0.12em',
       textColor: '#FFFFFF',
       textAlign: 'left',
     },
-    render: ({ block }) => {
+    render: ({ block, tenantSlug }) => {
       const { text, imageUrl, logoType, width } = block.content;
+      const displayText = text || (tenantSlug ? tenantSlug.toUpperCase() : 'STOREFRONT');
+
       if (logoType === 'image' && imageUrl) {
         return (
-          <img
-            src={imageUrl}
-            alt={block.content.altText || 'Logo'}
-            style={{ maxWidth: width ? `${width}px` : '160px', height: 'auto' }}
-            className="inline-block"
-          />
+          <div className="min-w-0 max-w-full overflow-hidden">
+            <img
+              src={imageUrl}
+              alt={block.content.altText || 'Logo'}
+              style={{ maxWidth: width ? `${width}px` : '160px', height: 'auto' }}
+              className="inline-block max-w-full"
+            />
+          </div>
         );
       }
       return (
         <div
           style={{
-            fontSize: block.styles?.fontSize || '20px',
+            fontSize: block.styles?.fontSize || '18px',
             fontFamily: block.styles?.fontFamily || 'inherit',
             fontWeight: block.styles?.fontWeight || '800',
-            letterSpacing: block.styles?.letterSpacing || '0.15em',
+            letterSpacing: block.styles?.letterSpacing || '0.12em',
             color: block.styles?.textColor || 'inherit',
             textAlign: block.styles?.textAlign || 'left',
           }}
-          className="uppercase tracking-widest font-serif font-black"
+          className="uppercase tracking-widest font-serif font-black break-words leading-tight min-w-0 max-w-full"
         >
-          {text || 'BRAND LOGO'}
+          {displayText}
         </div>
       );
     },
@@ -84,7 +88,7 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     description: 'Atelier story, bio, or description paragraphs',
     icon: Type,
     defaultContent: {
-      text: 'Bespoke high-couture essentials, engineered for timeless elegance and worldwide dispatch.',
+      text: 'Bespoke essentials and curated collections, engineered for elegance and worldwide fast dispatch.',
     },
     defaultStyles: {
       fontSize: '13px',
@@ -100,7 +104,7 @@ export const footerBlockDefinitions: BlockDefinition[] = [
           lineHeight: block.styles?.lineHeight || '1.6',
           textAlign: block.styles?.textAlign || 'left',
         }}
-        className="font-sans"
+        className="font-sans break-words"
       >
         {block.content.text || ''}
       </p>
@@ -115,13 +119,14 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     description: 'Displays a curated link menu from Navigation Manager',
     icon: MenuIcon,
     defaultContent: {
-      heading: 'Shop Collections',
+      heading: 'SHOP',
       menuCode: 'footer-menu-shop',
       items: [
         { label: 'New Arrivals', href: '/new-arrivals' },
-        { label: 'Haute Couture', href: '/collections' },
-        { label: 'Fine Accessories', href: '/accessories' },
-        { label: 'Private Archive', href: '/sale' },
+        { label: 'Women', href: '/women' },
+        { label: 'Men', href: '/men' },
+        { label: 'Collections', href: '/collections' },
+        { label: 'Sale', href: '/sale' },
       ],
     },
     defaultStyles: {
@@ -137,7 +142,7 @@ export const footerBlockDefinitions: BlockDefinition[] = [
       const items = block.content.items || [];
 
       return (
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0 max-w-full">
           {block.content.heading && (
             <div
               onClick={() => isMobile && setIsOpen(!isOpen)}
@@ -147,7 +152,7 @@ export const footerBlockDefinitions: BlockDefinition[] = [
             >
               <h4
                 style={{ color: block.styles?.headingColor || '#FFFFFF' }}
-                className="text-xs font-bold uppercase tracking-wider"
+                className="text-xs font-bold uppercase tracking-wider truncate"
               >
                 {block.content.heading}
               </h4>
@@ -159,11 +164,11 @@ export const footerBlockDefinitions: BlockDefinition[] = [
           {(!isMobile || isOpen) && (
             <ul className="space-y-2 text-xs">
               {items.map((it: any, i: number) => (
-                <li key={i}>
+                <li key={i} className="truncate">
                   <a
                     href={it.href || '#'}
                     style={{ color: block.styles?.linkColor || '#94A3B8' }}
-                    className="hover:text-white transition-colors duration-200 block py-0.5"
+                    className="hover:text-white transition-colors duration-200 block py-0.5 truncate"
                   >
                     {it.label}
                   </a>
@@ -184,12 +189,12 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     description: 'Email newsletter box with instant subscription feedback',
     icon: Mail,
     defaultContent: {
-      heading: 'Join The Private Atelier',
-      description: 'Subscribe to receive private preview invitations and seasonal drops.',
-      placeholder: 'Enter your work or personal email...',
-      buttonText: 'Subscribe',
-      privacyText: 'By subscribing, you agree to our Terms and Privacy Policy.',
-      successMessage: 'Thank you for joining our private circle.',
+      heading: 'NEWSLETTER',
+      description: 'Subscribe for private drops, seasonal previews, and exclusive offers.',
+      placeholder: 'Enter your email...',
+      buttonText: 'SUBSCRIBE',
+      privacyText: 'Instant unsubscription available at any time.',
+      successMessage: 'Welcome to our private circle.',
     },
     defaultStyles: {
       buttonBgColor: '#E11D48',
@@ -208,14 +213,14 @@ export const footerBlockDefinitions: BlockDefinition[] = [
       };
 
       return (
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0 max-w-full">
           {block.content.heading && (
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white truncate">
               {block.content.heading}
             </h4>
           )}
           {block.content.description && (
-            <p className="text-xs text-slate-400">{block.content.description}</p>
+            <p className="text-xs text-slate-400 break-words">{block.content.description}</p>
           )}
           {done ? (
             <div className="p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-medium">
@@ -223,13 +228,13 @@ export const footerBlockDefinitions: BlockDefinition[] = [
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-2">
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col gap-2">
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={block.content.placeholder || 'Enter email...'}
-                  className="flex-1 px-3.5 py-2.5 rounded-lg text-xs bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                  placeholder={block.content.placeholder || 'Enter your email...'}
+                  className="w-full px-3.5 py-2.5 rounded-lg text-xs bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
                 />
                 <button
                   type="submit"
@@ -237,13 +242,13 @@ export const footerBlockDefinitions: BlockDefinition[] = [
                     backgroundColor: block.styles?.buttonBgColor || '#E11D48',
                     color: block.styles?.buttonTextColor || '#FFFFFF',
                   }}
-                  className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity shrink-0"
+                  className="w-full px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity shrink-0"
                 >
                   {block.content.buttonText || 'Subscribe'}
                 </button>
               </div>
               {block.content.privacyText && (
-                <p className="text-[10px] text-slate-500">{block.content.privacyText}</p>
+                <p className="text-[10px] text-slate-500 break-words">{block.content.privacyText}</p>
               )}
             </form>
           )}
@@ -260,12 +265,11 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     description: 'Interactive social media profile icons (Instagram, WhatsApp, X, Facebook, etc.)',
     icon: Share2,
     defaultContent: {
-      heading: 'Connect With Us',
+      heading: 'CONNECT WITH US',
       platforms: [
         { name: 'Instagram', url: 'https://instagram.com', enabled: true },
         { name: 'Facebook', url: 'https://facebook.com', enabled: true },
         { name: 'WhatsApp', url: 'https://whatsapp.com', enabled: true },
-        { name: 'TikTok', url: '', enabled: false },
         { name: 'Pinterest', url: 'https://pinterest.com', enabled: true },
       ],
       iconSize: '20px',
@@ -279,9 +283,9 @@ export const footerBlockDefinitions: BlockDefinition[] = [
       const activePlatforms = (block.content.platforms || []).filter((p: any) => p.enabled && p.url);
 
       return (
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0 max-w-full">
           {block.content.heading && (
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white truncate">
               {block.content.heading}
             </h4>
           )}
@@ -312,10 +316,10 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     description: 'Displays phone, email, WhatsApp, and physical boutique address',
     icon: Phone,
     defaultContent: {
-      heading: 'Client Concierge',
+      heading: 'CLIENT CONCIERGE',
       phone: '+1 (800) 456-7890',
       email: 'concierge@example.com',
-      address: '740 Madison Avenue, New York, NY 10065',
+      address: 'Flagship Boutique, Atelier Suite 400',
       whatsapp: '+1 (800) 456-7890',
     },
     defaultStyles: {
@@ -325,37 +329,37 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     render: ({ block }) => {
       const { phone, email, address, whatsapp, heading } = block.content;
       return (
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0 max-w-full">
           {heading && (
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white truncate">
               {heading}
             </h4>
           )}
           <ul className="space-y-2 text-xs text-slate-400">
             {phone && (
-              <li className="flex items-center gap-2.5">
+              <li className="flex items-center gap-2.5 truncate">
                 <Phone className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                <span>{phone}</span>
+                <span className="truncate">{phone}</span>
               </li>
             )}
             {email && (
-              <li className="flex items-center gap-2.5">
+              <li className="flex items-center gap-2.5 truncate">
                 <Mail className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                <a href={`mailto:${email}`} className="hover:text-white transition-colors">
+                <a href={`mailto:${email}`} className="hover:text-white transition-colors truncate">
                   {email}
                 </a>
               </li>
             )}
             {whatsapp && (
-              <li className="flex items-center gap-2.5">
+              <li className="flex items-center gap-2.5 truncate">
                 <MessageCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>WhatsApp: {whatsapp}</span>
+                <span className="truncate">WhatsApp: {whatsapp}</span>
               </li>
             )}
             {address && (
-              <li className="flex items-start gap-2.5">
+              <li className="flex items-start gap-2.5 break-words">
                 <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                <span>{address}</span>
+                <span className="break-words">{address}</span>
               </li>
             )}
           </ul>
@@ -378,7 +382,6 @@ export const footerBlockDefinitions: BlockDefinition[] = [
         { name: 'Amex', enabled: true },
         { name: 'Apple Pay', enabled: true },
         { name: 'Google Pay', enabled: true },
-        { name: 'PayPal', enabled: true },
         { name: 'UPI', enabled: true },
       ],
       alignment: 'left',
@@ -408,19 +411,20 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     description: 'Dynamic year and store name copyright statement',
     icon: CopyrightIcon,
     defaultContent: {
-      template: '© {{year}} {{store.name}}. All rights reserved. Crafted with precision.',
-      storeName: 'MAVENCO LUXURY',
+      template: '© {{year}} {{store.name}}. All rights reserved.',
+      storeName: '',
     },
     defaultStyles: {
       textColor: '#64748B',
       fontSize: '11px',
       textAlign: 'center',
     },
-    render: ({ block }) => {
+    render: ({ block, tenantSlug }) => {
       const year = new Date().getFullYear();
-      const text = (block.content.template || '© {{year}} {{store.name}}')
+      const sName = block.content.storeName || (tenantSlug ? tenantSlug.toUpperCase() : 'STOREFRONT');
+      const text = (block.content.template || '© {{year}} {{store.name}}. All rights reserved.')
         .replace('{{year}}', String(year))
-        .replace('{{store.name}}', block.content.storeName || 'MAVENCO');
+        .replace('{{store.name}}', sName);
 
       return (
         <div
@@ -429,7 +433,7 @@ export const footerBlockDefinitions: BlockDefinition[] = [
             fontSize: block.styles?.fontSize || '11px',
             textAlign: block.styles?.textAlign || 'center',
           }}
-          className="font-sans"
+          className="font-sans break-words"
         >
           {text}
         </div>
@@ -449,7 +453,7 @@ export const footerBlockDefinitions: BlockDefinition[] = [
       borderColor: 'rgba(255,255,255,0.08)',
       borderWidth: '1px',
       borderStyle: 'solid',
-      marginY: '24px',
+      marginY: '20px',
     },
     render: ({ block }) => (
       <hr
@@ -457,7 +461,7 @@ export const footerBlockDefinitions: BlockDefinition[] = [
           borderColor: block.styles?.borderColor || 'rgba(255,255,255,0.08)',
           borderTopWidth: block.styles?.borderWidth || '1px',
           borderStyle: block.styles?.borderStyle || 'solid',
-          margin: `${block.styles?.marginY || '24px'} 0`,
+          margin: `${block.styles?.marginY || '20px'} 0`,
         }}
       />
     ),
@@ -471,10 +475,10 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     description: 'Adjustable vertical whitespace spacer',
     icon: Maximize2,
     defaultContent: {
-      height: '32px',
+      height: '24px',
     },
     render: ({ block }) => (
-      <div style={{ height: block.content.height || '32px' }} className="w-full" />
+      <div style={{ height: block.content.height || '24px' }} className="w-full" />
     ),
   },
 
@@ -490,6 +494,7 @@ export const footerBlockDefinitions: BlockDefinition[] = [
     },
     render: ({ block }) => (
       <div
+        className="break-words max-w-full overflow-hidden"
         dangerouslySetInnerHTML={{
           __html: block.content.html || '',
         }}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BuilderDocument,
   BuilderDevice,
@@ -14,8 +14,9 @@ import { useBuilderHistory } from '../history/HistoryManager';
 import { BuilderToolbar } from './BuilderToolbar';
 import { BuilderSidebar } from './BuilderSidebar';
 import { BuilderCanvas } from './BuilderCanvas';
+import { BuilderBlockRenderer } from './BuilderBlockRenderer';
 import { BlockSettingsPanel } from '../panels/BlockSettingsPanel';
-import { Sparkles, History, RotateCcw, X, CheckCircle2 } from 'lucide-react';
+import { Sparkles, History, RotateCcw, X, CheckCircle2, Monitor, Tablet, Smartphone } from 'lucide-react';
 
 interface BuilderProps {
   initialDocument: BuilderDocument;
@@ -48,6 +49,10 @@ export function Builder({
   const [device, setDevice] = useState<BuilderDevice>('desktop');
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+
+  // Responsive Drawer/Sidebar states
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(true);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -94,6 +99,7 @@ export function Builder({
     pushState(next);
     setSelectedSectionId(newSection.id);
     setSelectedBlockId(null);
+    setIsInspectorOpen(true);
     showToast('New section added', 'info');
   };
 
@@ -116,6 +122,7 @@ export function Builder({
     pushState(next);
     setSelectedSectionId(sectionId);
     setSelectedBlockId(newBlock.id);
+    setIsInspectorOpen(true);
     showToast(`Added ${newBlock.name || blockType} block`, 'info');
   };
 
@@ -150,6 +157,7 @@ export function Builder({
       pushState(next);
       setSelectedSectionId(newSection.id);
       setSelectedBlockId(newBlock.id);
+      setIsInspectorOpen(true);
       showToast(`Added section and ${newBlock.name}`, 'info');
       return;
     }
@@ -341,7 +349,7 @@ export function Builder({
     try {
       const draftDoc = { ...document, status: 'draft' as const, updatedAt: new Date().toISOString() };
       await onSaveDraft(draftDoc);
-      showToast('Draft successfully saved to MongoDB Atlas', 'success');
+      showToast('Draft saved successfully', 'success');
     } catch (err: any) {
       showToast(err?.message || 'Failed to save draft', 'error');
     } finally {
@@ -362,7 +370,7 @@ export function Builder({
       };
       await onPublish(pubDoc);
       pushState(pubDoc);
-      showToast(`Version ${pubDoc.version} published live to storefront!`, 'success');
+      showToast(`Version ${pubDoc.version} published live!`, 'success');
     } catch (err: any) {
       showToast(err?.message || 'Failed to publish live', 'error');
     } finally {
@@ -391,7 +399,7 @@ export function Builder({
   const activeBlock = activeSection?.blocks.find((b) => b.id === selectedBlockId) || null;
 
   return (
-    <div className="flex flex-col h-screen bg-[#07090E] text-slate-100 overflow-hidden select-none">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-[#07090E] text-slate-100 overflow-hidden select-none">
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -424,35 +432,43 @@ export function Builder({
         isPreviewOpen={isPreviewOpen}
         onOpenVersions={handleOpenVersions}
         onOpenPresets={presets.length > 0 ? () => setIsPresetsOpen(true) : undefined}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        isInspectorOpen={isInspectorOpen}
+        onToggleInspector={() => setIsInspectorOpen(!isInspectorOpen)}
         document={document}
       />
 
       {/* Main Workspace (Left Sidebar + Center Canvas + Right Inspector) */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* Left Blocks & Layers Sidebar */}
-        <BuilderSidebar
-          document={document}
-          onAddBlock={handleAddBlockFromSidebar}
-          onAddSection={handleAddSection}
-          onSelectBlock={(blockId, sectionId) => {
-            setSelectedSectionId(sectionId);
-            setSelectedBlockId(blockId);
-          }}
-          onSelectSection={(sectionId) => {
-            setSelectedSectionId(sectionId);
-            setSelectedBlockId(null);
-          }}
-          selectedBlockId={selectedBlockId}
-          selectedSectionId={selectedSectionId}
-          onUpdateTheme={(themeUpdates) => {
-            const next = { ...document, theme: { ...document.theme, ...themeUpdates } };
-            pushState(next);
-          }}
-          onDeleteSection={handleDeleteSection}
-          onDeleteBlock={handleDeleteBlock}
-          onToggleSectionVisibility={handleToggleSectionVisibility}
-          onToggleBlockVisibility={handleToggleBlockVisibility}
-        />
+        {isSidebarOpen && (
+          <BuilderSidebar
+            document={document}
+            onAddBlock={handleAddBlockFromSidebar}
+            onAddSection={handleAddSection}
+            onSelectBlock={(blockId, sectionId) => {
+              setSelectedSectionId(sectionId);
+              setSelectedBlockId(blockId);
+              setIsInspectorOpen(true);
+            }}
+            onSelectSection={(sectionId) => {
+              setSelectedSectionId(sectionId);
+              setSelectedBlockId(null);
+              setIsInspectorOpen(true);
+            }}
+            selectedBlockId={selectedBlockId}
+            selectedSectionId={selectedSectionId}
+            onUpdateTheme={(themeUpdates) => {
+              const next = { ...document, theme: { ...document.theme, ...themeUpdates } };
+              pushState(next);
+            }}
+            onDeleteSection={handleDeleteSection}
+            onDeleteBlock={handleDeleteBlock}
+            onToggleSectionVisibility={handleToggleSectionVisibility}
+            onToggleBlockVisibility={handleToggleBlockVisibility}
+          />
+        )}
 
         {/* Center Interactive WYSIWYG Canvas */}
         <BuilderCanvas
@@ -463,10 +479,12 @@ export function Builder({
           onSelectSection={(secId) => {
             setSelectedSectionId(secId);
             setSelectedBlockId(null);
+            setIsInspectorOpen(true);
           }}
           onSelectBlock={(blkId, secId) => {
             setSelectedSectionId(secId);
             setSelectedBlockId(blkId);
+            setIsInspectorOpen(true);
           }}
           onAddSection={handleAddSection}
           onAddBlockToSection={(secId) => handleAddBlockToSection(secId, 'text')}
@@ -487,17 +505,20 @@ export function Builder({
         />
 
         {/* Right Inspector Panel */}
-        <BlockSettingsPanel
-          block={activeBlock}
-          section={activeSection}
-          theme={document.theme}
-          onUpdateBlock={handleUpdateBlock}
-          onUpdateSection={handleUpdateSection}
-          onClose={() => {
-            setSelectedSectionId(null);
-            setSelectedBlockId(null);
-          }}
-        />
+        {isInspectorOpen && (
+          <BlockSettingsPanel
+            block={activeBlock}
+            section={activeSection}
+            theme={document.theme}
+            onUpdateBlock={handleUpdateBlock}
+            onUpdateSection={handleUpdateSection}
+            onClose={() => {
+              setSelectedSectionId(null);
+              setSelectedBlockId(null);
+              setIsInspectorOpen(false);
+            }}
+          />
+        )}
       </div>
 
       {/* MODAL 1: PRESETS ARCHETYPE MODAL */}
@@ -517,7 +538,7 @@ export function Builder({
             </div>
 
             <p className="text-xs text-slate-400">
-              Apply a battle-tested luxury or ecommerce preset as a starting canvas. Everything remains 100% editable afterwards.
+              Apply a battle-tested preset as a starting canvas. Everything remains 100% editable afterwards.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -617,6 +638,123 @@ export function Builder({
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: FULLSCREEN LIVE PREVIEW MODAL */}
+      {isPreviewOpen && (
+        <div className="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-md flex flex-col">
+          <div className="h-14 bg-slate-900/90 border-b border-slate-800 px-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                Storefront Live Preview
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold border border-emerald-800">
+                {device.toUpperCase()} MODE
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800">
+                <button
+                  onClick={() => setDevice('desktop')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'desktop' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span>Desktop</span>
+                </button>
+                <button
+                  onClick={() => setDevice('tablet')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'tablet' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Tablet className="w-3.5 h-3.5" />
+                  <span>Tablet</span>
+                </button>
+                <button
+                  onClick={() => setDevice('mobile')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'mobile' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Mobile</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setIsPreviewOpen(false)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 sm:p-10 flex flex-col items-center justify-start bg-black/40">
+            <div
+              style={{
+                backgroundColor: document.theme?.backgroundColor || '#07090E',
+                color: document.theme?.textColor || '#F8FAFC',
+                fontFamily: document.theme?.fontFamily,
+              }}
+              className={`transition-all duration-300 border border-white/10 rounded-2xl p-8 ${
+                device === 'desktop'
+                  ? 'w-full max-w-7xl'
+                  : device === 'tablet'
+                  ? 'w-[768px] shadow-2xl rounded-3xl'
+                  : 'w-[390px] shadow-2xl rounded-[36px]'
+              }`}
+            >
+              {document.sections
+                .filter((s) => s.enabled !== false && s.responsive?.[device]?.visible !== false)
+                .map((sec) => {
+                  const cols =
+                    device === 'desktop'
+                      ? sec.layout.columns?.desktop || 4
+                      : device === 'tablet'
+                      ? sec.layout.columns?.tablet || 2
+                      : sec.layout.columns?.mobile || 1;
+
+                  const gridClass =
+                    cols === 1
+                      ? 'grid grid-cols-1'
+                      : cols === 2
+                      ? 'grid grid-cols-1 sm:grid-cols-2 gap-8'
+                      : cols === 3
+                      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8'
+                      : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8';
+
+                  return (
+                    <div
+                      key={sec.id}
+                      style={{
+                        borderColor: sec.styles.borderColor || 'rgba(255,255,255,0.08)',
+                        borderBottomWidth: sec.styles.borderBottomWidth || '0px',
+                        borderTopWidth: sec.styles.borderTopWidth || '0px',
+                      }}
+                      className={`py-6 ${gridClass}`}
+                    >
+                      {sec.blocks
+                        .filter((b) => b.enabled !== false && b.responsive?.[device]?.visible !== false)
+                        .map((b) => (
+                          <div key={b.id} className="min-w-0 max-w-full overflow-hidden">
+                            <BuilderBlockRenderer
+                              block={b}
+                              device={device}
+                              isEditor={false}
+                              tenantSlug={tenantSlug}
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         </div>
       )}

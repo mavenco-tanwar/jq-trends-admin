@@ -10,7 +10,6 @@ import {
   Eye,
   EyeOff,
   GripVertical,
-  Settings2,
 } from 'lucide-react';
 import { BuilderSection, BuilderDevice, BuilderBlock } from '../types/builder.types';
 import { SortableBlock } from './SortableBlock';
@@ -69,23 +68,24 @@ export function SectionRenderer({
 
   const containerClass =
     section.layout.containerWidth === 'full'
-      ? 'w-full px-4 sm:px-6 lg:px-10'
+      ? 'w-full px-4 sm:px-6'
       : section.layout.containerWidth === 'narrow'
       ? 'max-w-4xl mx-auto px-4 sm:px-6'
-      : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8';
+      : 'max-w-7xl mx-auto px-4 sm:px-6';
 
+  // Responsive Grid Classes tailored for builder canvas width
   const gridClass =
     cols === 1
-      ? 'grid grid-cols-1'
+      ? 'grid grid-cols-1 gap-6'
       : cols === 2
-      ? 'grid grid-cols-1 sm:grid-cols-2'
+      ? 'grid grid-cols-1 sm:grid-cols-2 gap-6'
       : cols === 3
-      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+      ? 'grid grid-cols-1 md:grid-cols-3 gap-6'
       : cols === 4
-      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+      ? 'grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-6'
       : cols === 6
-      ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'
-      : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+      ? 'grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-4'
+      : 'grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-6';
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData('text/plain', id);
@@ -126,30 +126,30 @@ export function SectionRenderer({
         borderTopWidth: section.styles.borderTopWidth || '0px',
         borderBottomWidth: section.styles.borderBottomWidth || '0px',
       }}
-      className={`relative group transition-all rounded-2xl border ${
+      className={`relative group transition-all rounded-2xl border min-w-0 max-w-full overflow-hidden ${
         isSelected
-          ? 'ring-2 ring-rose-500/80 border-rose-500 bg-slate-900/40'
+          ? 'ring-2 ring-rose-500/80 border-rose-500 bg-slate-900/40 shadow-xl'
           : 'border-slate-800/80 hover:border-slate-700 bg-slate-950/40'
       } ${!isSecVis ? 'opacity-50 border-dashed border-rose-500/40' : ''}`}
     >
       {/* Section Header Controls Bar */}
-      <div className="flex items-center justify-between p-3 border-b border-slate-800/60 bg-slate-900/70 rounded-t-2xl">
-        <div className="flex items-center gap-2">
-          <GripVertical className="w-4 h-4 text-slate-500 cursor-grab" />
-          <span className="text-xs font-bold text-white uppercase tracking-wider">
+      <div className="flex items-center justify-between p-3 border-b border-slate-800/60 bg-slate-900/80 rounded-t-2xl flex-wrap gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <GripVertical className="w-4 h-4 text-slate-500 cursor-grab shrink-0" />
+          <span className="text-xs font-bold text-white uppercase tracking-wider truncate">
             {section.name || 'Section'}
           </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono shrink-0">
             {cols} Cols ({section.blocks.length} blocks)
           </span>
           {!isSecVis && (
-            <span className="text-[9px] px-2 py-0.5 rounded bg-rose-950 text-rose-400 font-bold border border-rose-800/60">
+            <span className="text-[9px] px-2 py-0.5 rounded bg-rose-950 text-rose-400 font-bold border border-rose-800/60 shrink-0">
               Hidden on {device}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -238,26 +238,27 @@ export function SectionRenderer({
             </span>
           </div>
         ) : (
-          <div className={`${gridClass} gap-6`}>
+          <div className={gridClass}>
             {section.blocks.map((block, idx) => (
-              <SortableBlock
-                key={block.id}
-                block={block}
-                sectionId={section.id}
-                isSelected={selectedBlockId === block.id}
-                device={device}
-                onSelect={() => onSelectBlock(block.id)}
-                onDelete={() => onDeleteBlock(block.id)}
-                onDuplicate={() => onDuplicateBlock(block.id)}
-                onToggleVisibility={() => onToggleBlockVisibility(block.id)}
-                onMoveUp={idx > 0 ? () => onMoveBlock(block.id, 'up') : undefined}
-                onMoveDown={idx < section.blocks.length - 1 ? () => onMoveBlock(block.id, 'down') : undefined}
-                tenantSlug={tenantSlug}
-                isDragging={draggedBlockId === block.id}
-                onDragStart={(e) => handleDragStart(e, block.id)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, block.id)}
-              />
+              <div key={block.id} className="min-w-0 max-w-full overflow-hidden">
+                <SortableBlock
+                  block={block}
+                  sectionId={section.id}
+                  isSelected={selectedBlockId === block.id}
+                  device={device}
+                  onSelect={() => onSelectBlock(block.id)}
+                  onDelete={() => onDeleteBlock(block.id)}
+                  onDuplicate={() => onDuplicateBlock(block.id)}
+                  onToggleVisibility={() => onToggleBlockVisibility(block.id)}
+                  onMoveUp={idx > 0 ? () => onMoveBlock(block.id, 'up') : undefined}
+                  onMoveDown={idx < section.blocks.length - 1 ? () => onMoveBlock(block.id, 'down') : undefined}
+                  tenantSlug={tenantSlug}
+                  isDragging={draggedBlockId === block.id}
+                  onDragStart={(e) => handleDragStart(e, block.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, block.id)}
+                />
+              </div>
             ))}
           </div>
         )}

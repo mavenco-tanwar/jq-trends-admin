@@ -1,6 +1,8 @@
 import { BuilderPreset, BuilderDocument } from '../types/builder.types';
 
-export function getDefaultFooterDocument(tenantSlug: string = 'jqtrends', storeName: string = 'JQ TRENDS'): BuilderDocument {
+export function getDefaultFooterDocument(tenantSlug: string = 'jqtrends', storeName: string = 'STOREFRONT'): BuilderDocument {
+  const dynamicName = storeName || tenantSlug.toUpperCase();
+
   return {
     id: `doc_footer_${tenantSlug}`,
     tenantId: `tenant_${tenantSlug}`,
@@ -46,7 +48,7 @@ export function getDefaultFooterDocument(tenantSlug: string = 'jqtrends', storeN
           mobile: { visible: true, accordion: true },
         },
         blocks: [
-          // Column 1: Brand & Atelier Bio
+          // Column 1: Brand Logo
           {
             id: 'blk_footer_logo',
             type: 'logo',
@@ -56,14 +58,14 @@ export function getDefaultFooterDocument(tenantSlug: string = 'jqtrends', storeN
             columnSpan: 1,
             content: {
               logoType: 'text',
-              text: storeName.toUpperCase(),
+              text: dynamicName,
               linkUrl: '/',
               width: 180,
             },
             styles: {
-              fontSize: '20px',
+              fontSize: '18px',
               fontWeight: '800',
-              letterSpacing: '0.15em',
+              letterSpacing: '0.12em',
               textColor: '#FFFFFF',
             },
           },
@@ -79,11 +81,11 @@ export function getDefaultFooterDocument(tenantSlug: string = 'jqtrends', storeN
               heading: 'SHOP',
               menuCode: 'footer-menu-shop',
               items: [
+                { label: 'New Arrivals', href: '/new-arrivals' },
                 { label: 'Women', href: '/women' },
                 { label: 'Men', href: '/men' },
-                { label: 'Kids', href: '/kids' },
-                { label: 'New Arrivals', href: '/new-arrivals' },
-                { label: 'Private Sale', href: '/sale' },
+                { label: 'Collections', href: '/collections' },
+                { label: 'Sale', href: '/sale' },
               ],
             },
           },
@@ -99,10 +101,10 @@ export function getDefaultFooterDocument(tenantSlug: string = 'jqtrends', storeN
               heading: 'CUSTOMER CARE',
               menuCode: 'footer-menu-care',
               items: [
-                { label: 'Contact & Concierge', href: '/contact' },
-                { label: 'Worldwide Shipping', href: '/shipping' },
+                { label: 'Contact Us', href: '/contact' },
+                { label: 'Shipping & Delivery', href: '/shipping' },
                 { label: 'Returns & Exchanges', href: '/returns' },
-                { label: 'Atelier FAQ', href: '/faq' },
+                { label: 'FAQ', href: '/faq' },
                 { label: 'Privacy & Terms', href: '/privacy' },
               ],
             },
@@ -131,7 +133,7 @@ export function getDefaultFooterDocument(tenantSlug: string = 'jqtrends', storeN
         ],
       },
 
-      // Section 2: Social & Concierge Contact Row
+      // Section 2: Social & Payment Badges Row
       {
         id: 'sec_footer_social',
         name: 'Social & Payment Badges',
@@ -207,8 +209,8 @@ export function getDefaultFooterDocument(tenantSlug: string = 'jqtrends', storeN
             order: 1,
             columnSpan: 1,
             content: {
-              template: '© {{year}} {{store.name}}. All rights reserved. Powered by Mavenco Commerce.',
-              storeName: storeName,
+              template: '© {{year}} {{store.name}}. All rights reserved.',
+              storeName: dynamicName,
             },
             styles: {
               textColor: '#64748B',
@@ -229,7 +231,7 @@ export const FOOTER_PRESETS: BuilderPreset[] = [
   {
     id: 'classic_ecommerce',
     name: 'Classic Ecommerce',
-    description: 'Logo, 4 dynamic menu columns, newsletter box, social channels, and payment badges.',
+    description: '4 dynamic menu columns, newsletter box, social channels, and payment badges.',
     badge: 'Popular',
     document: {
       theme: {
@@ -281,7 +283,7 @@ export const FOOTER_PRESETS: BuilderPreset[] = [
       theme: {
         primaryColor: '#0B090A',
         secondaryColor: '#161A1D',
-        accentColor: '#D4AF37', // Luxury Gold
+        accentColor: '#D4AF37',
         backgroundColor: '#0B090A',
         surfaceColor: '#161A1D',
         textColor: '#E5E5E5',

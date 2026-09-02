@@ -13,6 +13,10 @@ import {
   History,
   Sparkles,
   Layers,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
 } from 'lucide-react';
 import { BuilderDevice, BuilderDocument } from '../types/builder.types';
 
@@ -31,6 +35,10 @@ interface BuilderToolbarProps {
   isPreviewOpen: boolean;
   onOpenVersions: () => void;
   onOpenPresets?: () => void;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
+  isInspectorOpen?: boolean;
+  onToggleInspector?: () => void;
   document: BuilderDocument;
 }
 
@@ -49,12 +57,26 @@ export function BuilderToolbar({
   isPreviewOpen,
   onOpenVersions,
   onOpenPresets,
+  isSidebarOpen = true,
+  onToggleSidebar,
+  isInspectorOpen = true,
+  onToggleInspector,
   document,
 }: BuilderToolbarProps) {
   return (
     <div className="h-14 bg-[#0B0F19]/95 backdrop-blur border-b border-slate-800 px-4 flex items-center justify-between gap-4 sticky top-0 z-50">
       {/* Left: Document Info & Presets */}
       <div className="flex items-center gap-3">
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60 transition-colors"
+            title={isSidebarOpen ? 'Hide Left Sidebar' : 'Show Left Sidebar'}
+          >
+            {isSidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4 text-rose-400" />}
+          </button>
+        )}
+
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-rose-600/20 text-rose-400 flex items-center justify-center font-bold text-xs">
             <Layers className="w-4 h-4" />
@@ -122,7 +144,7 @@ export function BuilderToolbar({
                 ? 'bg-rose-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white'
             }`}
-            title="Mobile Viewport (375px)"
+            title="Mobile Viewport (390px)"
           >
             <Smartphone className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Mobile</span>
@@ -153,7 +175,7 @@ export function BuilderToolbar({
         </div>
       </div>
 
-      {/* Right: History, Preview, Draft & Publish */}
+      {/* Right: History, Preview, Draft & Publish + Inspector Toggle */}
       <div className="flex items-center gap-2">
         <button
           onClick={onOpenVersions}
@@ -193,6 +215,16 @@ export function BuilderToolbar({
           <Send className="w-3.5 h-3.5" />
           <span>{isPublishing ? 'Publishing...' : 'Publish Live'}</span>
         </button>
+
+        {onToggleInspector && (
+          <button
+            onClick={onToggleInspector}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60 transition-colors ml-1"
+            title={isInspectorOpen ? 'Hide Inspector Panel' : 'Show Inspector Panel'}
+          >
+            {isInspectorOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4 text-rose-400" />}
+          </button>
+        )}
       </div>
     </div>
   );
