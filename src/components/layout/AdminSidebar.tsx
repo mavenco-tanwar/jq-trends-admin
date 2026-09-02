@@ -270,6 +270,13 @@ function AdminSidebarInner({
           badgeColor: 'bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold',
         },
         {
+          label: 'Payments & Gateways',
+          href: '/payments',
+          icon: CreditCard,
+          badge: 'Online',
+          badgeColor: 'bg-gradient-to-r from-emerald-500 to-indigo-500 text-white font-bold',
+        },
+        {
           label: 'Tax & Compliance',
           href: '/tax',
           icon: Receipt,
