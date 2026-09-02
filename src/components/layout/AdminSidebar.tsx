@@ -38,6 +38,7 @@ import {
   Shield,
   Zap,
   Store,
+  RotateCcw,
   Globe,
   Database,
   Eye,
@@ -220,6 +221,13 @@ function AdminSidebarInner({
       title: 'SALES & CUSTOMERS',
       items: [
         { label: 'Orders & Fulfillment', href: '/orders', icon: ShoppingCart },
+        {
+          label: 'Returns & Refunds',
+          href: '/returns',
+          icon: RotateCcw,
+          badge: '2 New',
+          badgeColor: 'bg-rose-500/20 text-rose-300',
+        },
         { label: 'Customers', href: '/customers', icon: Users },
         {
           label: 'Customer Reviews',
