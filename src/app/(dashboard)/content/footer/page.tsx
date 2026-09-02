@@ -46,6 +46,8 @@ import {
   MapPin,
   CheckCircle2,
   Loader2,
+  Copy,
+  Settings2,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast-context';
 import { ApiClient } from '@/services/api';
@@ -146,7 +148,7 @@ function getDefaultFooterConfig(tenantSlug: string = 'lumina', storeName: string
         id: 'sec_footer_main',
         name: 'Navigation & Newsletter Row',
         subtitle: 'Main 4-column multi-link navigation, brand overview, and VIP newsletter capture.',
-        badge: 'N',
+        badge: '1',
         enabled: true,
         order: 1,
         columns: [
@@ -266,7 +268,7 @@ function getDefaultFooterConfig(tenantSlug: string = 'lumina', storeName: string
         id: 'sec_footer_social',
         name: 'Social Channels & Payment Methods Row',
         subtitle: 'Connect channels (Instagram, WhatsApp, Facebook) and verified checkout badges.',
-        badge: 'S',
+        badge: '2',
         enabled: true,
         order: 2,
         columns: [
@@ -324,7 +326,7 @@ function getDefaultFooterConfig(tenantSlug: string = 'lumina', storeName: string
         id: 'sec_footer_bottom',
         name: 'Copyright & Legal Notice Row',
         subtitle: 'Dynamic copyright statement with automatic year and store name.',
-        badge: 'C',
+        badge: '3',
         enabled: true,
         order: 3,
         columns: [
@@ -369,11 +371,12 @@ export default function FooterBuilderStudio() {
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // Modals
+  // Modals & Drawers
   const [isLivePreviewOpen, setIsLivePreviewOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<FooterBlock | null>(null);
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSection, setEditingSection] = useState<FooterSection | null>(null);
+  const [editingColumn, setEditingColumn] = useState<{ secId: string; colId: string; label: string } | null>(null);
 
   // Configuration State
   const [config, setConfig] = useState<FooterConfig>(getDefaultFooterConfig('lumina', 'Lumina Atelier'));
@@ -419,10 +422,8 @@ export default function FooterBuilderStudio() {
         const res = await ApiClient.get<any>(`/api/v1/content/footer?tenant=${slug}&preview=draft&_t=${Date.now()}`);
 
         if (res.data?.sections && res.data.sections.length > 0) {
-          // Normalize sections if in old builder format
           const normalizedSections: FooterSection[] = res.data.sections.map((sec: any, sIdx: number) => {
             if (sec.columns) return sec;
-            // Convert flat blocks into columns
             const cols = sec.layout?.columns?.desktop || 4;
             const columnsList: any[] = [];
             for (let i = 0; i < cols; i++) {
@@ -436,7 +437,7 @@ export default function FooterBuilderStudio() {
               id: sec.id || `sec_${sIdx + 1}`,
               name: sec.name || `Section ${sIdx + 1}`,
               subtitle: sec.subtitle || 'Custom content row',
-              badge: sec.name?.charAt(0) || 'S',
+              badge: String(sIdx + 1),
               enabled: sec.enabled !== false,
               order: sec.order || sIdx + 1,
               columns: columnsList,
@@ -474,7 +475,6 @@ export default function FooterBuilderStudio() {
     setIsSaving(true);
     try {
       const slug = activeTenant?.slug || config.tenantSlug || 'lumina';
-      // Format sections for storefront API
       const apiSections = config.sections.map((sec) => ({
         id: sec.id,
         name: sec.name,
@@ -543,7 +543,128 @@ export default function FooterBuilderStudio() {
     }
   };
 
-  // Block Actions
+  // 1. ADD NEW ROW / SECTION
+  const handleAddNewSection = () => {
+    const newIdx = config.sections.length + 1;
+    const newSec: FooterSection = {
+      id: `sec_footer_custom_${Date.now()}`,
+      name: `Custom Row ${newIdx}`,
+      subtitle: 'Configurable multi-zone content row',
+      badge: String(newIdx),
+      enabled: true,
+      order: newIdx,
+      columns: [
+        { id: `col_${Date.now()}_1`, label: 'COLUMN 1', blocks: [] },
+        { id: `col_${Date.now()}_2`, label: 'COLUMN 2', blocks: [] },
+        { id: `col_${Date.now()}_3`, label: 'COLUMN 3', blocks: [] },
+      ],
+      responsive: {
+        desktop: { visible: true },
+        tablet: { visible: true },
+        mobile: { visible: true },
+      },
+    };
+
+    const next = { ...config, sections: [...config.sections, newSec] };
+    setConfig(next);
+    pushHistory(next);
+    showToast(`Added Row ${newIdx} (3 Columns)`, 'info');
+  };
+
+  // 2. DELETE ROW / SECTION
+  const handleDeleteSection = (secId: string) => {
+    if (config.sections.length <= 1) {
+      showToast('You must have at least one footer row.', 'info');
+      return;
+    }
+    const nextSections = config.sections
+      .filter((s) => s.id !== secId)
+      .map((s, idx) => ({ ...s, order: idx + 1, badge: String(idx + 1) }));
+    const next = { ...config, sections: nextSections };
+    setConfig(next);
+    pushHistory(next);
+    showToast('Row removed', 'info');
+  };
+
+  // 3. DUPLICATE ROW / SECTION
+  const handleDuplicateSection = (secId: string) => {
+    const target = config.sections.find((s) => s.id === secId);
+    if (!target) return;
+    const cloned: FooterSection = JSON.parse(JSON.stringify(target));
+    cloned.id = `sec_footer_copy_${Date.now()}`;
+    cloned.name = `${cloned.name} (Copy)`;
+    cloned.order = config.sections.length + 1;
+    cloned.badge = String(config.sections.length + 1);
+
+    const next = { ...config, sections: [...config.sections, cloned] };
+    setConfig(next);
+    pushHistory(next);
+    showToast('Row duplicated', 'info');
+  };
+
+  // 4. MOVE ROW UP / DOWN
+  const handleMoveSection = (secId: string, direction: 'up' | 'down') => {
+    const list = [...config.sections];
+    const idx = list.findIndex((s) => s.id === secId);
+    if (idx === -1) return;
+    if (direction === 'up' && idx > 0) {
+      const temp = list[idx];
+      list[idx] = list[idx - 1];
+      list[idx - 1] = temp;
+    } else if (direction === 'down' && idx < list.length - 1) {
+      const temp = list[idx];
+      list[idx] = list[idx + 1];
+      list[idx + 1] = temp;
+    }
+    const next = {
+      ...config,
+      sections: list.map((s, i) => ({ ...s, order: i + 1, badge: String(i + 1) })),
+    };
+    setConfig(next);
+    pushHistory(next);
+  };
+
+  // 5. CHANGE COLUMN COUNT IN A ROW (1, 2, 3, 4, 6 columns)
+  const handleSetColumnCount = (secId: string, count: number) => {
+    const nextSections = config.sections.map((sec) => {
+      if (sec.id === secId) {
+        const currentCols = sec.columns;
+        let newCols = [...currentCols];
+
+        if (count > currentCols.length) {
+          // Add columns
+          for (let i = currentCols.length; i < count; i++) {
+            newCols.push({
+              id: `col_${sec.id}_${Date.now()}_${i + 1}`,
+              label: `COLUMN ${i + 1}`,
+              blocks: [],
+            });
+          }
+        } else if (count < currentCols.length) {
+          // Reduce columns, preserve blocks by moving into the last remaining column
+          const keptCols = newCols.slice(0, count);
+          const removedBlocks = newCols.slice(count).flatMap((c) => c.blocks);
+          if (keptCols.length > 0 && removedBlocks.length > 0) {
+            keptCols[keptCols.length - 1].blocks = [
+              ...keptCols[keptCols.length - 1].blocks,
+              ...removedBlocks,
+            ];
+          }
+          newCols = keptCols;
+        }
+
+        return { ...sec, columns: newCols };
+      }
+      return sec;
+    });
+
+    const next = { ...config, sections: nextSections };
+    setConfig(next);
+    pushHistory(next);
+    showToast(`Updated row to ${count} columns`, 'info');
+  };
+
+  // 6. BLOCK ACTIONS
   const handleToggleBlock = (secId: string, colId: string, blockId: string) => {
     const nextSections = config.sections.map((sec) => {
       if (sec.id === secId) {
@@ -652,6 +773,17 @@ export default function FooterBuilderStudio() {
     pushHistory(next);
   };
 
+  const handleUpdateEditingSection = (updated: Partial<FooterSection>) => {
+    if (!editingSection) return;
+    const modified = { ...editingSection, ...updated };
+    setEditingSection(modified);
+
+    const nextSections = config.sections.map((s) => (s.id === editingSection.id ? modified : s));
+    const next = { ...config, sections: nextSections };
+    setConfig(next);
+    pushHistory(next);
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen bg-[#07090E] flex flex-col items-center justify-center text-slate-400 gap-3">
@@ -684,7 +816,7 @@ export default function FooterBuilderStudio() {
           </h1>
 
           <p className="text-xs text-slate-400 max-w-2xl mt-1">
-            Design, arrange, and style multi-column footer navigation, newsletter capture, social channels, and payment badges for your storefront in real-time.
+            Design, arrange, and style 1, 2, 3, or more multi-column footer rows with dynamic newsletter capture, social channels, and payment badges in real-time.
           </p>
         </div>
 
@@ -760,7 +892,7 @@ export default function FooterBuilderStudio() {
           }`}
         >
           <Layers className="w-4 h-4" />
-          <span>Section &amp; Row Layout</span>
+          <span>Section &amp; Row Layout ({config.sections.length} Rows)</span>
         </button>
 
         <button
@@ -812,7 +944,7 @@ export default function FooterBuilderStudio() {
         </button>
       </div>
 
-      {/* 3. TAB 1: SECTION & ROW LAYOUT (Card / Zone Architecture) */}
+      {/* 3. TAB 1: SECTION & ROW LAYOUT (Fully Editable Rows Architecture) */}
       {activeTab === 'canvas' && (
         <div className="space-y-6">
           {config.sections.map((section, sIdx) => (
@@ -820,50 +952,90 @@ export default function FooterBuilderStudio() {
               key={section.id}
               className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-5"
             >
-              {/* Section Card Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/60 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-slate-300">
+              {/* Section Card Header (Fully Editable) */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800/60 pb-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-slate-300 shrink-0">
                     {section.badge || sIdx + 1}
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white tracking-wide">{section.name}</h3>
-                    <p className="text-xs text-slate-400">{section.subtitle || 'Custom content row'}</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-white tracking-wide truncate">{section.name}</h3>
+                      <button
+                        onClick={() => setEditingSection(section)}
+                        className="p-1 text-slate-400 hover:text-white"
+                        title="Edit Row Title & Subtitle"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate">{section.subtitle || 'Custom content row'}</p>
                   </div>
                 </div>
 
-                {/* Right Device Controls & Enable Row Toggle */}
+                {/* Right Controls: Column Count Switcher + Row Movement + Duplicate/Delete */}
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                  {/* Column Count Selector */}
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase px-1.5">Cols:</span>
+                    {[1, 2, 3, 4, 6].map((count) => (
+                      <button
+                        key={count}
+                        onClick={() => handleSetColumnCount(section.id, count)}
+                        className={`px-2 py-0.5 rounded font-bold text-xs transition-colors ${
+                          section.columns.length === count
+                            ? 'bg-rose-600 text-white'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                        title={`Set to ${count} Columns`}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Row Reorder Up / Down */}
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800">
                     <button
-                      onClick={() => setDevice('desktop')}
-                      className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-colors ${
-                        device === 'desktop' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                      onClick={() => handleMoveSection(section.id, 'up')}
+                      disabled={sIdx === 0}
+                      className={`p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors ${
+                        sIdx === 0 ? 'opacity-30 cursor-not-allowed' : ''
                       }`}
+                      title="Move Row Up"
                     >
-                      <Monitor className="w-3.5 h-3.5" />
-                      <span>Desktop</span>
+                      <MoveUp className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDevice('tablet')}
-                      className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-colors ${
-                        device === 'tablet' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                      onClick={() => handleMoveSection(section.id, 'down')}
+                      disabled={sIdx === config.sections.length - 1}
+                      className={`p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors ${
+                        sIdx === config.sections.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
                       }`}
+                      title="Move Row Down"
                     >
-                      <Tablet className="w-3.5 h-3.5" />
-                      <span>Tablet</span>
-                    </button>
-                    <button
-                      onClick={() => setDevice('mobile')}
-                      className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-colors ${
-                        device === 'mobile' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <Smartphone className="w-3.5 h-3.5" />
-                      <span>Mobile</span>
+                      <MoveDown className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
+                  {/* Duplicate & Delete Row */}
+                  <button
+                    onClick={() => handleDuplicateSection(section.id)}
+                    className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+                    title="Duplicate Row"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteSection(section.id)}
+                    className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
+                    title="Delete Row"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Enable Row Checkbox */}
                   <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer bg-slate-900/60 px-3 py-1.5 rounded-xl border border-slate-800">
                     <span>Enable Row</span>
                     <input
@@ -892,19 +1064,30 @@ export default function FooterBuilderStudio() {
                     ? 'grid-cols-1 md:grid-cols-2'
                     : section.columns.length === 3
                     ? 'grid-cols-1 md:grid-cols-3'
-                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                    : section.columns.length === 4
+                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                    : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'
                 }`}
               >
-                {section.columns.map((col) => (
+                {section.columns.map((col, cIdx) => (
                   <div
                     key={col.id}
                     className="p-4 rounded-xl bg-[#090D15] border border-slate-800/80 flex flex-col justify-between min-h-[140px]"
                   >
                     {/* Column Zone Header */}
                     <div className="flex items-center justify-between gap-2 border-b border-slate-800/50 pb-2.5 mb-3">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 truncate">
-                        {col.label}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 truncate">
+                          {col.label}
+                        </span>
+                        <button
+                          onClick={() => setEditingColumn({ secId: section.id, colId: col.id, label: col.label })}
+                          className="p-0.5 text-slate-500 hover:text-white"
+                          title="Rename Column"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </button>
+                      </div>
 
                       {/* Add Block Dropdown */}
                       <div className="relative group">
@@ -957,6 +1140,13 @@ export default function FooterBuilderStudio() {
                             <CreditCard className="w-3.5 h-3.5 text-sky-400" />
                             <span>Payment Badges</span>
                           </button>
+                          <button
+                            onClick={() => handleAddBlock(section.id, col.id, 'copyright')}
+                            className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-rose-600/20 flex items-center gap-2"
+                          >
+                            <CopyrightIcon className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Copyright Line</span>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -997,7 +1187,6 @@ export default function FooterBuilderStudio() {
                               <button
                                 onClick={() => {
                                   setEditingBlock(block);
-                                  setEditingSectionId(section.id);
                                 }}
                                 className="p-1 rounded text-slate-400 hover:text-white"
                                 title="Edit Block Properties"
@@ -1021,6 +1210,17 @@ export default function FooterBuilderStudio() {
               </div>
             </div>
           ))}
+
+          {/* ADD NEW ROW BUTTON */}
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={handleAddNewSection}
+              className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border-2 border-dashed border-slate-800 hover:border-rose-500/50 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg group"
+            >
+              <Plus className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
+              <span>Add Another Footer Row / Section</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -1287,7 +1487,109 @@ export default function FooterBuilderStudio() {
         </div>
       )}
 
-      {/* MODAL 1: EDITING BLOCK DRAWER / MODAL */}
+      {/* MODAL 1: EDIT ROW / SECTION TITLE & SUBTITLE */}
+      {editingSection && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[#0F131D] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                Edit Row Details
+              </h3>
+              <button onClick={() => setEditingSection(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Row Title / Label
+                </label>
+                <input
+                  type="text"
+                  value={editingSection.name}
+                  onChange={(e) => handleUpdateEditingSection({ name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Row Subtitle / Description
+                </label>
+                <input
+                  type="text"
+                  value={editingSection.subtitle || ''}
+                  onChange={(e) => handleUpdateEditingSection({ subtitle: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setEditingSection(null)}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: EDIT COLUMN LABEL */}
+      {editingColumn && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-[#0F131D] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                Rename Column Zone
+              </h3>
+              <button onClick={() => setEditingColumn(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Column Label
+              </label>
+              <input
+                type="text"
+                value={editingColumn.label}
+                onChange={(e) => setEditingColumn({ ...editingColumn, label: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => {
+                  const nextSections = config.sections.map((sec) => {
+                    if (sec.id === editingColumn.secId) {
+                      const nextCols = sec.columns.map((c) =>
+                        c.id === editingColumn.colId ? { ...c, label: editingColumn.label } : c
+                      );
+                      return { ...sec, columns: nextCols };
+                    }
+                    return sec;
+                  });
+                  const next = { ...config, sections: nextSections };
+                  setConfig(next);
+                  pushHistory(next);
+                  setEditingColumn(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: EDITING BLOCK PROPERTIES */}
       {editingBlock && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-[#0F131D] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
@@ -1449,7 +1751,7 @@ export default function FooterBuilderStudio() {
         </div>
       )}
 
-      {/* MODAL 2: LAYOUT TEMPLATES */}
+      {/* MODAL 4: LAYOUT TEMPLATES */}
       {isTemplatesModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-2xl bg-[#0F131D] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
@@ -1479,15 +1781,15 @@ export default function FooterBuilderStudio() {
                   setConfig(initial);
                   pushHistory(initial);
                   setIsTemplatesModalOpen(false);
-                  showToast('Applied Classic Ecommerce Preset');
+                  showToast('Applied Classic Ecommerce Preset (3 Rows)');
                 }}
                 className="p-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-rose-500 transition-all cursor-pointer group"
               >
                 <h4 className="text-sm font-bold text-white group-hover:text-rose-400 mb-1">
-                  Classic Ecommerce
+                  Classic Ecommerce (3 Rows)
                 </h4>
                 <p className="text-xs text-slate-400">
-                  4-column layout with shop links, concierge care, newsletter box, social channels, and payment badges.
+                  3 distinct rows: 4-column link navigation, social &amp; payment badges row, and legal copyright bar.
                 </p>
               </div>
 
@@ -1497,20 +1799,22 @@ export default function FooterBuilderStudio() {
                     activeTenant?.slug || 'lumina',
                     activeTenant?.name || 'Lumina Atelier'
                   );
+                  // Keep only 1 sleek row
+                  initial.sections = [initial.sections[0]];
                   initial.theme.backgroundColor = '#000000';
                   initial.theme.accentColor = '#FFFFFF';
                   setConfig(initial);
                   pushHistory(initial);
                   setIsTemplatesModalOpen(false);
-                  showToast('Applied Minimalist Studio Preset');
+                  showToast('Applied Minimalist Studio Preset (1 Row)');
                 }}
                 className="p-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-rose-500 transition-all cursor-pointer group"
               >
                 <h4 className="text-sm font-bold text-white group-hover:text-rose-400 mb-1">
-                  Minimalist Studio
+                  Minimalist Studio (1 Row)
                 </h4>
                 <p className="text-xs text-slate-400">
-                  Ultra-clean, high-contrast monochrome design for design studios and boutique fashion houses.
+                  Ultra-clean single-row layout for design studios and boutique fashion houses.
                 </p>
               </div>
             </div>
@@ -1518,7 +1822,7 @@ export default function FooterBuilderStudio() {
         </div>
       )}
 
-      {/* MODAL 3: FULLSCREEN LIVE PREVIEW */}
+      {/* MODAL 5: FULLSCREEN LIVE PREVIEW */}
       {isLivePreviewOpen && (
         <div className="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-md flex flex-col">
           <div className="h-14 bg-slate-900/90 border-b border-slate-800 px-6 flex items-center justify-between">
@@ -1598,7 +1902,9 @@ export default function FooterBuilderStudio() {
                         ? 'grid-cols-1 md:grid-cols-2'
                         : sec.columns.length === 3
                         ? 'grid-cols-1 md:grid-cols-3'
-                        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                        : sec.columns.length === 4
+                        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                        : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'
                     }`}
                   >
                     {sec.columns.map((col) => (
