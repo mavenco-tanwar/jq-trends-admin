@@ -2375,38 +2375,97 @@ export default function HeaderBuilderStudio() {
                 </div>
               </div>
 
-              {/* Mega Menu Toggle */}
-              <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-3">
+              {/* Dropdown & Mega Menu Type Selector */}
+              <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-bold text-white">Mega Menu Multi-Column Dropdown</h4>
-                    <p className="text-[11px] text-slate-400">Exposes multi-column grouped categories and spotlight lookbook banners.</p>
+                    <h4 className="font-bold text-white text-sm">Hover Dropdown &amp; Mega Menu Options</h4>
+                    <p className="text-[11px] text-slate-400">Choose how this menu item expands when customers hover or tap on it.</p>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={config.navigationMenu[editingNavIndex].megaMenu?.enabled || false}
-                    onChange={(e) => {
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
                       const list = [...config.navigationMenu];
-                      if (e.target.checked) {
+                      if (list[editingNavIndex].megaMenu) list[editingNavIndex].megaMenu!.enabled = false;
+                      delete list[editingNavIndex].children;
+                      setConfig({ ...config, navigationMenu: list });
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      !config.navigationMenu[editingNavIndex].megaMenu?.enabled &&
+                      (!config.navigationMenu[editingNavIndex].children || config.navigationMenu[editingNavIndex].children?.length === 0)
+                        ? 'bg-rose-600/20 border-rose-500 text-white font-bold'
+                        : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="block text-xs font-bold">No Dropdown</span>
+                    <span className="text-[10px] opacity-75">Direct page link only</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const list = [...config.navigationMenu];
+                      if (list[editingNavIndex].megaMenu) list[editingNavIndex].megaMenu!.enabled = false;
+                      if (!list[editingNavIndex].children || list[editingNavIndex].children?.length === 0) {
+                        list[editingNavIndex].children = [
+                          { id: `sub_${Date.now()}_1`, label: 'New Arrivals', url: config.navigationMenu[editingNavIndex].url || '/women', order: 1, enabled: true },
+                          { id: `sub_${Date.now()}_2`, label: 'Best Sellers', url: config.navigationMenu[editingNavIndex].url || '/women', order: 2, enabled: true },
+                          { id: `sub_${Date.now()}_3`, label: 'Featured Edit', url: config.navigationMenu[editingNavIndex].url || '/women', order: 3, enabled: true },
+                        ];
+                      }
+                      setConfig({ ...config, navigationMenu: list });
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      !config.navigationMenu[editingNavIndex].megaMenu?.enabled &&
+                      config.navigationMenu[editingNavIndex].children &&
+                      config.navigationMenu[editingNavIndex].children!.length > 0
+                        ? 'bg-rose-600/20 border-rose-500 text-white font-bold'
+                        : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="block text-xs font-bold">Simple Dropdown</span>
+                    <span className="text-[10px] opacity-75">Standard vertical list</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const list = [...config.navigationMenu];
+                      if (!list[editingNavIndex].megaMenu || !list[editingNavIndex].megaMenu?.columns || list[editingNavIndex].megaMenu?.columns.length === 0) {
                         list[editingNavIndex].megaMenu = {
                           enabled: true,
                           columns: [
                             {
-                              id: 'col_1',
-                              title: 'Curated Categories',
+                              id: `col_${Date.now()}_1`,
+                              title: 'Categories',
                               links: [
-                                { label: 'Architectural Silhouettes', url: '/women' },
+                                { label: 'Architectural Silhouettes', url: '/women', badge: 'NEW' },
                                 { label: 'Artisanal Linens & Silks', url: '/women' },
                                 { label: 'Tailored Sculptural Tops', url: '/women' },
+                                { label: 'Evening & Occasionwear', url: '/women' },
                               ],
                             },
                             {
-                              id: 'col_promo',
+                              id: `col_${Date.now()}_2`,
+                              title: 'Collections',
+                              links: [
+                                { label: 'Monochrome Minimalist', url: '/women' },
+                                { label: 'Autumn / Winter 2026', url: '/women', badge: 'HOT' },
+                                { label: 'Capsule Wardrobe', url: '/women' },
+                                { label: 'Exclusive Pre-Orders', url: '/women' },
+                              ],
+                            },
+                            {
+                              id: `col_${Date.now()}_promo`,
                               title: 'Spotlight Capsule',
                               links: [],
                               promoBanner: {
                                 image: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80',
                                 heading: 'Master Capsule 2026',
+                                description: 'Handcrafted luxury fabrics with sculptural draping.',
                                 ctaText: 'Shop Lookbook',
                                 ctaUrl: '/women',
                               },
@@ -2414,25 +2473,365 @@ export default function HeaderBuilderStudio() {
                           ],
                         };
                       } else {
-                        if (list[editingNavIndex].megaMenu) {
-                          list[editingNavIndex].megaMenu!.enabled = false;
-                        }
+                        list[editingNavIndex].megaMenu!.enabled = true;
                       }
+                      delete list[editingNavIndex].children;
                       setConfig({ ...config, navigationMenu: list });
                     }}
-                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
-                  />
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      config.navigationMenu[editingNavIndex].megaMenu?.enabled
+                        ? 'bg-rose-600/20 border-rose-500 text-white font-bold'
+                        : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="block text-xs font-bold">✨ Mega Menu</span>
+                    <span className="text-[10px] opacity-75">Multi-column &amp; banners</span>
+                  </button>
                 </div>
+
+                {/* Simple Dropdown Sublinks Editor */}
+                {!config.navigationMenu[editingNavIndex].megaMenu?.enabled &&
+                  config.navigationMenu[editingNavIndex].children &&
+                  config.navigationMenu[editingNavIndex].children!.length > 0 && (
+                    <div className="space-y-3 pt-3 border-t border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white text-xs">Submenu Links ({config.navigationMenu[editingNavIndex].children?.length || 0})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const list = [...config.navigationMenu];
+                            const curr = list[editingNavIndex].children || [];
+                            curr.push({
+                              id: `sub_${Date.now()}`,
+                              label: 'New Sublink',
+                              url: config.navigationMenu[editingNavIndex].url || '/women',
+                              order: curr.length + 1,
+                              enabled: true,
+                            });
+                            list[editingNavIndex].children = curr;
+                            setConfig({ ...config, navigationMenu: list });
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Sublink</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {config.navigationMenu[editingNavIndex].children?.map((child, cIdx) => (
+                          <div key={child.id || cIdx} className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center gap-2">
+                            <input
+                              type="text"
+                              placeholder="Link Label"
+                              value={child.label}
+                              onChange={(e) => {
+                                const list = [...config.navigationMenu];
+                                list[editingNavIndex].children![cIdx].label = e.target.value;
+                                setConfig({ ...config, navigationMenu: list });
+                              }}
+                              className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-white text-xs font-bold flex-1"
+                            />
+                            <input
+                              type="text"
+                              placeholder="URL (e.g. /women/tops)"
+                              value={child.url}
+                              onChange={(e) => {
+                                const list = [...config.navigationMenu];
+                                list[editingNavIndex].children![cIdx].url = e.target.value;
+                                setConfig({ ...config, navigationMenu: list });
+                              }}
+                              className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-white text-xs font-mono flex-1"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const list = [...config.navigationMenu];
+                                list[editingNavIndex].children = list[editingNavIndex].children!.filter((_, i) => i !== cIdx);
+                                setConfig({ ...config, navigationMenu: list });
+                              }}
+                              className="p-1 text-slate-500 hover:text-rose-400 cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Mega Menu Multi-Column & Banner Builder */}
+                {config.navigationMenu[editingNavIndex].megaMenu?.enabled && (
+                  <div className="space-y-4 pt-3 border-t border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-white text-xs">Mega Menu Columns &amp; Content</span>
+                        <p className="text-[10px] text-slate-400">Add grouped category columns and promotional lookbook cards.</p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const list = [...config.navigationMenu];
+                            const cols = list[editingNavIndex].megaMenu!.columns || [];
+                            cols.push({
+                              id: `col_${Date.now()}`,
+                              title: `Column ${cols.length + 1}`,
+                              links: [
+                                { label: 'Featured Product', url: '/women', badge: 'NEW' },
+                                { label: 'Signature Pieces', url: '/women' },
+                                { label: 'Seasonal Edit', url: '/women' },
+                              ],
+                            });
+                            list[editingNavIndex].megaMenu!.columns = cols;
+                            setConfig({ ...config, navigationMenu: list });
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add Category Column</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const list = [...config.navigationMenu];
+                            const cols = list[editingNavIndex].megaMenu!.columns || [];
+                            cols.push({
+                              id: `col_${Date.now()}_promo`,
+                              title: 'Spotlight Feature',
+                              links: [],
+                              promoBanner: {
+                                image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&auto=format&fit=crop&q=80',
+                                heading: 'Exclusive Drop',
+                                description: 'Discover the latest seasonal collection online now.',
+                                ctaText: 'Shop Drop',
+                                ctaUrl: '/women',
+                              },
+                            });
+                            list[editingNavIndex].megaMenu!.columns = cols;
+                            setConfig({ ...config, navigationMenu: list });
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Add Promo Banner</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Columns List */}
+                    <div className="space-y-4">
+                      {config.navigationMenu[editingNavIndex].megaMenu?.columns.map((col, colIdx) => (
+                        <div key={col.id || colIdx} className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                            <div className="flex items-center gap-2 flex-1 max-w-sm">
+                              <span className="font-mono text-xs text-indigo-400 font-bold">Col {colIdx + 1}:</span>
+                              <input
+                                type="text"
+                                value={col.title}
+                                placeholder="Column Title (e.g. APPAREL, SHOES, FEATURED)"
+                                onChange={(e) => {
+                                  const list = [...config.navigationMenu];
+                                  list[editingNavIndex].megaMenu!.columns[colIdx].title = e.target.value;
+                                  setConfig({ ...config, navigationMenu: list });
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-bold w-full uppercase"
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const list = [...config.navigationMenu];
+                                list[editingNavIndex].megaMenu!.columns = list[editingNavIndex].megaMenu!.columns.filter((_, i) => i !== colIdx);
+                                setConfig({ ...config, navigationMenu: list });
+                              }}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 cursor-pointer"
+                              title="Delete Column"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Column Type: Links List */}
+                          {!col.promoBanner && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] text-slate-400 font-semibold">Sublinks ({col.links?.length || 0})</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const list = [...config.navigationMenu];
+                                    const links = list[editingNavIndex].megaMenu!.columns[colIdx].links || [];
+                                    links.push({ label: 'New Link', url: '/women' });
+                                    list[editingNavIndex].megaMenu!.columns[colIdx].links = links;
+                                    setConfig({ ...config, navigationMenu: list });
+                                  }}
+                                  className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>Add Link</span>
+                                </button>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                {col.links?.map((link, lIdx) => (
+                                  <div key={lIdx} className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Link Name"
+                                      value={link.label}
+                                      onChange={(e) => {
+                                        const list = [...config.navigationMenu];
+                                        list[editingNavIndex].megaMenu!.columns[colIdx].links[lIdx].label = e.target.value;
+                                        setConfig({ ...config, navigationMenu: list });
+                                      }}
+                                      className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-white text-xs flex-1"
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="URL (/women/dresses)"
+                                      value={link.url}
+                                      onChange={(e) => {
+                                        const list = [...config.navigationMenu];
+                                        list[editingNavIndex].megaMenu!.columns[colIdx].links[lIdx].url = e.target.value;
+                                        setConfig({ ...config, navigationMenu: list });
+                                      }}
+                                      className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-white text-xs font-mono flex-1"
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="Badge (optional)"
+                                      value={link.badge || ''}
+                                      onChange={(e) => {
+                                        const list = [...config.navigationMenu];
+                                        list[editingNavIndex].megaMenu!.columns[colIdx].links[lIdx].badge = e.target.value || undefined;
+                                        setConfig({ ...config, navigationMenu: list });
+                                      }}
+                                      className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-amber-300 text-[10px] w-20 font-bold uppercase"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const list = [...config.navigationMenu];
+                                        list[editingNavIndex].megaMenu!.columns[colIdx].links = list[editingNavIndex].megaMenu!.columns[colIdx].links.filter((_, i) => i !== lIdx);
+                                        setConfig({ ...config, navigationMenu: list });
+                                      }}
+                                      className="p-1 text-slate-500 hover:text-rose-400 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Column Type: Promo Banner Card */}
+                          {col.promoBanner && (
+                            <div className="space-y-3 p-3 rounded-lg bg-slate-900 border border-slate-800">
+                              <div className="flex items-center gap-2 text-amber-400 text-xs font-bold">
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Spotlight Lookbook Banner</span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-[10px] text-slate-400">Banner Image URL</label>
+                                  <input
+                                    type="text"
+                                    value={col.promoBanner.image}
+                                    placeholder="https://images.unsplash.com/..."
+                                    onChange={(e) => {
+                                      const list = [...config.navigationMenu];
+                                      list[editingNavIndex].megaMenu!.columns[colIdx].promoBanner!.image = e.target.value;
+                                      setConfig({ ...config, navigationMenu: list });
+                                    }}
+                                    className="w-full px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700 text-white text-xs"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] text-slate-400">Headline</label>
+                                  <input
+                                    type="text"
+                                    value={col.promoBanner.heading}
+                                    placeholder="e.g. Master Capsule 2026"
+                                    onChange={(e) => {
+                                      const list = [...config.navigationMenu];
+                                      list[editingNavIndex].megaMenu!.columns[colIdx].promoBanner!.heading = e.target.value;
+                                      setConfig({ ...config, navigationMenu: list });
+                                    }}
+                                    className="w-full px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700 text-white text-xs font-bold"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] text-slate-400">Short Description</label>
+                                <input
+                                  type="text"
+                                  value={col.promoBanner.description || ''}
+                                  placeholder="e.g. Handcrafted luxury fabrics with sculptural draping."
+                                  onChange={(e) => {
+                                    const list = [...config.navigationMenu];
+                                    list[editingNavIndex].megaMenu!.columns[colIdx].promoBanner!.description = e.target.value;
+                                    setConfig({ ...config, navigationMenu: list });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700 text-white text-xs"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-[10px] text-slate-400">CTA Button Label</label>
+                                  <input
+                                    type="text"
+                                    value={col.promoBanner.ctaText || ''}
+                                    placeholder="e.g. Shop Lookbook"
+                                    onChange={(e) => {
+                                      const list = [...config.navigationMenu];
+                                      list[editingNavIndex].megaMenu!.columns[colIdx].promoBanner!.ctaText = e.target.value;
+                                      setConfig({ ...config, navigationMenu: list });
+                                    }}
+                                    className="w-full px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700 text-white text-xs font-bold"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] text-slate-400">CTA Target URL</label>
+                                  <input
+                                    type="text"
+                                    value={col.promoBanner.ctaUrl || ''}
+                                    placeholder="e.g. /women/lookbook"
+                                    onChange={(e) => {
+                                      const list = [...config.navigationMenu];
+                                      list[editingNavIndex].megaMenu!.columns[colIdx].promoBanner!.ctaUrl = e.target.value;
+                                      setConfig({ ...config, navigationMenu: list });
+                                    }}
+                                    className="w-full px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700 text-white text-xs font-mono"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
               <button
+                type="button"
                 onClick={() => {
                   pushHistory(config);
                   setIsNavModalOpen(false);
+                  showToast('Saved navigation item & mega menu settings', 'success');
                 }}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
+                className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-950/30 cursor-pointer"
               >
                 Save Navigation Settings
               </button>
