@@ -537,37 +537,6 @@ export default function HeaderBuilderStudio() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Device Switcher */}
-          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1">
-            <button
-              onClick={() => setDevice('desktop')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                device === 'desktop' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Monitor className="w-3.5 h-3.5" />
-              <span>Desktop</span>
-            </button>
-            <button
-              onClick={() => setDevice('tablet')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                device === 'tablet' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Tablet className="w-3.5 h-3.5" />
-              <span>Tablet</span>
-            </button>
-            <button
-              onClick={() => setDevice('mobile')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                device === 'mobile' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>Mobile</span>
-            </button>
-          </div>
-
           <button
             onClick={handleUndo}
             disabled={historyIdx <= 0}
@@ -596,20 +565,20 @@ export default function HeaderBuilderStudio() {
 
           <button
             onClick={handlePublishLive}
-            disabled={isPublishing || isSaving}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-rose-950/30 transition-all cursor-pointer flex items-center gap-2"
+            disabled={isSaving || isPublishing}
+            className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow-lg shadow-rose-900/30 transition-all cursor-pointer flex items-center gap-2"
           >
             <Check className="w-4 h-4" />
-            <span>{isPublishing ? 'Publishing Live...' : 'Publish Live'}</span>
+            <span>{isPublishing ? 'Publishing...' : 'Publish Live'}</span>
           </button>
         </div>
       </div>
 
-      {/* Primary Studio Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800/80">
         <button
           onClick={() => setActiveTab('canvas')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
             activeTab === 'canvas'
               ? 'bg-rose-600 text-white shadow-md'
               : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -621,7 +590,7 @@ export default function HeaderBuilderStudio() {
 
         <button
           onClick={() => setActiveTab('navigation')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
             activeTab === 'navigation'
               ? 'bg-rose-600 text-white shadow-md'
               : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -632,9 +601,9 @@ export default function HeaderBuilderStudio() {
         </button>
 
         <button
-          onClick={() => setActiveTab('styles')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
-            activeTab === 'styles'
+          onClick={() => setActiveTab('theme')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'theme'
               ? 'bg-rose-600 text-white shadow-md'
               : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
           }`}
@@ -645,7 +614,7 @@ export default function HeaderBuilderStudio() {
 
         <button
           onClick={() => setActiveTab('sticky')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
             activeTab === 'sticky'
               ? 'bg-rose-600 text-white shadow-md'
               : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -658,25 +627,7 @@ export default function HeaderBuilderStudio() {
 
       {/* Tab 1: Zone Layout & Canvas */}
       {activeTab === 'canvas' && (
-        <div
-          className={`space-y-6 transition-all duration-300 ${
-            device === 'tablet'
-              ? 'max-w-[768px] mx-auto p-4 rounded-3xl bg-slate-950/90 border-2 border-indigo-500/40 shadow-2xl shadow-indigo-950/50'
-              : device === 'mobile'
-              ? 'max-w-[420px] mx-auto p-3 rounded-3xl bg-slate-950/90 border-2 border-indigo-500/40 shadow-2xl shadow-indigo-950/50'
-              : 'w-full'
-          }`}
-        >
-          {device !== 'desktop' && (
-            <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 text-indigo-200 text-xs shadow-lg">
-              <div className="flex items-center gap-2">
-                {device === 'tablet' ? <Tablet className="w-4 h-4 text-indigo-400" /> : <Smartphone className="w-4 h-4 text-indigo-400" />}
-                <span className="font-bold capitalize">{device} Viewport ({device === 'tablet' ? '768px' : '390px'})</span>
-              </div>
-              <span className="text-[11px] opacity-80">Click the eye icon on any block to show/hide it on {device}</span>
-            </div>
-          )}
-
+        <div className="w-full space-y-6">
           {/* Zone 1: Announcement Bar */}
           <div className="p-6 rounded-2xl bg-[#12141D] border border-slate-800 space-y-4 shadow-xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
