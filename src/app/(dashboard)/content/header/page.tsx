@@ -999,6 +999,108 @@ export default function HeaderBuilderStudio() {
                   <p className="text-[11px] text-slate-400">Controls Brand Logo, Main Navigation links, Search, Wishlist, Cart, and Account.</p>
                 </div>
               </div>
+
+              <div className="flex items-center gap-3">
+                {/* Per-device Main Header visibility badges */}
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
+                  {/* Desktop Toggle */}
+                  <button
+                    onClick={() => {
+                      const current = config.mainHeader.responsive?.desktop !== false;
+                      const next = {
+                        ...config,
+                        mainHeader: {
+                          ...config.mainHeader,
+                          responsive: { ...config.mainHeader.responsive, desktop: !current },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                      showToast(`Main Header ${!current ? 'enabled' : 'hidden'} on Desktop`, 'info');
+                    }}
+                    title="Toggle Main Header on Desktop"
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                      config.mainHeader.responsive?.desktop !== false
+                        ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                        : 'bg-rose-950/40 text-rose-400 border border-rose-900/60 opacity-60'
+                    }`}
+                  >
+                    <Monitor className="w-3 h-3" />
+                    <span>Desktop</span>
+                  </button>
+
+                  {/* Tablet Toggle */}
+                  <button
+                    onClick={() => {
+                      const current = !config.mainHeader.hideOnTablet && config.mainHeader.responsive?.tablet !== false;
+                      const next = {
+                        ...config,
+                        mainHeader: {
+                          ...config.mainHeader,
+                          hideOnTablet: current,
+                          responsive: { ...config.mainHeader.responsive, tablet: !current },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                      showToast(`Main Header ${!current ? 'enabled' : 'hidden'} on Tablet`, 'info');
+                    }}
+                    title="Toggle Main Header on Tablet"
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                      !config.mainHeader.hideOnTablet && config.mainHeader.responsive?.tablet !== false
+                        ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                        : 'bg-rose-950/40 text-rose-400 border border-rose-900/60 opacity-60'
+                    }`}
+                  >
+                    <Tablet className="w-3 h-3" />
+                    <span>Tablet</span>
+                  </button>
+
+                  {/* Mobile Toggle */}
+                  <button
+                    onClick={() => {
+                      const current = !config.mainHeader.hideOnMobile && config.mainHeader.responsive?.mobile !== false;
+                      const next = {
+                        ...config,
+                        mainHeader: {
+                          ...config.mainHeader,
+                          hideOnMobile: current,
+                          responsive: { ...config.mainHeader.responsive, mobile: !current },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                      showToast(`Main Header ${!current ? 'enabled' : 'hidden'} on Mobile`, 'info');
+                    }}
+                    title="Toggle Main Header on Mobile"
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                      !config.mainHeader.hideOnMobile && config.mainHeader.responsive?.mobile !== false
+                        ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                        : 'bg-rose-950/40 text-rose-400 border border-rose-900/60 opacity-60'
+                    }`}
+                  >
+                    <Smartphone className="w-3 h-3" />
+                    <span>Mobile</span>
+                  </button>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <span>Enable Row</span>
+                  <input
+                    type="checkbox"
+                    checked={config.mainHeader.enabled !== false}
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        mainHeader: { ...config.mainHeader, enabled: e.target.checked },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                    }}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
