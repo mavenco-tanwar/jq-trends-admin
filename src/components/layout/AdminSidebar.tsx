@@ -233,6 +233,18 @@ function AdminSidebarInner({
       ],
     },
     {
+      title: 'APPEARANCE & THEME',
+      items: [
+        {
+          label: 'Theme & Design Studio',
+          href: '/appearance/theme',
+          icon: Palette,
+          badge: 'Design System',
+          badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
+        },
+      ],
+    },
+    {
       title: 'CONTENT & CMS',
       items: [
         {
