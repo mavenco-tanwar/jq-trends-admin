@@ -1761,6 +1761,42 @@ export default function HeaderBuilderStudio() {
             </div>
 
             <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300">Announcement Bar Text Color</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={config.announcementBar.styles.textColor || '#FFFFFF'}
+                  onChange={(e) => {
+                    const next = {
+                      ...config,
+                      announcementBar: {
+                        ...config.announcementBar,
+                        styles: { ...config.announcementBar.styles, textColor: e.target.value },
+                      },
+                    };
+                    setConfig(next);
+                  }}
+                  className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0"
+                />
+                <input
+                  type="text"
+                  value={config.announcementBar.styles.textColor || '#FFFFFF'}
+                  onChange={(e) => {
+                    const next = {
+                      ...config,
+                      announcementBar: {
+                        ...config.announcementBar,
+                        styles: { ...config.announcementBar.styles, textColor: e.target.value },
+                      },
+                    };
+                    setConfig(next);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-mono text-white flex-1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-xs font-bold text-slate-300">Typography Font Family</label>
               <select
                 value={config.mainHeader.styles.fontFamily}
