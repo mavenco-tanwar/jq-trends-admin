@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Mail,
   Percent,
+  Crown,
   Image as ImageIcon,
   FileText,
   Compass,
@@ -245,6 +246,13 @@ function AdminSidebarInner({
           badgeColor: 'bg-sky-500/20 text-sky-300',
         },
         { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
+        {
+          label: 'Loyalty & Gift Cards',
+          href: '/loyalty',
+          icon: Crown,
+          badge: 'VIP Club',
+          badgeColor: 'bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold',
+        },
         {
           label: 'Search & Discovery Studio',
           href: '/marketing/search',
