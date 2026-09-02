@@ -48,7 +48,7 @@ import {
 export default function HeaderBuilderStudio() {
   const { showToast } = useToast();
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [activeTab, setActiveTab] = useState<'canvas' | 'navigation' | 'styles' | 'sticky'>('canvas');
+  const [activeTab, setActiveTab] = useState<'canvas' | 'navigation' | 'theme' | 'sticky'>('canvas');
   const [activeTenant, setActiveTenant] = useState(PlatformService.getActiveTenant());
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -1608,7 +1608,7 @@ export default function HeaderBuilderStudio() {
       )}
 
       {/* Tab 3: Theme & Style Colors */}
-      {activeTab === 'styles' && (
+      {activeTab === 'theme' && (
         <div className="p-6 rounded-2xl bg-[#12141D] border border-slate-800 space-y-6 shadow-xl">
           <div className="pb-4 border-b border-slate-800">
             <h3 className="text-sm font-bold text-white">Header Theme &amp; Color Palette</h3>
