@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   Upload,
@@ -40,6 +40,10 @@ export function MediaPickerModal({
   const [uploadMode, setUploadMode] = useState<'device' | 'url'>('device');
   const [dragOver, setDragOver] = useState(false);
 
+  // File Input References for 100% Reliable Native File Picker
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const changeFileInputRef = useRef<HTMLInputElement>(null);
+
   // File from computer / phone state
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -76,7 +80,7 @@ export function MediaPickerModal({
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file (PNG, JPG, WEBP, SVG, GIF)');
+      alert('Please select a valid image file (PNG, JPG, WEBP, SVG, GIF, AVIF)');
       return;
     }
 
@@ -133,6 +137,10 @@ export function MediaPickerModal({
     setAssets((prev) => [newAsset, ...prev]);
     setSelectedAsset(newAsset);
     resetUploadForm();
+
+    // Automatically select and close with newly uploaded image
+    onSelect(newAsset.url, newAsset);
+    onClose();
   };
 
   const filteredAssets = assets.filter((a) => {
@@ -245,37 +253,52 @@ export function MediaPickerModal({
               <div>
                 {!filePreview ? (
                   <div
+                    onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOver(true);
                     }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
-                    className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${
                       dragOver
-                        ? 'border-rose-500 bg-rose-500/10'
-                        : 'border-slate-700 bg-slate-900/60 hover:border-slate-500 hover:bg-slate-900'
+                        ? 'border-rose-500 bg-rose-500/10 scale-[1.01]'
+                        : 'border-slate-700 bg-slate-900/60 hover:border-rose-500 hover:bg-slate-900'
                     }`}
                   >
-                    {/* Direct clickable file input covering the entire dropzone */}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileInputChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
-                    />
-
                     <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
                       <Upload className="w-6 h-6" />
                     </div>
-                    <div>
+
+                    <div className="space-y-1">
                       <p className="font-bold text-white text-xs">
                         Click to browse from Computer / Phone or drag &amp; drop
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
+                      <p className="text-[11px] text-slate-400">
                         High resolution JPG, PNG, WEBP, SVG or GIF (up to 20MB)
                       </p>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs cursor-pointer flex items-center gap-1.5 transition-all mt-1"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Browse Device Files</span>
+                    </button>
+
+                    {/* Native hidden file input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                    />
                   </div>
                 ) : (
                   <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl flex items-center gap-4">
@@ -289,15 +312,20 @@ export function MediaPickerModal({
                       <p className="text-[11px] text-slate-400">
                         {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload'}
                       </p>
-                      <label className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer">
+                      <button
+                        type="button"
+                        onClick={() => changeFileInputRef.current?.click()}
+                        className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer"
+                      >
                         Change Image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileInputChange}
-                          className="hidden"
-                        />
-                      </label>
+                      </button>
+                      <input
+                        ref={changeFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileInputChange}
+                        className="hidden"
+                      />
                     </div>
                     <button
                       type="button"
@@ -305,7 +333,7 @@ export function MediaPickerModal({
                         setFilePreview(null);
                         setSelectedFile(null);
                       }}
-                      className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg"
+                      className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
