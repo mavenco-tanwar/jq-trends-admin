@@ -1,355 +1,1379 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Sparkles,
   Plus,
   Save,
   Eye,
+  EyeOff,
   RotateCcw,
-  History,
+  Clock,
   CheckCircle2,
   AlertCircle,
   ExternalLink,
   Layers,
   Calendar,
   X,
+  Monitor,
+  Tablet,
+  Smartphone,
+  MoveUp,
+  MoveDown,
+  Trash2,
+  Copy,
+  Edit,
+  GripVertical,
+  ChevronDown,
+  LayoutTemplate,
+  ShoppingBag,
+  Tag,
+  Sliders,
+  Type,
+  Image as ImageIcon,
+  Video,
+  MessageSquare,
+  Share2,
+  HelpCircle,
+  Clock as CountdownIcon,
+  Code,
+  Minus,
+  Check,
+  Loader2,
+  FolderTree,
+  Boxes,
+  Palette,
+  Search,
+  ArrowRight,
 } from 'lucide-react';
-import { ContentService } from '@/services/content';
 import { useToast } from '@/lib/toast-context';
-import { BlockCard } from '@/components/cms/BlockCard';
-import { BlockEditorModal } from '@/components/cms/BlockEditorModal';
-import { BlockLibraryModal } from '@/components/cms/BlockLibraryModal';
-import { DevicePreviewFrame } from '@/components/cms/DevicePreviewFrame';
-import type { ContentBlock, HomepageConfig } from '@/types';
+import { ApiClient } from '@/services/api';
+import { PlatformService } from '@/services/platform';
 
-export default function HomepageBuilderPage() {
+interface HomepageSection {
+  id: string;
+  type: string;
+  name: string;
+  subtitle?: string;
+  badge?: string;
+  enabled: boolean;
+  order: number;
+  data: Record<string, any>;
+  styles?: Record<string, any>;
+  responsive?: {
+    desktop?: { visible?: boolean };
+    tablet?: { visible?: boolean };
+    mobile?: { visible?: boolean };
+  };
+}
+
+interface HomepageDocument {
+  id: string;
+  tenantSlug: string;
+  name: string;
+  type: 'homepage';
+  status: 'draft' | 'published';
+  version: number;
+  sections: HomepageSection[];
+  seo?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    ogImage?: string;
+  };
+  settings?: {
+    headerTransparent?: boolean;
+    pageBackground?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+  publishedAt?: string;
+}
+
+const SECTION_TEMPLATES = [
+  {
+    type: 'hero',
+    name: 'Full-Width Hero Banner',
+    description: 'Immersive visual header with headline, subtitle, dual CTAs, and background media.',
+    icon: LayoutTemplate,
+    category: 'HERO & PROMO',
+    defaultData: {
+      tagline: 'SPRING DROP 2026',
+      heading: 'Elegance Designed For You',
+      subheading: 'Discover bespoke tailoring and handcrafted essentials engineered for modern living.',
+      primaryBtnText: 'SHOP THE COLLECTION',
+      primaryBtnLink: '/collections',
+      secondaryBtnText: 'EXPLORE LOOKBOOK',
+      secondaryBtnLink: '/about',
+      bgImage: '/images/hero/luxury-hero-banner.jpg',
+      overlayOpacity: 0.35,
+      contentAlign: 'center',
+      minHeight: '700px',
+    },
+  },
+  {
+    type: 'products_grid',
+    name: 'Featured Products Grid',
+    description: 'Dynamic product grid query (Newest, Best Selling, On Sale) with responsive columns.',
+    icon: ShoppingBag,
+    category: 'COMMERCE',
+    defaultData: {
+      heading: 'Featured Essentials',
+      subtitle: 'Curated artisanal pieces crafted for timeless versatility.',
+      querySource: 'best_sellers',
+      columnsDesktop: 4,
+      columnsTablet: 2,
+      columnsMobile: 1,
+      limit: 8,
+      showViewAll: true,
+      viewAllLink: '/collections',
+    },
+  },
+  {
+    type: 'product_carousel',
+    name: 'Product Carousel / Slider',
+    description: 'Smooth sliding product carousel with swipe navigation and auto-rotation.',
+    icon: Sparkles,
+    category: 'COMMERCE',
+    defaultData: {
+      heading: 'Trending Now',
+      subtitle: 'Most coveted silhouettes of the season.',
+      querySource: 'trending',
+      autoplay: true,
+      slidesDesktop: 4,
+      slidesMobile: 1,
+    },
+  },
+  {
+    type: 'categories',
+    name: 'Shop by Category Tiles',
+    description: 'Visual category cards with hover zoom and product count badges.',
+    icon: FolderTree,
+    category: 'COMMERCE',
+    defaultData: {
+      heading: 'Shop By Category',
+      subtitle: 'Explore curated departments crafted with premium materials.',
+      categoriesList: [
+        { label: 'Women', image: '/images/categories/women.jpg', href: '/women', count: '48 Items' },
+        { label: 'Men', image: '/images/categories/men.jpg', href: '/men', count: '36 Items' },
+        { label: 'Kids', image: '/images/categories/kids.jpg', href: '/kids', count: '24 Items' },
+        { label: 'Accessories', image: '/images/categories/accessories.jpg', href: '/accessories', count: '18 Items' },
+      ],
+    },
+  },
+  {
+    type: 'image_text',
+    name: 'Split Image + Story Editorial',
+    description: '2-column editorial story with high-resolution imagery and brand narrative.',
+    icon: ImageIcon,
+    category: 'CONTENT',
+    defaultData: {
+      tagline: 'OUR HERITAGE',
+      heading: 'Artisanal Craftsmanship & Ethical Textiles',
+      description: 'Each piece is cut and assembled by master artisans using organic chanderi silk and sustainably sourced linen.',
+      btnText: 'READ OUR STORY',
+      btnLink: '/about',
+      imagePosition: 'left',
+      image: '/images/editorial/craftsmanship.jpg',
+    },
+  },
+  {
+    type: 'promotional_banner',
+    name: 'Promotional Campaign Banner',
+    description: 'High-impact conversion banner with background accent and discount messaging.',
+    icon: Tag,
+    category: 'HERO & PROMO',
+    defaultData: {
+      tagline: 'LIMITED TIME ATELIER PRIVILEGE',
+      heading: 'Complimentary Express Worldwide Shipping',
+      description: 'Enjoy door-to-door express delivery on all orders above $200. No coupon code needed.',
+      btnText: 'CLAIM PRIVILEGE',
+      btnLink: '/collections',
+      bgColor: '#111827',
+      textColor: '#FFFFFF',
+    },
+  },
+  {
+    type: 'countdown',
+    name: 'Flash Sale Countdown Timer',
+    description: 'Live urgency countdown clock for private flash sales and limited releases.',
+    icon: CountdownIcon,
+    category: 'HERO & PROMO',
+    defaultData: {
+      heading: 'Private Seasonal Flash Sale',
+      subtitle: 'Enjoy up to 30% OFF selected archive silhouettes before release closes.',
+      targetDate: '2026-09-15T23:59:59',
+      btnText: 'SHOP SALE NOW',
+      btnLink: '/sale',
+    },
+  },
+  {
+    type: 'newsletter',
+    name: 'VIP Newsletter Box',
+    description: 'Email capture form with incentive description and privacy assurance.',
+    icon: Sliders,
+    category: 'COMMERCE',
+    defaultData: {
+      heading: 'Join The Private Circle',
+      description: 'Subscribe to receive private collection previews, seasonal trunk shows, and exclusive atelier access.',
+      placeholder: 'Enter your email address...',
+      btnText: 'SUBSCRIBE',
+      successMsg: 'Welcome to our private circle.',
+    },
+  },
+  {
+    type: 'testimonials',
+    name: 'Customer Reviews & Press Quotes',
+    description: 'Verified customer feedback quotes with star ratings and avatar images.',
+    icon: MessageSquare,
+    category: 'SOCIAL PROOF',
+    defaultData: {
+      heading: 'What Our Patrons Say',
+      subtitle: 'Read authentic reflections from clientele across the globe.',
+      testimonialsList: [
+        { name: 'Elena Rostova', role: 'Verified Collector', text: 'The drape of the chanderi silk co-ord is unmatched. Exquisite craftsmanship and rapid delivery.', rating: 5 },
+        { name: 'Aria Montgomery', role: 'Fashion Stylist', text: 'Mavenco standards are world-class. The luxury packaging and stitch precision exceeded expectations.', rating: 5 },
+      ],
+    },
+  },
+  {
+    type: 'brands',
+    name: 'Brand Partners & Press Logos',
+    description: 'Monochrome partner logos with grayscale hover effect.',
+    icon: Sparkles,
+    category: 'SOCIAL PROOF',
+    defaultData: {
+      heading: 'AS FEATURED IN',
+      logos: ['VOGUE', 'HARPER’S BAZAAR', 'ELLE', 'GQ', 'FORBES'],
+    },
+  },
+  {
+    type: 'faq',
+    name: 'FAQ Accordions',
+    description: 'Expandable frequently asked questions list for customer concierge clarity.',
+    icon: HelpCircle,
+    category: 'CONTENT',
+    defaultData: {
+      heading: 'Frequently Asked Questions',
+      subtitle: 'Instant answers to concierge, shipping, and bespoke care inquiries.',
+      faqList: [
+        { q: 'What is the shipping timeframe for international orders?', a: 'Standard international dispatch takes 3–5 business days via DHL Express.' },
+        { q: 'How do returns and atelier exchanges work?', a: 'We offer complimentary 7-day doorstep returns and size exchanges.' },
+      ],
+    },
+  },
+  {
+    type: 'social_grid',
+    name: 'Instagram / Social Gallery',
+    description: 'Dynamic social photo grid showcasing community looks.',
+    icon: Share2,
+    category: 'SOCIAL PROOF',
+    defaultData: {
+      heading: 'Styled by You &bull; #MavencoAtelier',
+      subtitle: 'Tag your looks on Instagram for a chance to be featured.',
+      images: [
+        '/images/social/look1.jpg',
+        '/images/social/look2.jpg',
+        '/images/social/look3.jpg',
+        '/images/social/look4.jpg',
+      ],
+    },
+  },
+  {
+    type: 'spacer',
+    name: 'Vertical Spacer',
+    description: 'Customizable whitespace rhythm between sections.',
+    icon: Minus,
+    category: 'UTILITIES',
+    defaultData: {
+      heightDesktop: '60px',
+      heightMobile: '30px',
+    },
+  },
+];
+
+function getDefaultHomepageDocument(tenantSlug: string = 'lumina', storeName: string = 'Lumina Atelier'): HomepageDocument {
+  const dynamicName = storeName || tenantSlug.toUpperCase();
+
+  return {
+    id: `homepage_${tenantSlug}`,
+    tenantSlug,
+    name: 'Main Storefront Homepage',
+    type: 'homepage',
+    status: 'published',
+    version: 1,
+    settings: {
+      headerTransparent: true,
+      pageBackground: '#FAFAF9',
+    },
+    seo: {
+      metaTitle: `${dynamicName} — Artisanal Luxury Fashion & Boutiques`,
+      metaDescription: `Discover bespoke collections, precision tailoring, and modern lifestyle essentials at ${dynamicName}.`,
+    },
+    sections: [
+      {
+        id: 'sec_hero',
+        type: 'hero',
+        name: 'Full-Width Hero Banner',
+        subtitle: 'Main storefront entry visual banner with primary & secondary CTAs.',
+        badge: '1',
+        enabled: true,
+        order: 1,
+        data: {
+          tagline: 'SPRING DROP 2026',
+          heading: 'Elegance Designed For You',
+          subheading: `Discover bespoke tailoring and handcrafted essentials by ${dynamicName}.`,
+          primaryBtnText: 'SHOP THE COLLECTION',
+          primaryBtnLink: '/collections',
+          secondaryBtnText: 'EXPLORE LOOKBOOK',
+          secondaryBtnLink: '/about',
+          bgImage: '/images/hero/luxury-hero-banner.jpg',
+          overlayOpacity: 0.35,
+          contentAlign: 'center',
+          minHeight: '650px',
+        },
+      },
+      {
+        id: 'sec_categories',
+        type: 'categories',
+        name: 'Shop by Category Tiles',
+        subtitle: 'Curated 4-column department cards with hover zoom.',
+        badge: '2',
+        enabled: true,
+        order: 2,
+        data: {
+          heading: 'Shop By Category',
+          subtitle: 'Explore curated departments crafted with fine textiles.',
+          categoriesList: [
+            { label: 'Women', image: '/images/categories/women.jpg', href: '/women', count: '48 Items' },
+            { label: 'Men', image: '/images/categories/men.jpg', href: '/men', count: '36 Items' },
+            { label: 'Kids', image: '/images/categories/kids.jpg', href: '/kids', count: '24 Items' },
+            { label: 'Collections', image: '/images/categories/accessories.jpg', href: '/collections', count: '18 Items' },
+          ],
+        },
+      },
+      {
+        id: 'sec_products',
+        type: 'products_grid',
+        name: 'Featured Best Sellers Grid',
+        subtitle: 'Dynamic 4-column product grid populated from catalog.',
+        badge: '3',
+        enabled: true,
+        order: 3,
+        data: {
+          heading: 'Featured Essentials',
+          subtitle: 'Curated artisanal pieces crafted for timeless versatility.',
+          querySource: 'best_sellers',
+          columnsDesktop: 4,
+          columnsTablet: 2,
+          columnsMobile: 1,
+          limit: 8,
+          showViewAll: true,
+          viewAllLink: '/collections',
+        },
+      },
+      {
+        id: 'sec_promo',
+        type: 'promotional_banner',
+        name: 'Promotional Campaign Banner',
+        subtitle: 'High-impact campaign banner highlighting free shipping.',
+        badge: '4',
+        enabled: true,
+        order: 4,
+        data: {
+          tagline: 'LIMITED TIME PRIVILEGE',
+          heading: 'Complimentary Express Doorstep Shipping',
+          description: 'Enjoy door-to-door express delivery on all orders above $200. Hand-packaged with care.',
+          btnText: 'CLAIM PRIVILEGE',
+          btnLink: '/collections',
+        },
+      },
+      {
+        id: 'sec_editorial',
+        type: 'image_text',
+        name: 'Split Editorial Story',
+        subtitle: 'Brand heritage story with artisanal photography.',
+        badge: '5',
+        enabled: true,
+        order: 5,
+        data: {
+          tagline: 'OUR ATELIER STORY',
+          heading: 'Artisanal Craftsmanship & Ethical Textiles',
+          description: 'Each piece is cut and assembled by master artisans using organic chanderi silk and sustainably sourced linen.',
+          btnText: 'READ OUR STORY',
+          btnLink: '/about',
+          imagePosition: 'left',
+          image: '/images/editorial/craftsmanship.jpg',
+        },
+      },
+      {
+        id: 'sec_testimonials',
+        type: 'testimonials',
+        name: 'Customer Reviews & Quotes',
+        subtitle: 'Verified clientele feedback cards.',
+        badge: '6',
+        enabled: true,
+        order: 6,
+        data: {
+          heading: 'What Our Patrons Say',
+          subtitle: 'Read authentic reflections from clientele across the globe.',
+          testimonialsList: [
+            { name: 'Elena Rostova', role: 'Verified Collector', text: 'The drape of the chanderi silk co-ord is unmatched. Exquisite craftsmanship and rapid delivery.', rating: 5 },
+            { name: 'Aria Montgomery', role: 'Fashion Stylist', text: 'Mavenco standards are world-class. The luxury packaging and stitch precision exceeded expectations.', rating: 5 },
+          ],
+        },
+      },
+      {
+        id: 'sec_newsletter',
+        type: 'newsletter',
+        name: 'VIP Newsletter Box',
+        subtitle: 'Subscriber acquisition capture box.',
+        badge: '7',
+        enabled: true,
+        order: 7,
+        data: {
+          heading: 'Join The Private Circle',
+          description: 'Subscribe to receive private collection previews, seasonal trunk shows, and exclusive atelier access.',
+          placeholder: 'Enter your email address...',
+          btnText: 'SUBSCRIBE',
+          successMsg: 'Welcome to our private circle.',
+        },
+      },
+    ],
+  };
+}
+
+export default function HomepageBuilderStudio() {
   const { showToast } = useToast();
-  const [homepage, setHomepage] = useState<HomepageConfig | null>(null);
-  const [sections, setSections] = useState<ContentBlock[]>([]);
+  const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [activeTab, setActiveTab] = useState<'canvas' | 'library' | 'catalog' | 'responsive' | 'seo'>('canvas');
+  const [activeTenant, setActiveTenant] = useState(PlatformService.getActiveTenant());
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // Modals State
-  const [editingBlock, setEditingBlock] = useState<ContentBlock | null>(null);
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [historyList, setHistoryList] = useState<{ version: number; updatedAt: string; publishedAt?: string; sections: ContentBlock[] }[]>([]);
+  // Modals & State
+  const [isLivePreviewOpen, setIsLivePreviewOpen] = useState(false);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
+  const [isVersionsModalOpen, setIsVersionsModalOpen] = useState(false);
+  const [editingSection, setEditingSection] = useState<HomepageSection | null>(null);
+  const [versionHistory, setVersionHistory] = useState<any[]>([]);
 
-  const fetchHomepage = async () => {
-    try {
-      setIsLoading(true);
-      const data = await ContentService.getHomepage(true);
-      setHomepage(data);
-      setSections(data.sections || []);
-    } catch (err: any) {
-      showToast('Failed to load homepage sections', 'error');
-    } finally {
-      setIsLoading(false);
+  // Core Configuration State
+  const [doc, setDoc] = useState<HomepageDocument>(getDefaultHomepageDocument('lumina', 'Lumina Atelier'));
+
+  // Drag and Drop State
+  const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Undo / Redo History Stack
+  const [history, setHistory] = useState<HomepageDocument[]>([]);
+  const [historyIdx, setHistoryIdx] = useState(-1);
+
+  const pushHistory = (newDoc: HomepageDocument) => {
+    const next = history.slice(0, historyIdx + 1);
+    next.push(JSON.parse(JSON.stringify(newDoc)));
+    setHistory(next);
+    setHistoryIdx(next.length - 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIdx > 0) {
+      const prev = history[historyIdx - 1];
+      setDoc(JSON.parse(JSON.stringify(prev)));
+      setHistoryIdx(historyIdx - 1);
+      showToast('Undid last change', 'info');
     }
   };
 
+  const handleRedo = () => {
+    if (historyIdx < history.length - 1) {
+      const next = history[historyIdx + 1];
+      setDoc(JSON.parse(JSON.stringify(next)));
+      setHistoryIdx(historyIdx + 1);
+      showToast('Redid change', 'info');
+    }
+  };
+
+  // Load Homepage Document on Mount
   useEffect(() => {
-    fetchHomepage();
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const tenant = PlatformService.getActiveTenant();
+        setActiveTenant(tenant);
+        const slug = (tenant?.slug || 'lumina').toLowerCase().trim();
+
+        const res = await ApiClient.get<any>(`/api/v1/content/homepage?tenant=${slug}&preview=draft&_t=${Date.now()}`);
+        if (res.data?.sections && Array.isArray(res.data.sections) && res.data.sections.length > 0) {
+          const initial: HomepageDocument = {
+            id: res.data.id || `homepage_${slug}`,
+            tenantSlug: slug,
+            name: res.data.name || 'Main Storefront Homepage',
+            type: 'homepage',
+            status: res.data.status || 'published',
+            version: res.data.version || 1,
+            sections: res.data.sections.map((s: any, idx: number) => ({
+              id: s.id || `sec_${idx + 1}`,
+              type: s.type || 'hero',
+              name: s.name || s.title || `Section ${idx + 1}`,
+              subtitle: s.subtitle || s.description || '',
+              badge: String(idx + 1),
+              enabled: s.enabled !== false && s.isVisible !== false,
+              order: s.order || s.displayOrder || idx + 1,
+              data: s.data || s.settings || {},
+              styles: s.styles || {},
+              responsive: s.responsive || { desktop: { visible: true }, tablet: { visible: true }, mobile: { visible: true } },
+            })),
+            seo: res.data.seo || {},
+            settings: res.data.settings || {},
+          };
+          setDoc(initial);
+          setHistory([JSON.parse(JSON.stringify(initial))]);
+          setHistoryIdx(0);
+        } else {
+          const initial = getDefaultHomepageDocument(slug, tenant?.name || 'Lumina Atelier');
+          setDoc(initial);
+          setHistory([JSON.parse(JSON.stringify(initial))]);
+          setHistoryIdx(0);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch homepage from CMS API, using default seed:', err);
+        const t = PlatformService.getActiveTenant();
+        const initial = getDefaultHomepageDocument(t?.slug || 'lumina', t?.name || 'Lumina Atelier');
+        setDoc(initial);
+        setHistory([JSON.parse(JSON.stringify(initial))]);
+        setHistoryIdx(0);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
   }, []);
 
-  const handleToggleVisibility = (id: string) => {
-    setSections((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, isVisible: !s.isVisible, updatedAt: new Date().toISOString() } : s))
-    );
-    showToast('Section visibility updated. Remember to Save or Publish!', 'info');
-  };
-
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (targetIndex: number) => {
-    if (draggedIndex === null || draggedIndex === targetIndex) {
-      setDraggedIndex(null);
-      return;
-    }
-    const updated = [...sections];
-    const [draggedItem] = updated.splice(draggedIndex, 1);
-    updated.splice(targetIndex, 0, draggedItem);
-    updated.forEach((s, idx) => (s.displayOrder = idx + 1));
-    setSections(updated);
-    setDraggedIndex(null);
-    showToast('Sections reordered. Remember to Publish Live!', 'info');
-  };
-
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
-    const updated = [...sections];
-    const temp = updated[index];
-    updated[index] = updated[index - 1];
-    updated[index - 1] = temp;
-    updated.forEach((s, idx) => (s.displayOrder = idx + 1));
-    setSections(updated);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index === sections.length - 1) return;
-    const updated = [...sections];
-    const temp = updated[index];
-    updated[index] = updated[index + 1];
-    updated[index + 1] = temp;
-    updated.forEach((s, idx) => (s.displayOrder = idx + 1));
-    setSections(updated);
-  };
-
-  const handleDuplicate = (block: ContentBlock) => {
-    const duplicated: ContentBlock = {
-      ...JSON.parse(JSON.stringify(block)),
-      id: `sec_${block.type}_${Date.now()}`,
-      name: `${block.name} (Copy)`,
-      displayOrder: sections.length + 1,
-      updatedAt: new Date().toISOString(),
-    };
-    setSections([...sections, duplicated]);
-    showToast(`Duplicated ${block.name}`, 'success');
-  };
-
-  const handleDelete = (id: string) => {
-    if (!confirm('Are you sure you want to remove this section from the homepage?')) return;
-    setSections(sections.filter((s) => s.id !== id));
-    showToast('Section removed', 'info');
-  };
-
-  const handleSaveBlockEdit = async (updatedBlock: ContentBlock) => {
-    const updated = sections.map((s) => (s.id === updatedBlock.id ? updatedBlock : s));
-    setSections(updated);
-    try {
-      const pub = await ContentService.publishHomepage(updated);
-      setHomepage(pub);
-      showToast(`Saved & Published live: ${updatedBlock.name}`, 'success');
-    } catch {
-      showToast(`Updated section: ${updatedBlock.name}`, 'info');
-    }
-  };
-
-  const handleAddBlockFromLibrary = (newBlock: ContentBlock) => {
-    newBlock.displayOrder = sections.length + 1;
-    setSections([...sections, newBlock]);
-    showToast(`Added ${newBlock.name} to homepage`, 'success');
-  };
-
+  // Save Draft
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
-      const draft = await ContentService.saveDraft(sections);
-      setHomepage(draft);
-      showToast('Homepage draft saved successfully!', 'success');
-    } catch {
-      showToast('Failed to save draft', 'error');
+      const slug = activeTenant?.slug || doc.tenantSlug || 'lumina';
+      await ApiClient.put(`/api/v1/content/homepage?tenant=${slug}`, {
+        ...doc,
+        tenantSlug: slug,
+        status: 'draft',
+        updatedAt: new Date().toISOString(),
+      });
+      showToast('Draft homepage saved to MongoDB Atlas', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to save draft', 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handlePublishLive = async () => {
+  // Publish Live
+  const handlePublish = async () => {
     setIsPublishing(true);
     try {
-      const published = await ContentService.publishHomepage(sections);
-      setHomepage(published);
-      showToast(`Homepage v${published.version} published live to storefront!`, 'success');
-    } catch {
-      showToast('Failed to publish homepage', 'error');
+      const slug = activeTenant?.slug || doc.tenantSlug || 'lumina';
+      const nextVersion = (doc.version || 1) + 1;
+      const pubDoc: HomepageDocument = {
+        ...doc,
+        tenantSlug: slug,
+        version: nextVersion,
+        status: 'published',
+        publishedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await ApiClient.put(`/api/v1/content/homepage?tenant=${slug}`, pubDoc);
+      setDoc(pubDoc);
+      pushHistory(pubDoc);
+      showToast(`Homepage Version ${nextVersion} published live to storefront!`, 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to publish live', 'error');
     } finally {
       setIsPublishing(false);
     }
   };
 
-  const handleOpenHistory = async () => {
-    const hist = await ContentService.getHistory();
-    setHistoryList(hist);
-    setIsHistoryOpen(true);
+  // Section Management Handlers
+  const handleAddSection = (templateType: string) => {
+    const tmpl = SECTION_TEMPLATES.find((t) => t.type === templateType);
+    if (!tmpl) return;
+
+    const newIdx = doc.sections.length + 1;
+    const newSection: HomepageSection = {
+      id: `sec_${templateType}_${Date.now()}`,
+      type: tmpl.type,
+      name: tmpl.name,
+      subtitle: tmpl.description,
+      badge: String(newIdx),
+      enabled: true,
+      order: newIdx,
+      data: JSON.parse(JSON.stringify(tmpl.defaultData)),
+      responsive: {
+        desktop: { visible: true },
+        tablet: { visible: true },
+        mobile: { visible: true },
+      },
+    };
+
+    const next = { ...doc, sections: [...doc.sections, newSection] };
+    setDoc(next);
+    pushHistory(next);
+    setActiveTab('canvas');
+    showToast(`Added ${newSection.name}`, 'info');
   };
 
-  const handleRestoreVersion = async (version: number) => {
-    if (!confirm(`Restore homepage to Version ${version}? Current unsaved changes will be replaced.`)) return;
-    const restored = await ContentService.restoreVersion(version);
-    setSections(restored);
-    setIsHistoryOpen(false);
-    showToast(`Restored homepage Version ${version}`, 'success');
+  const handleDeleteSection = (secId: string) => {
+    if (doc.sections.length <= 1) {
+      showToast('You must keep at least one homepage section.', 'info');
+      return;
+    }
+    const nextSections = doc.sections
+      .filter((s) => s.id !== secId)
+      .map((s, idx) => ({ ...s, order: idx + 1, badge: String(idx + 1) }));
+    const next = { ...doc, sections: nextSections };
+    setDoc(next);
+    pushHistory(next);
+    showToast('Section removed', 'info');
   };
+
+  const handleDuplicateSection = (secId: string) => {
+    const target = doc.sections.find((s) => s.id === secId);
+    if (!target) return;
+    const cloned: HomepageSection = JSON.parse(JSON.stringify(target));
+    cloned.id = `sec_${cloned.type}_copy_${Date.now()}`;
+    cloned.name = `${cloned.name} (Copy)`;
+    cloned.order = doc.sections.length + 1;
+    cloned.badge = String(doc.sections.length + 1);
+
+    const next = { ...doc, sections: [...doc.sections, cloned] };
+    setDoc(next);
+    pushHistory(next);
+    showToast('Section duplicated', 'info');
+  };
+
+  const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+    const list = [...doc.sections];
+    if (direction === 'up' && index > 0) {
+      const temp = list[index];
+      list[index] = list[index - 1];
+      list[index - 1] = temp;
+    } else if (direction === 'down' && index < list.length - 1) {
+      const temp = list[index];
+      list[index] = list[index + 1];
+      list[index + 1] = temp;
+    }
+    const next = {
+      ...doc,
+      sections: list.map((s, i) => ({ ...s, order: i + 1, badge: String(i + 1) })),
+    };
+    setDoc(next);
+    pushHistory(next);
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (index: number) => {
+    setDraggedSectionIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDrop = (targetIndex: number) => {
+    if (draggedSectionIndex === null || draggedSectionIndex === targetIndex) {
+      setDraggedSectionIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const list = [...doc.sections];
+    const [moved] = list.splice(draggedSectionIndex, 1);
+    list.splice(targetIndex, 0, moved);
+
+    const next = {
+      ...doc,
+      sections: list.map((s, i) => ({ ...s, order: i + 1, badge: String(i + 1) })),
+    };
+
+    setDoc(next);
+    pushHistory(next);
+    setDraggedSectionIndex(null);
+    setDragOverIndex(null);
+    showToast('Sections reordered', 'info');
+  };
+
+  const handleUpdateEditingSection = (updated: Partial<HomepageSection>) => {
+    if (!editingSection) return;
+    const modified = { ...editingSection, ...updated };
+    setEditingSection(modified);
+
+    const nextSections = doc.sections.map((s) => (s.id === editingSection.id ? modified : s));
+    const next = { ...doc, sections: nextSections };
+    setDoc(next);
+    pushHistory(next);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-[#07090E] flex flex-col items-center justify-center text-slate-400 gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+          Loading {activeTenant?.name ? `${activeTenant.name} ` : ''}Homepage Studio...
+        </span>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 pb-20 select-none">
-      {/* Top Header & Publishing Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-[#161822] p-5 rounded-xl border border-slate-800 shadow-md">
+    <div className="min-h-screen bg-[#07090E] text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6 select-none max-w-7xl mx-auto">
+      {/* 1. TOP HEADER STUDIO BAR (Matches Header, Footer, and Theme Builders) */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800/80 pb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs uppercase font-bold tracking-widest text-rose-400">
-              Visual Headless CMS
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-950/80 text-rose-400 border border-rose-800/60 shadow-sm">
+              Visual Theme Studio
             </span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
-              Version {homepage?.version || 1} • {homepage?.status?.toUpperCase() || 'PUBLISHED'}
+            <span className="text-xs font-mono text-slate-400">
+              Store: <strong className="text-white">{activeTenant?.name || 'Lumina Atelier'}</strong>{' '}
+              <span className="text-slate-600">({activeTenant?.slug || 'lumina'})</span>
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-white mt-1">Homepage Builder &amp; Section Flow</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Arrange, schedule, and toggle visibility for every storefront block without writing code.
+
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <LayoutTemplate className="w-7 h-7 text-rose-500" />
+            <span>Homepage &amp; Visual Storefront Builder</span>
+          </h1>
+
+          <p className="text-xs text-slate-400 max-w-2xl mt-1">
+            Visually arrange, reorder, and configure high-converting storefront homepage sections with dynamic ecommerce catalog bindings in real-time.
           </p>
         </div>
 
-        {/* Action Buttons Toolbar */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Top Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setIsLibraryOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition-all"
+            onClick={() => setActiveTab('library')}
+            className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
           >
-            <Plus className="w-4 h-4 text-rose-400" />
-            <span>+ Add Section</span>
+            <Plus className="w-4 h-4 text-amber-400" />
+            <span>Add Section</span>
           </button>
 
           <button
-            onClick={() => setIsPreviewOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition-all"
+            onClick={() => setIsLivePreviewOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-2 transition-all"
           >
-            <Eye className="w-4 h-4 text-sky-400" />
-            <span>Device Preview</span>
+            <Eye className="w-4 h-4 text-emerald-400" />
+            <span>Live Preview</span>
           </button>
 
-          <button
-            onClick={handleOpenHistory}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition-all"
-            title="Version History"
-          >
-            <History className="w-4 h-4 text-amber-400" />
-            <span>History</span>
-          </button>
+          <div className="flex items-center gap-1 border-l border-slate-800 pl-2">
+            <button
+              onClick={handleUndo}
+              disabled={historyIdx <= 0}
+              className={`p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors ${
+                historyIdx <= 0 ? 'opacity-40 cursor-not-allowed' : ''
+              }`}
+              title="Undo"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={historyIdx >= history.length - 1}
+              className={`p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors ${
+                historyIdx >= history.length - 1 ? 'opacity-40 cursor-not-allowed' : ''
+              }`}
+              title="Redo"
+            >
+              <RotateCcw className="w-4 h-4 scale-x-[-1]" />
+            </button>
+          </div>
 
           <button
             onClick={handleSaveDraft}
             disabled={isSaving}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-bold transition-all disabled:opacity-50"
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-2 transition-all"
           >
-            <Save className="w-4 h-4" />
+            <Save className="w-4 h-4 text-amber-400" />
             <span>{isSaving ? 'Saving...' : 'Save Draft'}</span>
           </button>
 
           <button
-            onClick={handlePublishLive}
+            onClick={handlePublish}
             disabled={isPublishing}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-950/50 transition-all disabled:opacity-50"
+            className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Sparkles className="w-4 h-4" />
+            <Check className="w-4 h-4" />
             <span>{isPublishing ? 'Publishing...' : 'Publish Live'}</span>
           </button>
         </div>
       </div>
 
-      {/* Info Status Banner */}
-      <div className="p-3.5 bg-[#161822] border border-slate-800 rounded-xl flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 text-slate-300">
-          <Layers className="w-4 h-4 text-rose-400" />
-          <span>
-            Displaying <strong className="text-white">{sections.length} sections</strong> (
-            <strong className="text-emerald-400">{sections.filter((s) => s.isVisible).length} visible</strong>,{' '}
-            <strong className="text-slate-400">{sections.filter((s) => !s.isVisible).length} hidden</strong>)
-          </span>
+      {/* 2. NAVIGATION TABS BAR (Pill Tabs matching Header & Footer Builder) */}
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+        <button
+          onClick={() => setActiveTab('canvas')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'canvas'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Page Sections &amp; Canvas ({doc.sections.length} Sections)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('library')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'library'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Section Library ({SECTION_TEMPLATES.length} Types)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('catalog')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'catalog'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          <span>Dynamic Catalog Binding</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('responsive')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'responsive'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Smartphone className="w-4 h-4" />
+          <span>Responsive Viewports</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('seo')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === 'seo'
+              ? 'bg-rose-600 text-white shadow-lg shadow-rose-950'
+              : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          <span>SEO &amp; Social Graph</span>
+        </button>
+      </div>
+
+      {/* 3. TAB 1: SECTION CANVAS (Clean Card Architecture with Full Drag and Drop) */}
+      {activeTab === 'canvas' && (
+        <div className="space-y-4">
+          {doc.sections.map((section, sIdx) => (
+            <div
+              key={section.id}
+              draggable={true}
+              onDragStart={() => handleDragStart(sIdx)}
+              onDragOver={(e) => handleDragOver(e, sIdx)}
+              onDrop={() => handleDrop(sIdx)}
+              className={`p-5 rounded-2xl border transition-all ${
+                draggedSectionIndex === sIdx
+                  ? 'opacity-40 scale-95 border-rose-500 bg-rose-950/20'
+                  : dragOverIndex === sIdx
+                  ? 'border-t-2 border-t-rose-500 bg-slate-800'
+                  : section.enabled
+                  ? 'bg-[#0D111A] border-slate-800/90 shadow-xl'
+                  : 'bg-slate-950/40 border-dashed border-slate-800/60 opacity-60'
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Left Section Info */}
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <GripVertical className="w-4 h-4 text-slate-600 cursor-grab active:cursor-grabbing hover:text-slate-300" />
+                    <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center font-bold text-xs text-rose-400">
+                      {section.badge || sIdx + 1}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-white tracking-wide truncate">{section.name}</h3>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-slate-800 text-slate-400 border border-slate-700">
+                        {section.type}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      {section.subtitle || 'Configurable homepage section'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Action Controls */}
+                <div className="flex items-center gap-2 flex-wrap shrink-0">
+                  {/* Reorder Up / Down */}
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800">
+                    <button
+                      onClick={() => handleMoveSection(sIdx, 'up')}
+                      disabled={sIdx === 0}
+                      className={`p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 ${
+                        sIdx === 0 ? 'opacity-30 cursor-not-allowed' : ''
+                      }`}
+                      title="Move Section Up"
+                    >
+                      <MoveUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleMoveSection(sIdx, 'down')}
+                      disabled={sIdx === doc.sections.length - 1}
+                      className={`p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 ${
+                        sIdx === doc.sections.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
+                      }`}
+                      title="Move Section Down"
+                    >
+                      <MoveDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Duplicate */}
+                  <button
+                    onClick={() => handleDuplicateSection(section.id)}
+                    className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+                    title="Duplicate Section"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Toggle Visibility */}
+                  <button
+                    onClick={() => {
+                      const next = {
+                        ...doc,
+                        sections: doc.sections.map((s) => (s.id === section.id ? { ...s, enabled: !s.enabled } : s)),
+                      };
+                      setDoc(next);
+                      pushHistory(next);
+                    }}
+                    className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+                    title={section.enabled ? 'Hide Section' : 'Show Section'}
+                  >
+                    {section.enabled ? (
+                      <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <EyeOff className="w-3.5 h-3.5 text-rose-400" />
+                    )}
+                  </button>
+
+                  {/* Edit Properties */}
+                  <button
+                    onClick={() => setEditingSection(section)}
+                    className="px-3 py-1.5 rounded-xl bg-rose-600/20 text-rose-300 hover:bg-rose-600 hover:text-white border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 transition-all"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Customize</span>
+                  </button>
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => handleDeleteSection(section.id)}
+                    className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
+                    title="Delete Section"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Add Section Prompt at bottom of canvas */}
+          <div className="flex justify-center pt-3">
+            <button
+              onClick={() => setActiveTab('library')}
+              className="px-6 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border-2 border-dashed border-slate-800 hover:border-rose-500/50 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg group"
+            >
+              <Plus className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
+              <span>Add Another Section to Canvas</span>
+            </button>
+          </div>
         </div>
-        <span className="text-[11px] text-slate-500">
-          Toggle visibility switch to immediately show/hide any block on the storefront.
-        </span>
-      </div>
-
-      {/* Block List Stack */}
-      <div className="space-y-3">
-        {sections.map((block, idx) => (
-          <BlockCard
-            key={block.id}
-            block={block}
-            index={idx}
-            total={sections.length}
-            isDragging={draggedIndex === idx}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onToggleVisibility={handleToggleVisibility}
-            onEdit={(b) => setEditingBlock(b)}
-            onDuplicate={handleDuplicate}
-            onDelete={handleDelete}
-            onMoveUp={handleMoveUp}
-            onMoveDown={handleMoveDown}
-          />
-        ))}
-      </div>
-
-      {/* MODAL: BLOCK INSPECTOR / EDITOR */}
-      {editingBlock && (
-        <BlockEditorModal
-          isOpen={!!editingBlock}
-          onClose={() => setEditingBlock(null)}
-          block={editingBlock}
-          onSave={handleSaveBlockEdit}
-        />
       )}
 
-      {/* MODAL: BLOCK PRESET LIBRARY */}
-      {isLibraryOpen && (
-        <BlockLibraryModal
-          isOpen={isLibraryOpen}
-          onClose={() => setIsLibraryOpen(false)}
-          onAddBlock={handleAddBlockFromLibrary}
-        />
+      {/* 4. TAB 2: SECTION LIBRARY */}
+      {activeTab === 'library' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-6">
+          <div>
+            <h3 className="text-base font-bold text-white tracking-wide">Section Template Library</h3>
+            <p className="text-xs text-slate-400">
+              Select any pre-built, conversion-optimized section to insert into your storefront homepage.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {SECTION_TEMPLATES.map((tmpl) => {
+              const IconComp = tmpl.icon;
+              return (
+                <div
+                  key={tmpl.type}
+                  onClick={() => handleAddSection(tmpl.type)}
+                  className="p-5 rounded-2xl bg-[#090D15] hover:bg-slate-900 border border-slate-800/80 hover:border-rose-500/80 transition-all cursor-pointer group flex flex-col justify-between space-y-4"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-rose-400 group-hover:scale-105 transition-transform">
+                        <IconComp className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                        {tmpl.category}
+                      </span>
+                    </div>
+
+                    <h4 className="text-sm font-bold text-white group-hover:text-rose-400 transition-colors">
+                      {tmpl.name}
+                    </h4>
+
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {tmpl.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800/50 flex items-center justify-between text-xs font-bold text-rose-400 group-hover:translate-x-1 transition-transform">
+                    <span>+ Insert Section</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
-      {/* SIMULATOR: DEVICE PREVIEW FRAME */}
-      {isPreviewOpen && (
-        <DevicePreviewFrame
-          isOpen={isPreviewOpen}
-          onClose={() => setIsPreviewOpen(false)}
-          blocks={sections}
-        />
+      {/* 5. TAB 3: DYNAMIC CATALOG BINDING */}
+      {activeTab === 'catalog' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-6">
+          <div>
+            <h3 className="text-base font-bold text-white tracking-wide">Catalog Data Binding</h3>
+            <p className="text-xs text-slate-400">
+              Configure how product grids and category collections dynamically query your inventory in real-time.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Default Query Strategy</h4>
+              <p className="text-xs text-slate-400">
+                When sections query products dynamically, they automatically sort by best-selling metrics and inventory availability.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* DRAWER: VERSION HISTORY */}
-      {isHistoryOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-[#161822] border-l border-slate-800 h-full flex flex-col shadow-2xl p-6 space-y-4 select-none">
+      {/* 6. TAB 4: RESPONSIVE VIEWPORTS */}
+      {activeTab === 'responsive' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-6">
+          <div>
+            <h3 className="text-base font-bold text-white tracking-wide">Responsive Viewport Settings</h3>
+            <p className="text-xs text-slate-400">
+              Fine-tune how sections render across Desktop (1440px), Tablet (768px), and Mobile (390px) screen sizes.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+            Sections automatically adapt columns (4 on desktop &rarr; 2 on tablet &rarr; 1 on mobile). You can customize per-section visibility in the canvas.
+          </div>
+        </div>
+      )}
+
+      {/* 7. TAB 5: SEO & META TAGS */}
+      {activeTab === 'seo' && (
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-slate-800/90 shadow-xl space-y-6">
+          <div>
+            <h3 className="text-base font-bold text-white tracking-wide">Homepage Search Engine Optimization</h3>
+            <p className="text-xs text-slate-400">
+              Configure meta tags, OpenGraph sharing preview, and search engine snippets for your homepage.
+            </p>
+          </div>
+
+          <div className="space-y-4 max-w-xl">
+            <div>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
+                Meta Page Title
+              </label>
+              <input
+                type="text"
+                value={doc.seo?.metaTitle || ''}
+                onChange={(e) => {
+                  const next = { ...doc, seo: { ...doc.seo, metaTitle: e.target.value } };
+                  setDoc(next);
+                  pushHistory(next);
+                }}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
+                Meta Description
+              </label>
+              <textarea
+                rows={3}
+                value={doc.seo?.metaDescription || ''}
+                onChange={(e) => {
+                  const next = { ...doc, seo: { ...doc.seo, metaDescription: e.target.value } };
+                  setDoc(next);
+                  pushHistory(next);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: SECTION CUSTOMIZE INSPECTOR */}
+      {editingSection && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-[#0F131D] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <History className="w-4 h-4 text-amber-400" />
-                <span>Homepage Version History</span>
-              </h3>
-              <button onClick={() => setIsHistoryOpen(false)} className="text-slate-400 hover:text-white">
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Customize {editingSection.name}
+                </h3>
+                <span className="text-[10px] text-slate-500 font-mono">{editingSection.type}</span>
+              </div>
+              <button onClick={() => setEditingSection(null)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 text-xs">
-              {historyList.map((ver) => (
-                <div key={ver.version} className="p-4 bg-[#10121A] rounded-xl border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white text-sm">Version {ver.version}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
-                      {ver.sections.length} Blocks
-                    </span>
+            <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1">
+              {/* Common Fields */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Section Label
+                </label>
+                <input
+                  type="text"
+                  value={editingSection.name}
+                  onChange={(e) => handleUpdateEditingSection({ name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                />
+              </div>
+
+              {/* Tagline / Eyebrow */}
+              {editingSection.data?.tagline !== undefined && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Eyebrow / Badge Tagline
+                  </label>
+                  <input
+                    type="text"
+                    value={editingSection.data?.tagline || ''}
+                    onChange={(e) =>
+                      handleUpdateEditingSection({
+                        data: { ...editingSection.data, tagline: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  />
+                </div>
+              )}
+
+              {/* Heading */}
+              {editingSection.data?.heading !== undefined && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Main Headline (H1 / H2)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingSection.data?.heading || ''}
+                    onChange={(e) =>
+                      handleUpdateEditingSection({
+                        data: { ...editingSection.data, heading: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  />
+                </div>
+              )}
+
+              {/* Subheading / Description */}
+              {(editingSection.data?.subheading !== undefined || editingSection.data?.description !== undefined || editingSection.data?.subtitle !== undefined) && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Subtitle / Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editingSection.data?.subheading || editingSection.data?.description || editingSection.data?.subtitle || ''}
+                    onChange={(e) =>
+                      handleUpdateEditingSection({
+                        data: {
+                          ...editingSection.data,
+                          subheading: e.target.value,
+                          description: e.target.value,
+                          subtitle: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  />
+                </div>
+              )}
+
+              {/* Primary Button */}
+              {editingSection.data?.primaryBtnText !== undefined && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Primary Button Text
+                    </label>
+                    <input
+                      type="text"
+                      value={editingSection.data?.primaryBtnText || ''}
+                      onChange={(e) =>
+                        handleUpdateEditingSection({
+                          data: { ...editingSection.data, primaryBtnText: e.target.value },
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                    />
                   </div>
-                  <div className="text-[11px] text-slate-400">
-                    Published: {new Date(ver.publishedAt || ver.updatedAt).toLocaleString('en-IN')}
-                  </div>
-                  <div className="pt-2">
-                    <button
-                      onClick={() => handleRestoreVersion(ver.version)}
-                      className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-rose-300 hover:text-white font-bold rounded-lg border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Restore This Snapshot</span>
-                    </button>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Button Link Target
+                    </label>
+                    <input
+                      type="text"
+                      value={editingSection.data?.primaryBtnLink || ''}
+                      onChange={(e) =>
+                        handleUpdateEditingSection({
+                          data: { ...editingSection.data, primaryBtnLink: e.target.value },
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono"
+                    />
                   </div>
                 </div>
-              ))}
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setEditingSection(null)}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: FULLSCREEN LIVE PREVIEW SIMULATOR */}
+      {isLivePreviewOpen && (
+        <div className="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-md flex flex-col">
+          <div className="h-14 bg-slate-900/90 border-b border-slate-800 px-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                Storefront Homepage Live Simulator
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold border border-emerald-800">
+                {device.toUpperCase()} VIEW
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800">
+                <button
+                  onClick={() => setDevice('desktop')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'desktop' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span>Desktop</span>
+                </button>
+                <button
+                  onClick={() => setDevice('tablet')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'tablet' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Tablet className="w-3.5 h-3.5" />
+                  <span>Tablet</span>
+                </button>
+                <button
+                  onClick={() => setDevice('mobile')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                    device === 'mobile' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Mobile</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setIsLivePreviewOpen(false)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 sm:p-10 flex flex-col items-center justify-start bg-black/50">
+            <div
+              className={`transition-all duration-300 bg-[#FAFAF9] text-[#111111] rounded-2xl shadow-2xl overflow-hidden border border-white/10 ${
+                device === 'desktop'
+                  ? 'w-full max-w-6xl'
+                  : device === 'tablet'
+                  ? 'w-[768px]'
+                  : 'w-[390px]'
+              }`}
+            >
+              {doc.sections
+                .filter((s) => s.enabled)
+                .map((sec) => (
+                  <div key={sec.id} className="py-10 px-6 sm:px-12 border-b border-black/5 last:border-0">
+                    <div className="text-center max-w-2xl mx-auto space-y-3">
+                      {sec.data?.tagline && (
+                        <span className="px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-rose-600 text-white inline-block">
+                          {sec.data.tagline}
+                        </span>
+                      )}
+                      <h2 className="text-2xl sm:text-3xl font-serif font-black text-slate-900">
+                        {sec.data?.heading || sec.name}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-600">
+                        {sec.data?.subheading || sec.data?.description || sec.subtitle}
+                      </p>
+                      {sec.data?.primaryBtnText && (
+                        <div className="pt-2">
+                          <button className="px-6 py-2.5 rounded-lg bg-slate-950 text-white text-xs font-bold uppercase tracking-wider shadow-lg">
+                            {sec.data.primaryBtnText}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
