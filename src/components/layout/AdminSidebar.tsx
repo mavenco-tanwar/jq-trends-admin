@@ -276,6 +276,13 @@ function AdminSidebarInner({
           badgeColor: 'bg-rose-600 text-white font-bold',
         },
         {
+          label: 'Collection Pages',
+          href: '/content/collections',
+          icon: Layers,
+          badge: 'PLP Studio',
+          badgeColor: 'bg-amber-600 text-white font-bold',
+        },
+        {
           label: 'Product Page Builder',
           href: '/content/product-page',
           icon: Package,
