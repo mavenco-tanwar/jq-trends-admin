@@ -25,14 +25,14 @@ export class DiscountService {
 
   static async getAll(): Promise<Discount[]> {
     try {
-      const res = await ApiClient.get<any[]>('/api/v1/marketing/coupons');
+      const res = await ApiClient.get<any[]>('/api/v1/discounts');
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
         const normalized = res.data.map(normalizeDiscount);
         this.localDiscounts = normalized;
         return normalized;
       }
     } catch {
-      // Mock Fallback
+      // Fallback
     }
     return this.localDiscounts;
   }
