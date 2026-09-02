@@ -45,6 +45,7 @@ import {
   getDefaultHeaderConfig,
   LUXURY_PRESET_TEMPLATES,
 } from '@/lib/header-config';
+import { ImageUploadInput } from '@/components/ui/ImageUploadInput';
 
 export default function HeaderBuilderStudio() {
   const { showToast } = useToast();
@@ -2866,21 +2867,19 @@ export default function HeaderBuilderStudio() {
                       className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="font-bold text-slate-300">Custom Logo Image URL (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="https://.../logo.png"
-                      value={editingBlock.settings?.logoUrl || ''}
-                      onChange={(e) => {
-                        setEditingBlock({
-                          ...editingBlock,
-                          settings: { ...editingBlock.settings, logoUrl: e.target.value },
-                        });
-                      }}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white"
-                    />
-                  </div>
+                  <ImageUploadInput
+                    label="Custom Logo Image"
+                    description="Upload your high-res store logo asset"
+                    value={editingBlock.settings?.logoUrl || ''}
+                    onChange={(url) => {
+                      setEditingBlock({
+                        ...editingBlock,
+                        settings: { ...editingBlock.settings, logoUrl: url },
+                      });
+                    }}
+                    aspectRatio="auto"
+                    folder="Header"
+                  />
                 </>
               )}
 

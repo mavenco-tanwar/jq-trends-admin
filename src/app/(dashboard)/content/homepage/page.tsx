@@ -49,6 +49,7 @@ import {
 import { useToast } from '@/lib/toast-context';
 import { ApiClient } from '@/services/api';
 import { PlatformService } from '@/services/platform';
+import { ImageUploadInput } from '@/components/ui/ImageUploadInput';
 
 interface HomepageSection {
   id: string;
@@ -1269,6 +1270,58 @@ export default function HomepageBuilderStudio() {
                       className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono"
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Section Image / Banner Upload */}
+              {(editingSection.data?.desktopImage !== undefined ||
+                editingSection.data?.image !== undefined ||
+                editingSection.data?.bgImage !== undefined ||
+                editingSection.type === 'hero' ||
+                editingSection.type === 'image_text' ||
+                editingSection.type === 'promotional_banner' ||
+                editingSection.type === 'countdown') && (
+                <div className="space-y-4 pt-3 border-t border-slate-800/80">
+                  <ImageUploadInput
+                    label="Primary Desktop Image / Banner"
+                    description="Main banner asset rendered on large screens"
+                    value={
+                      editingSection.data?.desktopImage ||
+                      editingSection.data?.image ||
+                      editingSection.data?.bgImage ||
+                      ''
+                    }
+                    onChange={(url) =>
+                      handleUpdateEditingSection({
+                        data: {
+                          ...editingSection.data,
+                          desktopImage: url,
+                          image: url,
+                          bgImage: url,
+                        },
+                      })
+                    }
+                    aspectRatio="banner"
+                    folder="Homepage"
+                  />
+
+                  {editingSection.data?.mobileImage !== undefined && (
+                    <ImageUploadInput
+                      label="Mobile Optimized Image (Optional)"
+                      description="Custom portrait/compact ratio for smartphones"
+                      value={editingSection.data?.mobileImage || ''}
+                      onChange={(url) =>
+                        handleUpdateEditingSection({
+                          data: {
+                            ...editingSection.data,
+                            mobileImage: url,
+                          },
+                        })
+                      }
+                      aspectRatio="3/4"
+                      folder="Homepage"
+                    />
+                  )}
                 </div>
               )}
             </div>

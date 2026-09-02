@@ -33,6 +33,7 @@ import { ApiClient } from '@/services/api';
 import { PlatformService } from '@/services/platform';
 import { CollectionPageConfig } from '@/types/collection-page.types';
 import { getDefaultCollectionPageConfig, COLLECTION_PAGE_PRESETS } from '@/lib/collection-page-presets';
+import { ImageUploadInput } from '@/components/ui/ImageUploadInput';
 
 type ActiveTab =
   | 'hero'
@@ -574,24 +575,21 @@ export default function CollectionPageBuilderStudio() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Background Banner Image URL
-                </label>
-                <input
-                  type="text"
-                  value={config.hero.bgImage}
-                  onChange={(e) => {
-                    const updated = {
-                      ...config,
-                      hero: { ...config.hero, bgImage: e.target.value },
-                    };
-                    setConfig(updated);
-                    pushHistory(updated);
-                  }}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono"
-                />
-              </div>
+              <ImageUploadInput
+                label="Hero Background Banner Image"
+                description="High-resolution wide banner for collection header"
+                value={config.hero.bgImage}
+                onChange={(url) => {
+                  const updated = {
+                    ...config,
+                    hero: { ...config.hero, bgImage: url },
+                  };
+                  setConfig(updated);
+                  pushHistory(updated);
+                }}
+                aspectRatio="banner"
+                folder="Collections"
+              />
             </div>
           )}
 
@@ -1037,6 +1035,22 @@ export default function CollectionPageBuilderStudio() {
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
                 />
               </div>
+
+              <ImageUploadInput
+                label="Promotional Tile Image"
+                description="Visual asset for inline product grid promotional block"
+                value={config.promo.image}
+                onChange={(url) => {
+                  const updated = {
+                    ...config,
+                    promo: { ...config.promo, image: url },
+                  };
+                  setConfig(updated);
+                  pushHistory(updated);
+                }}
+                aspectRatio="square"
+                folder="Promotions"
+              />
             </div>
           )}
 
@@ -1090,6 +1104,22 @@ export default function CollectionPageBuilderStudio() {
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
                 />
               </div>
+
+              <ImageUploadInput
+                label="Social Share &amp; Open Graph Image"
+                description="1200x630px image displayed when sharing collection URL"
+                value={config.seo.ogImage}
+                onChange={(url) => {
+                  const updated = {
+                    ...config,
+                    seo: { ...config.seo, ogImage: url },
+                  };
+                  setConfig(updated);
+                  pushHistory(updated);
+                }}
+                aspectRatio="video"
+                folder="SEO"
+              />
             </div>
           )}
         </div>

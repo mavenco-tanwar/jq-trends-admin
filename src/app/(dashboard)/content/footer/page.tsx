@@ -52,6 +52,7 @@ import {
 import { useToast } from '@/lib/toast-context';
 import { ApiClient } from '@/services/api';
 import { PlatformService } from '@/services/platform';
+import { ImageUploadInput } from '@/components/ui/ImageUploadInput';
 import { POPULAR_FONTS } from '@/components/builder/tokens/themeTokens';
 
 interface FooterBlock {
@@ -1797,21 +1798,60 @@ export default function FooterBuilderStudio() {
 
               {/* Logo block fields */}
               {editingBlock.type === 'logo' && (
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                    Logo Text
-                  </label>
-                  <input
-                    type="text"
-                    value={editingBlock.content?.text || ''}
-                    onChange={(e) =>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Logo Text (Fallback)
+                    </label>
+                    <input
+                      type="text"
+                      value={editingBlock.content?.text || ''}
+                      onChange={(e) =>
+                        handleUpdateEditingBlock({
+                          content: { ...editingBlock.content, text: e.target.value },
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                    />
+                  </div>
+
+                  <ImageUploadInput
+                    label="Footer Logo Image"
+                    description="Upload custom brand logo asset for footer"
+                    value={editingBlock.content?.imageUrl || editingBlock.content?.logoUrl || ''}
+                    onChange={(url) =>
                       handleUpdateEditingBlock({
-                        content: { ...editingBlock.content, text: e.target.value },
+                        content: {
+                          ...editingBlock.content,
+                          imageUrl: url,
+                          logoUrl: url,
+                        },
                       })
                     }
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                    aspectRatio="auto"
+                    folder="Footer"
                   />
                 </div>
+              )}
+
+              {/* Image block fields */}
+              {editingBlock.type === 'image' && (
+                <ImageUploadInput
+                  label="Block Image"
+                  description="Upload custom graphic or icon for footer"
+                  value={editingBlock.content?.imageUrl || editingBlock.content?.url || ''}
+                  onChange={(url) =>
+                    handleUpdateEditingBlock({
+                      content: {
+                        ...editingBlock.content,
+                        imageUrl: url,
+                        url: url,
+                      },
+                    })
+                  }
+                  aspectRatio="auto"
+                  folder="Footer"
+                />
               )}
 
               {/* Text block fields */}
