@@ -332,18 +332,26 @@ export default function HeaderBuilderStudio() {
 
   // Block Helpers
   const updateBlock = (updated: HeaderBlock) => {
-    const isAnn = updated.zone.startsWith('announcement');
-    if (isAnn) {
-      const nextBlocks = config.announcementBar.blocks.map((b) => (b.id === updated.id ? updated : b));
-      const next = { ...config, announcementBar: { ...config.announcementBar, blocks: nextBlocks } };
-      setConfig(next);
-      pushHistory(next);
+    const isTargetAnn = updated.zone.startsWith('announcement');
+
+    // Remove from both lists
+    const newAnnBlocks = config.announcementBar.blocks.filter((b) => b.id !== updated.id);
+    const newMainBlocks = config.mainHeader.blocks.filter((b) => b.id !== updated.id);
+
+    // Insert into target list
+    if (isTargetAnn) {
+      newAnnBlocks.push(updated);
     } else {
-      const nextBlocks = config.mainHeader.blocks.map((b) => (b.id === updated.id ? updated : b));
-      const next = { ...config, mainHeader: { ...config.mainHeader, blocks: nextBlocks } };
-      setConfig(next);
-      pushHistory(next);
+      newMainBlocks.push(updated);
     }
+
+    const next = {
+      ...config,
+      announcementBar: { ...config.announcementBar, blocks: newAnnBlocks },
+      mainHeader: { ...config.mainHeader, blocks: newMainBlocks },
+    };
+    setConfig(next);
+    pushHistory(next);
     setEditingBlock(null);
     showToast(`Updated block ${updated.type}`, 'success');
   };
@@ -453,9 +461,86 @@ export default function HeaderBuilderStudio() {
     }
   };
 
-  const addBlockToZone = (zone: HeaderBlock['zone'], type: HeaderBlock['type']) => {
+  // Drag and Drop Zone State
+  const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
+  const [dragOverZone, setDragOverZone] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    setDraggingBlockId(id);
+  };
+
+  const handleDropToZone = (e: React.DragEvent, targetZone: HeaderBlock['zone']) => {
+    e.preventDefault();
+    setDragOverZone(null);
+    const blockId = e.dataTransfer.getData('text/plain') || draggingBlockId;
+    if (!blockId) return;
+
+    // Check in announcement bar
+    const isTargetAnn = targetZone.startsWith('announcement');
+    let foundBlock: HeaderBlock | undefined = config.announcementBar.blocks.find((b) => b.id === blockId);
+
+    if (!foundBlock) {
+      foundBlock = config.mainHeader.blocks.find((b) => b.id === blockId);
+    }
+
+    if (!foundBlock) return;
+
+    const updatedBlock: HeaderBlock = {
+      ...foundBlock,
+      zone: targetZone,
+    };
+
+    // Remove from existing zones
+    const newAnnBlocks = config.announcementBar.blocks.filter((b) => b.id !== blockId);
+    const newMainBlocks = config.mainHeader.blocks.filter((b) => b.id !== blockId);
+
+    // Add to target zone
+    if (isTargetAnn) {
+      newAnnBlocks.push(updatedBlock);
+    } else {
+      newMainBlocks.push(updatedBlock);
+    }
+
+    const next = {
+      ...config,
+      announcementBar: { ...config.announcementBar, blocks: newAnnBlocks },
+      mainHeader: { ...config.mainHeader, blocks: newMainBlocks },
+    };
+
+    setConfig(next);
+    pushHistory(next);
+    setDraggingBlockId(null);
+    showToast(`Moved block to ${targetZone.replace('.', ' ').toUpperCase()}`, 'success');
+  };
+
+  const addBlockToZone = (zone: HeaderBlock['zone'], typeKey: string) => {
     const isAnn = zone.startsWith('announcement');
-    const newId = `${type}_${Date.now().toString().slice(-4)}`;
+    const newId = `${typeKey.replace('nav_split_', 'nav_')}_${Date.now().toString().slice(-4)}`;
+
+    let type: HeaderBlock['type'] = typeKey as any;
+    let settings: Record<string, any> = { text: activeTenant.name };
+
+    if (typeKey === 'nav_split_left') {
+      type = 'navigation';
+      settings = { splitSide: 'first-half', label: 'Navigation (Left Half)' };
+    } else if (typeKey === 'nav_split_right') {
+      type = 'navigation';
+      settings = { splitSide: 'second-half', label: 'Navigation (Right Half)' };
+    } else if (typeKey === 'navigation') {
+      type = 'navigation';
+      settings = { splitSide: 'all', label: 'Primary Navigation' };
+    } else if (typeKey === 'logo') {
+      settings = { logoText: activeTenant.name, badgeText: activeTenant.tagline };
+    } else if (typeKey === 'search') {
+      settings = { mode: 'icon-label', label: 'SEARCH', placeholder: 'Search...' };
+    } else if (typeKey === 'announcement') {
+      settings = { text: 'Special seasonal promotion live now • Limited quantities available •', ctaText: 'EXPLORE', ctaUrl: '/sale' };
+    } else if (typeKey === 'whatsapp') {
+      settings = { label: 'WhatsApp Concierge', phone: '18004125864' };
+    } else if (typeKey === 'cta') {
+      settings = { label: 'BOOK CONSULTATION', url: '/contact' };
+    }
 
     const newBlock: HeaderBlock = {
       id: newId,
@@ -463,18 +548,7 @@ export default function HeaderBuilderStudio() {
       zone,
       enabled: true,
       order: 99,
-      settings:
-        type === 'logo'
-          ? { logoText: activeTenant.name, badgeText: activeTenant.tagline }
-          : type === 'search'
-          ? { mode: 'icon-label', label: 'SEARCH', placeholder: 'Search...' }
-          : type === 'announcement'
-          ? { text: 'Special seasonal promotion live now • Limited quantities available •', ctaText: 'EXPLORE', ctaUrl: '/sale' }
-          : type === 'whatsapp'
-          ? { label: 'WhatsApp Concierge', phone: '18004125864' }
-          : type === 'cta'
-          ? { label: 'BOOK CONSULTATION', url: '/contact' }
-          : { text: activeTenant.name },
+      settings,
       responsive: { desktop: { visible: true }, tablet: { visible: true }, mobile: { visible: true } },
     };
 
@@ -499,7 +573,7 @@ export default function HeaderBuilderStudio() {
       setConfig(next);
       pushHistory(next);
     }
-    showToast(`Added ${type} block to ${zone}`, 'success');
+    showToast(`Added ${newBlock.type} to ${zone.replace('.', ' ')}`, 'success');
   };
 
   if (isLoading) {
@@ -747,13 +821,25 @@ export default function HeaderBuilderStudio() {
             {/* Zones Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Left Zone */}
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverZone('announcement.left');
+                }}
+                onDragLeave={() => setDragOverZone(null)}
+                onDrop={(e) => handleDropToZone(e, 'announcement.left')}
+                className={`p-4 rounded-xl transition-all space-y-3 ${
+                  dragOverZone === 'announcement.left'
+                    ? 'bg-indigo-950/40 border-2 border-dashed border-indigo-500 ring-2 ring-indigo-500/30'
+                    : 'bg-slate-900/60 border border-slate-800/80'
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Left Zone</span>
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
-                        addBlockToZone('announcement.left', e.target.value as any);
+                        addBlockToZone('announcement.left', e.target.value);
                         e.target.value = '';
                       }
                     }}
@@ -764,6 +850,11 @@ export default function HeaderBuilderStudio() {
                     <option value="whatsapp">WhatsApp Concierge</option>
                     <option value="phone">Phone Support</option>
                     <option value="text">Static Text</option>
+                    <option value="currency">🌐 Currency Switcher</option>
+                    <option value="cta">Custom CTA</option>
+                    <option value="announcement">Promo Banner</option>
+                    <option value="logo">Brand Logo</option>
+                    <option value="navigation">Menu Links</option>
                   </select>
                 </div>
 
@@ -775,18 +866,21 @@ export default function HeaderBuilderStudio() {
                       return (
                         <div
                           key={block.id}
-                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, block.id)}
+                          onDragEnd={() => setDraggingBlockId(null)}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing hover:border-indigo-500/50 ${
                             isVis
                               ? 'bg-slate-800/80 border-slate-700 text-white'
                               : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <span className="font-mono text-[10px] text-slate-400">#{block.order}</span>
+                            <GripVertical className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                             <span className="font-bold truncate">{block.settings?.text || block.settings?.label || block.type}</span>
                             {!isVis && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
-                                Hidden on {device}
+                                Hidden
                               </span>
                             )}
                           </div>
@@ -812,13 +906,25 @@ export default function HeaderBuilderStudio() {
               </div>
 
               {/* Center Zone */}
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverZone('announcement.center');
+                }}
+                onDragLeave={() => setDragOverZone(null)}
+                onDrop={(e) => handleDropToZone(e, 'announcement.center')}
+                className={`p-4 rounded-xl transition-all space-y-3 ${
+                  dragOverZone === 'announcement.center'
+                    ? 'bg-indigo-950/40 border-2 border-dashed border-indigo-500 ring-2 ring-indigo-500/30'
+                    : 'bg-slate-900/60 border border-slate-800/80'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Center Zone (Hero Alert)</span>
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Center Zone</span>
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
-                        addBlockToZone('announcement.center', e.target.value as any);
+                        addBlockToZone('announcement.center', e.target.value);
                         e.target.value = '';
                       }
                     }}
@@ -827,6 +933,10 @@ export default function HeaderBuilderStudio() {
                     <option value="">+ Add Block</option>
                     <option value="announcement">Promo Banner + CTA</option>
                     <option value="text">Announcement Text</option>
+                    <option value="whatsapp">WhatsApp Concierge</option>
+                    <option value="phone">Phone Support</option>
+                    <option value="currency">🌐 Currency Switcher</option>
+                    <option value="logo">Brand Logo</option>
                   </select>
                 </div>
 
@@ -838,17 +948,21 @@ export default function HeaderBuilderStudio() {
                       return (
                         <div
                           key={block.id}
-                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, block.id)}
+                          onDragEnd={() => setDraggingBlockId(null)}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing hover:border-indigo-500/50 ${
                             isVis
                               ? 'bg-slate-800/80 border-slate-700 text-white'
                               : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
                           }`}
                         >
                           <div className="truncate flex items-center gap-2">
+                            <GripVertical className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                             <span className="font-bold truncate">{block.settings?.text || 'Announcement'}</span>
                             {!isVis && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
-                                Hidden on {device}
+                                Hidden
                               </span>
                             )}
                           </div>
@@ -874,13 +988,25 @@ export default function HeaderBuilderStudio() {
               </div>
 
               {/* Right Zone */}
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverZone('announcement.right');
+                }}
+                onDragLeave={() => setDragOverZone(null)}
+                onDrop={(e) => handleDropToZone(e, 'announcement.right')}
+                className={`p-4 rounded-xl transition-all space-y-3 ${
+                  dragOverZone === 'announcement.right'
+                    ? 'bg-indigo-950/40 border-2 border-dashed border-indigo-500 ring-2 ring-indigo-500/30'
+                    : 'bg-slate-900/60 border border-slate-800/80'
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Right Zone</span>
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
-                        addBlockToZone('announcement.right', e.target.value as any);
+                        addBlockToZone('announcement.right', e.target.value);
                         e.target.value = '';
                       }
                     }}
@@ -890,6 +1016,9 @@ export default function HeaderBuilderStudio() {
                     <option value="currency">🌐 Currency Switcher</option>
                     <option value="text">Store Label</option>
                     <option value="cta">Custom CTA</option>
+                    <option value="whatsapp">WhatsApp Concierge</option>
+                    <option value="phone">Phone Support</option>
+                    <option value="icon">✦ Icon + Text</option>
                   </select>
                 </div>
 
@@ -901,17 +1030,21 @@ export default function HeaderBuilderStudio() {
                       return (
                         <div
                           key={block.id}
-                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, block.id)}
+                          onDragEnd={() => setDraggingBlockId(null)}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing hover:border-indigo-500/50 ${
                             isVis
                               ? 'bg-slate-800/80 border-slate-700 text-white'
                               : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
                           }`}
                         >
                           <div className="truncate flex items-center gap-2">
+                            <GripVertical className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                             <span className="font-bold truncate">{block.settings?.text || block.type}</span>
                             {!isVis && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
-                                Hidden on {device}
+                                Hidden
                               </span>
                             )}
                           </div>
@@ -1055,14 +1188,26 @@ export default function HeaderBuilderStudio() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Main Left Zone (Logo) */}
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
+              {/* Main Left Zone (Logo, Split Menu, etc.) */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverZone('main.left');
+                }}
+                onDragLeave={() => setDragOverZone(null)}
+                onDrop={(e) => handleDropToZone(e, 'main.left')}
+                className={`p-4 rounded-xl transition-all space-y-3 ${
+                  dragOverZone === 'main.left'
+                    ? 'bg-indigo-950/40 border-2 border-dashed border-indigo-500 ring-2 ring-indigo-500/30'
+                    : 'bg-slate-900/60 border border-slate-800/80'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Main Left (Logo &amp; Brand)</span>
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Main Left</span>
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
-                        addBlockToZone('main.left', e.target.value as any);
+                        addBlockToZone('main.left', e.target.value);
                         e.target.value = '';
                       }
                     }}
@@ -1072,6 +1217,11 @@ export default function HeaderBuilderStudio() {
                     <option value="logo">Brand Logo</option>
                     <option value="brand">Brand Name</option>
                     <option value="tagline">Tagline</option>
+                    <option value="nav_split_left">Split Menu (Left Half - 1st 50%)</option>
+                    <option value="navigation">Primary Navigation (Full)</option>
+                    <option value="search">Search Bar</option>
+                    <option value="cta">Custom CTA</option>
+                    <option value="whatsapp">WhatsApp Concierge</option>
                   </select>
                 </div>
 
@@ -1080,24 +1230,37 @@ export default function HeaderBuilderStudio() {
                     .filter((b) => b.zone === 'main.left')
                     .map((block) => {
                       const isVis = block.responsive?.[device]?.visible !== false;
+                      const displayName =
+                        block.type === 'navigation'
+                          ? block.settings?.splitSide === 'first-half'
+                            ? 'Menu (Left Half)'
+                            : block.settings?.splitSide === 'second-half'
+                            ? 'Menu (Right Half)'
+                            : `Primary Navigation (${config.navigationMenu?.length || 0} links)`
+                          : block.settings?.logoText || block.settings?.text || block.settings?.label || block.type.toUpperCase();
+
                       return (
                         <div
                           key={block.id}
-                          className={`p-3 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, block.id)}
+                          onDragEnd={() => setDraggingBlockId(null)}
+                          className={`p-3 rounded-lg border flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing hover:border-indigo-500/50 ${
                             isVis
                               ? 'bg-slate-800/80 border-slate-700 text-white'
                               : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
                           }`}
                         >
                           <div className="truncate flex items-center gap-2">
-                            <span className="font-bold">{block.settings?.logoText || block.settings?.text || 'Logo Block'}</span>
+                            <GripVertical className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="font-bold truncate">{displayName}</span>
                             {!isVis && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
-                                Hidden on {device}
+                                Hidden
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => toggleDeviceVisibility(block.id, false, device)}
                               className="p-1 hover:text-white"
@@ -1118,22 +1281,38 @@ export default function HeaderBuilderStudio() {
                 </div>
               </div>
 
-              {/* Main Center Zone (Navigation) */}
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
+              {/* Main Center Zone (Centered Logo, Navigation, etc.) */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverZone('main.center');
+                }}
+                onDragLeave={() => setDragOverZone(null)}
+                onDrop={(e) => handleDropToZone(e, 'main.center')}
+                className={`p-4 rounded-xl transition-all space-y-3 ${
+                  dragOverZone === 'main.center'
+                    ? 'bg-indigo-950/40 border-2 border-dashed border-indigo-500 ring-2 ring-indigo-500/30'
+                    : 'bg-slate-900/60 border border-slate-800/80'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Main Center (Navigation)</span>
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Main Center</span>
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
-                        addBlockToZone('main.center', e.target.value as any);
+                        addBlockToZone('main.center', e.target.value);
                         e.target.value = '';
                       }
                     }}
                     className="text-[11px] bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-slate-200 cursor-pointer"
                   >
                     <option value="">+ Add Block</option>
-                    <option value="navigation">Primary Navigation Menu</option>
+                    <option value="logo">Centered Brand Logo</option>
+                    <option value="navigation">Primary Navigation (Full Menu)</option>
                     <option value="search">Inline Search Bar</option>
+                    <option value="brand">Brand Name</option>
+                    <option value="tagline">Tagline</option>
+                    <option value="cta">Centered CTA</option>
                   </select>
                 </div>
 
@@ -1142,28 +1321,37 @@ export default function HeaderBuilderStudio() {
                     .filter((b) => b.zone === 'main.center')
                     .map((block) => {
                       const isVis = block.responsive?.[device]?.visible !== false;
+                      const displayName =
+                        block.type === 'navigation'
+                          ? block.settings?.splitSide === 'first-half'
+                            ? 'Menu (Left Half)'
+                            : block.settings?.splitSide === 'second-half'
+                            ? 'Menu (Right Half)'
+                            : `Primary Navigation (${config.navigationMenu?.length || 0} links)`
+                          : block.settings?.logoText || block.settings?.text || block.settings?.label || block.type.toUpperCase();
+
                       return (
                         <div
                           key={block.id}
-                          className={`p-3 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, block.id)}
+                          onDragEnd={() => setDraggingBlockId(null)}
+                          className={`p-3 rounded-lg border flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing hover:border-indigo-500/50 ${
                             isVis
                               ? 'bg-slate-800/80 border-slate-700 text-white'
                               : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
                           }`}
                         >
                           <div className="truncate flex items-center gap-2">
-                            <span className="font-bold">
-                              {block.type === 'navigation'
-                                ? `Primary Navigation Menu (${config.navigationMenu?.length || 0} items)`
-                                : block.settings?.label || 'Inline Search Bar'}
-                            </span>
+                            <GripVertical className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="font-bold truncate">{displayName}</span>
                             {!isVis && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
-                                Hidden on {device}
+                                Hidden
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => toggleDeviceVisibility(block.id, false, device)}
                               className="p-1 hover:text-white"
@@ -1173,7 +1361,7 @@ export default function HeaderBuilderStudio() {
                             </button>
                             {block.type === 'navigation' && (
                               <button onClick={() => setActiveTab('navigation')} className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold">
-                                Manage Links
+                                Links
                               </button>
                             )}
                             <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
@@ -1189,14 +1377,26 @@ export default function HeaderBuilderStudio() {
                 </div>
               </div>
 
-              {/* Main Right Zone (Utilities) */}
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
+              {/* Main Right Zone (Utilities, Split Menu, etc.) */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverZone('main.right');
+                }}
+                onDragLeave={() => setDragOverZone(null)}
+                onDrop={(e) => handleDropToZone(e, 'main.right')}
+                className={`p-4 rounded-xl transition-all space-y-3 ${
+                  dragOverZone === 'main.right'
+                    ? 'bg-indigo-950/40 border-2 border-dashed border-indigo-500 ring-2 ring-indigo-500/30'
+                    : 'bg-slate-900/60 border border-slate-800/80'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Main Right (Utilities)</span>
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Main Right</span>
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
-                        addBlockToZone('main.right', e.target.value as any);
+                        addBlockToZone('main.right', e.target.value);
                         e.target.value = '';
                       }
                     }}
@@ -1207,8 +1407,11 @@ export default function HeaderBuilderStudio() {
                     <option value="wishlist">♡ Wishlist Button</option>
                     <option value="cart">🛍 Bag / Cart Button</option>
                     <option value="account">👤 Sign In / Account</option>
+                    <option value="nav_split_right">Split Menu (Right Half - 2nd 50%)</option>
+                    <option value="navigation">Primary Navigation (Full)</option>
                     <option value="currency">🌐 Currency Picker</option>
                     <option value="cta">Custom CTA</option>
+                    <option value="logo">Brand Logo</option>
                   </select>
                 </div>
 
@@ -1217,20 +1420,33 @@ export default function HeaderBuilderStudio() {
                     .filter((b) => b.zone === 'main.right')
                     .map((block) => {
                       const isVis = block.responsive?.[device]?.visible !== false;
+                      const displayName =
+                        block.type === 'navigation'
+                          ? block.settings?.splitSide === 'first-half'
+                            ? 'Menu (Left Half)'
+                            : block.settings?.splitSide === 'second-half'
+                            ? 'Menu (Right Half)'
+                            : `Menu (${config.navigationMenu?.length || 0} links)`
+                          : block.settings?.label || block.settings?.logoText || block.settings?.text || block.type.toUpperCase();
+
                       return (
                         <div
                           key={block.id}
-                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, block.id)}
+                          onDragEnd={() => setDraggingBlockId(null)}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing hover:border-indigo-500/50 ${
                             isVis
                               ? 'bg-slate-800/80 border-slate-700 text-white'
                               : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <span className="font-bold uppercase tracking-wider">{block.settings?.label || block.type}</span>
+                            <GripVertical className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="font-bold uppercase tracking-wider truncate">{displayName}</span>
                             {!isVis && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
-                                Hidden on {device}
+                                Hidden
                               </span>
                             )}
                           </div>
@@ -1839,6 +2055,65 @@ export default function HeaderBuilderStudio() {
                     />
                   </div>
                 </>
+              )}
+
+              {/* Zone Placement Selector */}
+              <div className="space-y-1.5 p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                <label className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                  Header Zone Placement
+                </label>
+                <select
+                  value={editingBlock.zone}
+                  onChange={(e) => {
+                    setEditingBlock({
+                      ...editingBlock,
+                      zone: e.target.value as any,
+                    });
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold cursor-pointer"
+                >
+                  <optgroup label="Main Header Row">
+                    <option value="main.left">Main Left (Logo &amp; Brand / Left Split Menu)</option>
+                    <option value="main.center">Main Center (Navigation / Centered Logo)</option>
+                    <option value="main.right">Main Right (Utilities / Right Split Menu)</option>
+                  </optgroup>
+                  <optgroup label="Announcement Bar Row">
+                    <option value="announcement.left">Announcement Left (Concierge / Info)</option>
+                    <option value="announcement.center">Announcement Center (Promo Banner)</option>
+                    <option value="announcement.right">Announcement Right (Currency / CTA)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Navigation Split Side Options */}
+              {editingBlock.type === 'navigation' && (
+                <div className="space-y-1.5 p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30">
+                  <label className="font-bold text-indigo-300 flex items-center gap-1.5">
+                    <Menu className="w-3.5 h-3.5 text-indigo-400" />
+                    Navigation Portion (Split Menu Mode)
+                  </label>
+                  <p className="text-[11px] text-slate-400">
+                    Use split portions when placing a centered logo between two navigation halves:
+                  </p>
+                  <select
+                    value={editingBlock.settings?.splitSide || 'all'}
+                    onChange={(e) => {
+                      setEditingBlock({
+                        ...editingBlock,
+                        settings: {
+                          ...editingBlock.settings,
+                          splitSide: e.target.value,
+                        },
+                      });
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-indigo-500/40 text-white font-semibold cursor-pointer"
+                  >
+                    <option value="all">Full Menu (All Navigation Links)</option>
+                    <option value="first-half">Left Half (1st 50% of Menu Items)</option>
+                    <option value="second-half">Right Half (2nd 50% of Menu Items)</option>
+                  </select>
+                </div>
               )}
 
               {/* Search Block Mode */}
