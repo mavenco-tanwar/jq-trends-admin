@@ -17,6 +17,7 @@ import {
   Mail,
   Percent,
   Crown,
+  Gift,
   Bell,
   Image as ImageIcon,
   FileText,
@@ -255,7 +256,14 @@ function AdminSidebarInner({
         },
         { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
         {
-          label: 'Loyalty & Gift Cards',
+          label: 'Gift Cards & Vouchers',
+          href: '/gift-cards',
+          icon: Gift,
+          badge: 'Vouchers',
+          badgeColor: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold',
+        },
+        {
+          label: 'Loyalty & VIP Club',
           href: '/loyalty',
           icon: Crown,
           badge: 'VIP Club',
