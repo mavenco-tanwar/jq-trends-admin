@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   LayoutTemplate,
+  PanelBottom,
   Package,
   Layers,
   Sparkles,
@@ -240,6 +241,13 @@ function AdminSidebarInner({
           icon: LayoutTemplate,
           badge: 'Navbar',
           badgeColor: 'bg-indigo-600 text-white font-bold',
+        },
+        {
+          label: 'Footer Builder',
+          href: '/content/footer',
+          icon: PanelBottom,
+          badge: 'Footer',
+          badgeColor: 'bg-emerald-600 text-white font-bold',
         },
         {
           label: 'Homepage Builder',
