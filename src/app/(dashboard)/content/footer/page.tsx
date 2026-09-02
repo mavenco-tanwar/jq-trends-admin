@@ -378,6 +378,11 @@ export default function FooterBuilderStudio() {
   const [editingSection, setEditingSection] = useState<FooterSection | null>(null);
   const [editingColumn, setEditingColumn] = useState<{ secId: string; colId: string; label: string } | null>(null);
 
+  // Drag and Drop State
+  const [draggedBlockInfo, setDraggedBlockInfo] = useState<{ secId: string; colId: string; blockId: string } | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
+  const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
+
   // Configuration State
   const [config, setConfig] = useState<FooterConfig>(getDefaultFooterConfig('lumina', 'Lumina Atelier'));
 
@@ -784,6 +789,133 @@ export default function FooterBuilderStudio() {
     pushHistory(next);
   };
 
+  // 7. DRAG AND DROP HANDLERS
+  const handleBlockDragStart = (e: React.DragEvent, secId: string, colId: string, blockId: string) => {
+    e.stopPropagation();
+    const info = { secId, colId, blockId };
+    setDraggedBlockInfo(info);
+    e.dataTransfer.setData('text/plain', JSON.stringify(info));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleBlockDragOver = (e: React.DragEvent, colId: string, blockId?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverColId !== colId) setDragOverColId(colId);
+    if (blockId && dragOverBlockId !== blockId) setDragOverBlockId(blockId);
+  };
+
+  const handleBlockDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleBlockDrop = (e: React.DragEvent, targetSecId: string, targetColId: string, targetBlockId?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverColId(null);
+    setDragOverBlockId(null);
+
+    let sourceInfo = draggedBlockInfo;
+    const raw = e.dataTransfer.getData('text/plain');
+    if (raw) {
+      try {
+        sourceInfo = JSON.parse(raw);
+      } catch {}
+    }
+    if (!sourceInfo) return;
+
+    const { secId: srcSecId, colId: srcColId, blockId: srcBlockId } = sourceInfo;
+    if (srcSecId === targetSecId && srcColId === targetColId && srcBlockId === targetBlockId) {
+      setDraggedBlockInfo(null);
+      return;
+    }
+
+    // Extract moving block from source column
+    let movingBlock: FooterBlock | null = null;
+    const nextSections = config.sections.map((sec) => {
+      if (sec.id === srcSecId) {
+        const nextCols = sec.columns.map((col) => {
+          if (col.id === srcColId) {
+            const found = col.blocks.find((b) => b.id === srcBlockId);
+            if (found) movingBlock = found;
+            return { ...col, blocks: col.blocks.filter((b) => b.id !== srcBlockId) };
+          }
+          return col;
+        });
+        return { ...sec, columns: nextCols };
+      }
+      return sec;
+    });
+
+    if (!movingBlock) {
+      setDraggedBlockInfo(null);
+      return;
+    }
+
+    // Place into target column
+    const finalSections = nextSections.map((sec) => {
+      if (sec.id === targetSecId) {
+        const nextCols = sec.columns.map((col) => {
+          if (col.id === targetColId) {
+            const list = [...col.blocks];
+            if (targetBlockId) {
+              const targetIdx = list.findIndex((b) => b.id === targetBlockId);
+              if (targetIdx !== -1) {
+                list.splice(targetIdx, 0, movingBlock!);
+              } else {
+                list.push(movingBlock!);
+              }
+            } else {
+              list.push(movingBlock!);
+            }
+            return { ...col, blocks: list };
+          }
+          return col;
+        });
+        return { ...sec, columns: nextCols };
+      }
+      return sec;
+    });
+
+    setConfig({ ...config, sections: finalSections });
+    pushHistory({ ...config, sections: finalSections });
+    setDraggedBlockInfo(null);
+    showToast(`Moved ${(movingBlock as FooterBlock).name}`, 'info');
+  };
+
+  const handleMoveBlockOrder = (secId: string, colId: string, blockId: string, direction: 'up' | 'down') => {
+    const nextSections = config.sections.map((sec) => {
+      if (sec.id === secId) {
+        const nextCols = sec.columns.map((col) => {
+          if (col.id === colId) {
+            const list = [...col.blocks];
+            const idx = list.findIndex((b) => b.id === blockId);
+            if (idx === -1) return col;
+            if (direction === 'up' && idx > 0) {
+              const temp = list[idx];
+              list[idx] = list[idx - 1];
+              list[idx - 1] = temp;
+            } else if (direction === 'down' && idx < list.length - 1) {
+              const temp = list[idx];
+              list[idx] = list[idx + 1];
+              list[idx + 1] = temp;
+            }
+            return { ...col, blocks: list };
+          }
+          return col;
+        });
+        return { ...sec, columns: nextCols };
+      }
+      return sec;
+    });
+
+    const next = { ...config, sections: nextSections };
+    setConfig(next);
+    pushHistory(next);
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen bg-[#07090E] flex flex-col items-center justify-center text-slate-400 gap-3">
@@ -1072,7 +1204,14 @@ export default function FooterBuilderStudio() {
                 {section.columns.map((col, cIdx) => (
                   <div
                     key={col.id}
-                    className="p-4 rounded-xl bg-[#090D15] border border-slate-800/80 flex flex-col justify-between min-h-[140px]"
+                    onDragOver={(e) => handleBlockDragOver(e, col.id)}
+                    onDragLeave={handleBlockDragLeave}
+                    onDrop={(e) => handleBlockDrop(e, section.id, col.id)}
+                    className={`p-4 rounded-xl border flex flex-col justify-between min-h-[140px] transition-all ${
+                      dragOverColId === col.id
+                        ? 'bg-rose-950/30 border-rose-500/80 ring-2 ring-rose-500/30'
+                        : 'bg-[#090D15] border-slate-800/80'
+                    }`}
                   >
                     {/* Column Zone Header */}
                     <div className="flex items-center justify-between gap-2 border-b border-slate-800/50 pb-2.5 mb-3">
@@ -1151,30 +1290,67 @@ export default function FooterBuilderStudio() {
                       </div>
                     </div>
 
-                    {/* Zone Blocks List */}
+                    {/* Zone Blocks List with Full Drag and Drop */}
                     <div className="space-y-2 flex-1">
                       {col.blocks.length === 0 ? (
                         <div className="p-4 rounded-lg border border-dashed border-slate-800 text-center text-slate-600 text-xs">
-                          Empty Zone
+                          Drop block here or click + Add Block
                         </div>
                       ) : (
-                        col.blocks.map((block) => (
+                        col.blocks.map((block, bIdx) => (
                           <div
                             key={block.id}
-                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all ${
-                              block.enabled
-                                ? 'bg-slate-900/90 border-slate-800 hover:border-slate-700 text-white'
+                            draggable={true}
+                            onDragStart={(e) => handleBlockDragStart(e, section.id, col.id, block.id)}
+                            onDragOver={(e) => handleBlockDragOver(e, col.id, block.id)}
+                            onDrop={(e) => handleBlockDrop(e, section.id, col.id, block.id)}
+                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-grab active:cursor-grabbing select-none ${
+                              draggedBlockInfo?.blockId === block.id
+                                ? 'opacity-40 scale-95 border-rose-500 bg-rose-950/20'
+                                : dragOverBlockId === block.id
+                                ? 'border-t-2 border-t-rose-500 bg-slate-800'
+                                : block.enabled
+                                ? 'bg-slate-900/90 border-slate-800 hover:border-slate-700 text-white shadow-sm'
                                 : 'bg-slate-950/40 border-dashed border-slate-800/60 text-slate-500 opacity-60'
                             }`}
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <GripVertical className="w-3.5 h-3.5 text-slate-600 shrink-0 cursor-grab" />
+                              <GripVertical className="w-3.5 h-3.5 text-slate-500 shrink-0 cursor-grab" />
                               <span className="text-xs font-bold truncate">{block.name}</span>
                             </div>
 
                             <div className="flex items-center gap-1 shrink-0">
                               <button
-                                onClick={() => handleToggleBlock(section.id, col.id, block.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveBlockOrder(section.id, col.id, block.id, 'up');
+                                }}
+                                disabled={bIdx === 0}
+                                className={`p-1 rounded text-slate-500 hover:text-white ${
+                                  bIdx === 0 ? 'opacity-20 cursor-not-allowed' : ''
+                                }`}
+                                title="Move Block Up"
+                              >
+                                <MoveUp className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveBlockOrder(section.id, col.id, block.id, 'down');
+                                }}
+                                disabled={bIdx === col.blocks.length - 1}
+                                className={`p-1 rounded text-slate-500 hover:text-white ${
+                                  bIdx === col.blocks.length - 1 ? 'opacity-20 cursor-not-allowed' : ''
+                                }`}
+                                title="Move Block Down"
+                              >
+                                <MoveDown className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleBlock(section.id, col.id, block.id);
+                                }}
                                 className="p-1 rounded text-slate-400 hover:text-white"
                                 title={block.enabled ? 'Hide Block' : 'Show Block'}
                               >
@@ -1185,7 +1361,8 @@ export default function FooterBuilderStudio() {
                                 )}
                               </button>
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setEditingBlock(block);
                                 }}
                                 className="p-1 rounded text-slate-400 hover:text-white"
@@ -1194,7 +1371,10 @@ export default function FooterBuilderStudio() {
                                 <Edit className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={() => handleDeleteBlock(section.id, col.id, block.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteBlock(section.id, col.id, block.id);
+                                }}
                                 className="p-1 rounded text-slate-400 hover:text-rose-400"
                                 title="Delete Block"
                               >
