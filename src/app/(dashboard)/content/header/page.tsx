@@ -399,15 +399,19 @@ export default function HeaderBuilderStudio() {
     if (isAnnouncement) {
       const nextBlocks = config.announcementBar.blocks.map((b) => {
         if (b.id === id) {
-          const currentVis = b.responsive?.[targetDevice]?.visible !== false;
+          const currentVis = b.enabled !== false && b.responsive?.[targetDevice]?.visible !== false;
+          const nextVis = !currentVis;
+          const nextResp = {
+            desktop: { visible: b.responsive?.desktop?.visible !== false },
+            tablet: { visible: b.responsive?.tablet?.visible !== false },
+            mobile: { visible: b.responsive?.mobile?.visible !== false },
+            [targetDevice]: { visible: nextVis },
+          };
+          const allHidden = !nextResp.desktop.visible && !nextResp.tablet.visible && !nextResp.mobile.visible;
           return {
             ...b,
-            responsive: {
-              desktop: b.responsive?.desktop || { visible: true },
-              tablet: b.responsive?.tablet || { visible: true },
-              mobile: b.responsive?.mobile || { visible: true },
-              [targetDevice]: { visible: !currentVis },
-            },
+            enabled: !allHidden,
+            responsive: nextResp,
           };
         }
         return b;
@@ -418,15 +422,19 @@ export default function HeaderBuilderStudio() {
     } else {
       const nextBlocks = config.mainHeader.blocks.map((b) => {
         if (b.id === id) {
-          const currentVis = b.responsive?.[targetDevice]?.visible !== false;
+          const currentVis = b.enabled !== false && b.responsive?.[targetDevice]?.visible !== false;
+          const nextVis = !currentVis;
+          const nextResp = {
+            desktop: { visible: b.responsive?.desktop?.visible !== false },
+            tablet: { visible: b.responsive?.tablet?.visible !== false },
+            mobile: { visible: b.responsive?.mobile?.visible !== false },
+            [targetDevice]: { visible: nextVis },
+          };
+          const allHidden = !nextResp.desktop.visible && !nextResp.tablet.visible && !nextResp.mobile.visible;
           return {
             ...b,
-            responsive: {
-              desktop: b.responsive?.desktop || { visible: true },
-              tablet: b.responsive?.tablet || { visible: true },
-              mobile: b.responsive?.mobile || { visible: true },
-              [targetDevice]: { visible: !currentVis },
-            },
+            enabled: !allHidden,
+            responsive: nextResp,
           };
         }
         return b;
@@ -790,11 +798,19 @@ export default function HeaderBuilderStudio() {
                 {config.announcementBar.mode === 'marquee' ? (
                   <div className="flex w-max items-center animate-marquee">
                     <span className="px-6 font-semibold uppercase tracking-wider">
-                      {config.announcementBar.blocks.map((b) => b.settings?.text).filter(Boolean).join('   ✦   ') ||
+                      {config.announcementBar.blocks
+                        .filter((b) => b.enabled !== false && b.responsive?.[device]?.visible !== false)
+                        .map((b) => b.settings?.text)
+                        .filter(Boolean)
+                        .join('   ✦   ') ||
                         'COMPLIMENTARY WORLDWIDE EXPRESS DELIVERY • EXCLUSIVE ATELIER LUXURY PACKAGING'}
                     </span>
                     <span className="px-6 font-semibold uppercase tracking-wider">
-                      {config.announcementBar.blocks.map((b) => b.settings?.text).filter(Boolean).join('   ✦   ') ||
+                      {config.announcementBar.blocks
+                        .filter((b) => b.enabled !== false && b.responsive?.[device]?.visible !== false)
+                        .map((b) => b.settings?.text)
+                        .filter(Boolean)
+                        .join('   ✦   ') ||
                         'COMPLIMENTARY WORLDWIDE EXPRESS DELIVERY • EXCLUSIVE ATELIER LUXURY PACKAGING'}
                     </span>
                   </div>
@@ -816,21 +832,21 @@ export default function HeaderBuilderStudio() {
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-3">
                       {config.announcementBar.blocks
-                        .filter((b) => b.zone === 'announcement.left')
+                        .filter((b) => b.zone === 'announcement.left' && b.enabled !== false && b.responsive?.[device]?.visible !== false)
                         .map((b) => (
                           <span key={b.id} className="opacity-90">{b.settings?.text || b.settings?.label || b.type.toUpperCase()}</span>
                         ))}
                     </div>
                     <div className="flex-1 text-center font-medium">
                       {config.announcementBar.blocks
-                        .filter((b) => b.zone === 'announcement.center')
+                        .filter((b) => b.zone === 'announcement.center' && b.enabled !== false && b.responsive?.[device]?.visible !== false)
                         .map((b) => (
                           <span key={b.id} className="font-bold">{b.settings?.text || 'Announcement Text'}</span>
                         ))}
                     </div>
                     <div className="flex items-center gap-3">
                       {config.announcementBar.blocks
-                        .filter((b) => b.zone === 'announcement.right')
+                        .filter((b) => b.zone === 'announcement.right' && b.enabled !== false && b.responsive?.[device]?.visible !== false)
                         .map((b) => (
                           <span key={b.id} className="opacity-90">{b.settings?.text || b.settings?.label || b.type.toUpperCase()}</span>
                         ))}
@@ -853,7 +869,7 @@ export default function HeaderBuilderStudio() {
               {/* Left Zone */}
               <div className="flex items-center gap-4 flex-1">
                 {config.mainHeader.blocks
-                  .filter((b) => b.zone === 'main.left')
+                  .filter((b) => b.zone === 'main.left' && b.enabled !== false && b.responsive?.[device]?.visible !== false)
                   .map((b) => {
                     if (b.type === 'logo') {
                       return (
@@ -885,7 +901,7 @@ export default function HeaderBuilderStudio() {
               {/* Center Zone */}
               <div className="flex items-center justify-center gap-4 flex-1">
                 {config.mainHeader.blocks
-                  .filter((b) => b.zone === 'main.center')
+                  .filter((b) => b.zone === 'main.center' && b.enabled !== false && b.responsive?.[device]?.visible !== false)
                   .map((b) => {
                     if (b.type === 'logo') {
                       return (
@@ -917,7 +933,7 @@ export default function HeaderBuilderStudio() {
               {/* Right Zone */}
               <div className="flex items-center justify-end gap-4 flex-1">
                 {config.mainHeader.blocks
-                  .filter((b) => b.zone === 'main.right')
+                  .filter((b) => b.zone === 'main.right' && b.enabled !== false && b.responsive?.[device]?.visible !== false)
                   .map((b) => {
                     if (b.type === 'navigation') {
                       const split = b.settings?.splitSide;
@@ -1108,7 +1124,7 @@ export default function HeaderBuilderStudio() {
                   {config.announcementBar.blocks
                     .filter((b) => b.zone === 'announcement.left')
                     .map((block) => {
-                      const isVis = block.responsive?.[device]?.visible !== false;
+                      const isVis = block.enabled !== false && block.responsive?.[device]?.visible !== false;
                       return (
                         <div
                           key={block.id}
@@ -1190,7 +1206,7 @@ export default function HeaderBuilderStudio() {
                   {config.announcementBar.blocks
                     .filter((b) => b.zone === 'announcement.center')
                     .map((block) => {
-                      const isVis = block.responsive?.[device]?.visible !== false;
+                      const isVis = block.enabled !== false && block.responsive?.[device]?.visible !== false;
                       return (
                         <div
                           key={block.id}
@@ -1272,7 +1288,7 @@ export default function HeaderBuilderStudio() {
                   {config.announcementBar.blocks
                     .filter((b) => b.zone === 'announcement.right')
                     .map((block) => {
-                      const isVis = block.responsive?.[device]?.visible !== false;
+                      const isVis = block.enabled !== false && block.responsive?.[device]?.visible !== false;
                       return (
                         <div
                           key={block.id}
@@ -1637,7 +1653,7 @@ export default function HeaderBuilderStudio() {
                   {config.mainHeader.blocks
                     .filter((b) => b.zone === 'main.left')
                     .map((block) => {
-                      const isVis = block.responsive?.[device]?.visible !== false;
+                      const isVis = block.enabled !== false && block.responsive?.[device]?.visible !== false;
                       const displayName =
                         block.type === 'navigation'
                           ? block.settings?.splitSide === 'first-half'
@@ -1728,7 +1744,7 @@ export default function HeaderBuilderStudio() {
                   {config.mainHeader.blocks
                     .filter((b) => b.zone === 'main.center')
                     .map((block) => {
-                      const isVis = block.responsive?.[device]?.visible !== false;
+                      const isVis = block.enabled !== false && block.responsive?.[device]?.visible !== false;
                       const displayName =
                         block.type === 'navigation'
                           ? block.settings?.splitSide === 'first-half'
@@ -1827,7 +1843,7 @@ export default function HeaderBuilderStudio() {
                   {config.mainHeader.blocks
                     .filter((b) => b.zone === 'main.right')
                     .map((block) => {
-                      const isVis = block.responsive?.[device]?.visible !== false;
+                      const isVis = block.enabled !== false && block.responsive?.[device]?.visible !== false;
                       const displayName =
                         block.type === 'navigation'
                           ? block.settings?.splitSide === 'first-half'
