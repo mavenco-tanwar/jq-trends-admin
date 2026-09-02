@@ -237,6 +237,13 @@ function AdminSidebarInner({
           badgeColor: 'bg-sky-500/20 text-sky-300',
         },
         { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
+        {
+          label: 'Search & Discovery Studio',
+          href: '/marketing/search',
+          icon: SearchIcon,
+          badge: 'Smart Discovery',
+          badgeColor: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold',
+        },
         { label: 'Advanced Analytics', href: '/analytics', icon: BarChart3 },
       ],
     },
