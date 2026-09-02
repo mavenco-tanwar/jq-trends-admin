@@ -17,6 +17,7 @@ import {
   Mail,
   Percent,
   Crown,
+  Bell,
   Image as ImageIcon,
   FileText,
   Compass,
@@ -237,6 +238,13 @@ function AdminSidebarInner({
           icon: Mail,
           badge: 'Journeys',
           badgeColor: 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white font-bold',
+        },
+        {
+          label: 'Omnichannel Communications',
+          href: '/communications',
+          icon: Bell,
+          badge: 'Gateways',
+          badgeColor: 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-bold',
         },
         {
           label: 'Customer Reviews',
