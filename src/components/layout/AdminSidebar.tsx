@@ -263,6 +263,13 @@ function AdminSidebarInner({
         },
         { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
         {
+          label: 'Invoices & Documents',
+          href: '/invoices',
+          icon: FileText,
+          badge: 'PDF',
+          badgeColor: 'bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold',
+        },
+        {
           label: 'Tax & Compliance',
           href: '/tax',
           icon: Receipt,
