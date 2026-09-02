@@ -381,6 +381,49 @@ export default function HeaderBuilderStudio() {
     }
   };
 
+  const toggleDeviceVisibility = (id: string, isAnnouncement: boolean, targetDevice: 'desktop' | 'tablet' | 'mobile') => {
+    if (isAnnouncement) {
+      const nextBlocks = config.announcementBar.blocks.map((b) => {
+        if (b.id === id) {
+          const currentVis = b.responsive?.[targetDevice]?.visible !== false;
+          return {
+            ...b,
+            responsive: {
+              desktop: b.responsive?.desktop || { visible: true },
+              tablet: b.responsive?.tablet || { visible: true },
+              mobile: b.responsive?.mobile || { visible: true },
+              [targetDevice]: { visible: !currentVis },
+            },
+          };
+        }
+        return b;
+      });
+      const next = { ...config, announcementBar: { ...config.announcementBar, blocks: nextBlocks } };
+      setConfig(next);
+      pushHistory(next);
+    } else {
+      const nextBlocks = config.mainHeader.blocks.map((b) => {
+        if (b.id === id) {
+          const currentVis = b.responsive?.[targetDevice]?.visible !== false;
+          return {
+            ...b,
+            responsive: {
+              desktop: b.responsive?.desktop || { visible: true },
+              tablet: b.responsive?.tablet || { visible: true },
+              mobile: b.responsive?.mobile || { visible: true },
+              [targetDevice]: { visible: !currentVis },
+            },
+          };
+        }
+        return b;
+      });
+      const next = { ...config, mainHeader: { ...config.mainHeader, blocks: nextBlocks } };
+      setConfig(next);
+      pushHistory(next);
+    }
+    showToast(`Updated ${targetDevice} visibility`, 'info');
+  };
+
   const moveBlock = (id: string, isAnnouncement: boolean, direction: 'up' | 'down') => {
     const list = isAnnouncement
       ? [...config.announcementBar.blocks]
@@ -615,7 +658,25 @@ export default function HeaderBuilderStudio() {
 
       {/* Tab 1: Zone Layout & Canvas */}
       {activeTab === 'canvas' && (
-        <div className="space-y-6">
+        <div
+          className={`space-y-6 transition-all duration-300 ${
+            device === 'tablet'
+              ? 'max-w-[768px] mx-auto p-4 rounded-3xl bg-slate-950/90 border-2 border-indigo-500/40 shadow-2xl shadow-indigo-950/50'
+              : device === 'mobile'
+              ? 'max-w-[420px] mx-auto p-3 rounded-3xl bg-slate-950/90 border-2 border-indigo-500/40 shadow-2xl shadow-indigo-950/50'
+              : 'w-full'
+          }`}
+        >
+          {device !== 'desktop' && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 text-indigo-200 text-xs shadow-lg">
+              <div className="flex items-center gap-2">
+                {device === 'tablet' ? <Tablet className="w-4 h-4 text-indigo-400" /> : <Smartphone className="w-4 h-4 text-indigo-400" />}
+                <span className="font-bold capitalize">{device} Viewport ({device === 'tablet' ? '768px' : '390px'})</span>
+              </div>
+              <span className="text-[11px] opacity-80">Click the eye icon on any block to show/hide it on {device}</span>
+            </div>
+          )}
+
           {/* Zone 1: Announcement Bar */}
           <div className="p-6 rounded-2xl bg-[#12141D] border border-slate-800 space-y-4 shadow-xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -675,35 +736,44 @@ export default function HeaderBuilderStudio() {
                 <div className="space-y-2 min-h-[100px]">
                   {config.announcementBar.blocks
                     .filter((b) => b.zone === 'announcement.left')
-                    .map((block) => (
-                      <div
-                        key={block.id}
-                        className={`p-2.5 rounded-lg border flex items-center justify-between text-xs ${
-                          block.enabled !== false
-                            ? 'bg-slate-800/80 border-slate-700 text-white'
-                            : 'bg-slate-900/40 border-slate-800/50 text-slate-500 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="font-mono text-[10px] text-slate-400">#{block.order}</span>
-                          <span className="font-bold truncate">{block.settings?.text || block.settings?.label || block.type}</span>
+                    .map((block) => {
+                      const isVis = block.responsive?.[device]?.visible !== false;
+                      return (
+                        <div
+                          key={block.id}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                            isVis
+                              ? 'bg-slate-800/80 border-slate-700 text-white'
+                              : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="font-mono text-[10px] text-slate-400">#{block.order}</span>
+                            <span className="font-bold truncate">{block.settings?.text || block.settings?.label || block.type}</span>
+                            {!isVis && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
+                                Hidden on {device}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => toggleDeviceVisibility(block.id, true, device)}
+                              className="p-1 hover:text-white"
+                              title={`Toggle ${device} visibility`}
+                            >
+                              {isVis ? <Eye className="w-3.5 h-3.5 text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5 text-rose-400" />}
+                            </button>
+                            <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => deleteBlock(block.id, true)} className="p-1 hover:text-rose-500" title="Delete Block">
+                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => toggleBlockVisibility(block.id, true)}
-                            className="p-1 hover:text-white"
-                          >
-                            {block.enabled !== false ? <Eye className="w-3.5 h-3.5 text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5" />}
-                          </button>
-                          <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400">
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => deleteBlock(block.id, true)} className="p-1 hover:text-rose-500">
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
 
@@ -729,24 +799,43 @@ export default function HeaderBuilderStudio() {
                 <div className="space-y-2 min-h-[100px]">
                   {config.announcementBar.blocks
                     .filter((b) => b.zone === 'announcement.center')
-                    .map((block) => (
-                      <div
-                        key={block.id}
-                        className="p-2.5 rounded-lg border bg-slate-800/80 border-slate-700 text-white flex items-center justify-between text-xs"
-                      >
-                        <div className="truncate flex items-center gap-2">
-                          <span className="font-bold truncate">{block.settings?.text || 'Announcement'}</span>
+                    .map((block) => {
+                      const isVis = block.responsive?.[device]?.visible !== false;
+                      return (
+                        <div
+                          key={block.id}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                            isVis
+                              ? 'bg-slate-800/80 border-slate-700 text-white'
+                              : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
+                          }`}
+                        >
+                          <div className="truncate flex items-center gap-2">
+                            <span className="font-bold truncate">{block.settings?.text || 'Announcement'}</span>
+                            {!isVis && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
+                                Hidden on {device}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => toggleDeviceVisibility(block.id, true, device)}
+                              className="p-1 hover:text-white"
+                              title={`Toggle ${device} visibility`}
+                            >
+                              {isVis ? <Eye className="w-3.5 h-3.5 text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5 text-rose-400" />}
+                            </button>
+                            <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => deleteBlock(block.id, true)} className="p-1 hover:text-rose-500" title="Delete Block">
+                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400">
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => deleteBlock(block.id, true)} className="p-1 hover:text-rose-500">
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
 
@@ -773,24 +862,43 @@ export default function HeaderBuilderStudio() {
                 <div className="space-y-2 min-h-[100px]">
                   {config.announcementBar.blocks
                     .filter((b) => b.zone === 'announcement.right')
-                    .map((block) => (
-                      <div
-                        key={block.id}
-                        className="p-2.5 rounded-lg border bg-slate-800/80 border-slate-700 text-white flex items-center justify-between text-xs"
-                      >
-                        <div className="truncate flex items-center gap-2">
-                          <span className="font-bold truncate">{block.settings?.text || block.type}</span>
+                    .map((block) => {
+                      const isVis = block.responsive?.[device]?.visible !== false;
+                      return (
+                        <div
+                          key={block.id}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                            isVis
+                              ? 'bg-slate-800/80 border-slate-700 text-white'
+                              : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
+                          }`}
+                        >
+                          <div className="truncate flex items-center gap-2">
+                            <span className="font-bold truncate">{block.settings?.text || block.type}</span>
+                            {!isVis && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
+                                Hidden on {device}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => toggleDeviceVisibility(block.id, true, device)}
+                              className="p-1 hover:text-white"
+                              title={`Toggle ${device} visibility`}
+                            >
+                              {isVis ? <Eye className="w-3.5 h-3.5 text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5 text-rose-400" />}
+                            </button>
+                            <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => deleteBlock(block.id, true)} className="p-1 hover:text-rose-500" title="Delete Block">
+                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400">
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => deleteBlock(block.id, true)} className="p-1 hover:text-rose-500">
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             </div>
@@ -834,24 +942,43 @@ export default function HeaderBuilderStudio() {
                 <div className="space-y-2 min-h-[120px]">
                   {config.mainHeader.blocks
                     .filter((b) => b.zone === 'main.left')
-                    .map((block) => (
-                      <div
-                        key={block.id}
-                        className="p-3 rounded-lg border bg-slate-800/80 border-slate-700 text-white flex items-center justify-between text-xs"
-                      >
-                        <div className="truncate flex items-center gap-2">
-                          <span className="font-bold">{block.settings?.logoText || 'Logo Block'}</span>
+                    .map((block) => {
+                      const isVis = block.responsive?.[device]?.visible !== false;
+                      return (
+                        <div
+                          key={block.id}
+                          className={`p-3 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                            isVis
+                              ? 'bg-slate-800/80 border-slate-700 text-white'
+                              : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
+                          }`}
+                        >
+                          <div className="truncate flex items-center gap-2">
+                            <span className="font-bold">{block.settings?.logoText || block.settings?.text || 'Logo Block'}</span>
+                            {!isVis && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
+                                Hidden on {device}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => toggleDeviceVisibility(block.id, false, device)}
+                              className="p-1 hover:text-white"
+                              title={`Toggle ${device} visibility`}
+                            >
+                              {isVis ? <Eye className="w-3.5 h-3.5 text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5 text-rose-400" />}
+                            </button>
+                            <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => deleteBlock(block.id, false)} className="p-1 hover:text-rose-500" title="Delete Block">
+                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400">
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => deleteBlock(block.id, false)} className="p-1 hover:text-rose-500">
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
 
@@ -877,33 +1004,52 @@ export default function HeaderBuilderStudio() {
                 <div className="space-y-2 min-h-[120px]">
                   {config.mainHeader.blocks
                     .filter((b) => b.zone === 'main.center')
-                    .map((block) => (
-                      <div
-                        key={block.id}
-                        className="p-3 rounded-lg border bg-slate-800/80 border-slate-700 text-white flex items-center justify-between text-xs"
-                      >
-                        <div className="truncate flex items-center gap-2">
-                          <span className="font-bold">
-                            {block.type === 'navigation'
-                              ? `Primary Navigation Menu (${config.navigationMenu?.length || 0} items)`
-                              : block.settings?.label || 'Inline Search Bar'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {block.type === 'navigation' && (
-                            <button onClick={() => setActiveTab('navigation')} className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold">
-                              Manage Links
+                    .map((block) => {
+                      const isVis = block.responsive?.[device]?.visible !== false;
+                      return (
+                        <div
+                          key={block.id}
+                          className={`p-3 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                            isVis
+                              ? 'bg-slate-800/80 border-slate-700 text-white'
+                              : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
+                          }`}
+                        >
+                          <div className="truncate flex items-center gap-2">
+                            <span className="font-bold">
+                              {block.type === 'navigation'
+                                ? `Primary Navigation Menu (${config.navigationMenu?.length || 0} items)`
+                                : block.settings?.label || 'Inline Search Bar'}
+                            </span>
+                            {!isVis && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
+                                Hidden on {device}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => toggleDeviceVisibility(block.id, false, device)}
+                              className="p-1 hover:text-white"
+                              title={`Toggle ${device} visibility`}
+                            >
+                              {isVis ? <Eye className="w-3.5 h-3.5 text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5 text-rose-400" />}
                             </button>
-                          )}
-                          <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => deleteBlock(block.id, false)} className="p-1 hover:text-rose-500" title="Delete Block">
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          </button>
+                            {block.type === 'navigation' && (
+                              <button onClick={() => setActiveTab('navigation')} className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold">
+                                Manage Links
+                              </button>
+                            )}
+                            <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => deleteBlock(block.id, false)} className="p-1 hover:text-rose-500" title="Delete Block">
+                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
 
@@ -933,30 +1079,49 @@ export default function HeaderBuilderStudio() {
                 <div className="space-y-2 min-h-[120px]">
                   {config.mainHeader.blocks
                     .filter((b) => b.zone === 'main.right')
-                    .map((block) => (
-                      <div
-                        key={block.id}
-                        className="p-2.5 rounded-lg border bg-slate-800/80 border-slate-700 text-white flex items-center justify-between text-xs"
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="font-bold uppercase tracking-wider">{block.settings?.label || block.type}</span>
+                    .map((block) => {
+                      const isVis = block.responsive?.[device]?.visible !== false;
+                      return (
+                        <div
+                          key={block.id}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                            isVis
+                              ? 'bg-slate-800/80 border-slate-700 text-white'
+                              : 'bg-slate-950/40 border-dashed border-rose-500/40 text-slate-500 opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="font-bold uppercase tracking-wider">{block.settings?.label || block.type}</span>
+                            {!isVis && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800/60 shrink-0">
+                                Hidden on {device}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => toggleDeviceVisibility(block.id, false, device)}
+                              className="p-1 hover:text-white"
+                              title={`Toggle ${device} visibility`}
+                            >
+                              {isVis ? <Eye className="w-3.5 h-3.5 text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5 text-rose-400" />}
+                            </button>
+                            <button onClick={() => moveBlock(block.id, false, 'up')} className="p-1 hover:text-white" title="Move Up">
+                              <MoveUp className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => moveBlock(block.id, false, 'down')} className="p-1 hover:text-white" title="Move Down">
+                              <MoveDown className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400" title="Edit Block">
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => deleteBlock(block.id, false)} className="p-1 hover:text-rose-500" title="Delete Block">
+                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => moveBlock(block.id, false, 'up')} className="p-1 hover:text-white" title="Move Up">
-                            <MoveUp className="w-3 h-3" />
-                          </button>
-                          <button onClick={() => moveBlock(block.id, false, 'down')} className="p-1 hover:text-white" title="Move Down">
-                            <MoveDown className="w-3 h-3" />
-                          </button>
-                          <button onClick={() => setEditingBlock(block)} className="p-1 hover:text-rose-400">
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => deleteBlock(block.id, false)} className="p-1 hover:text-rose-500">
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             </div>
@@ -1541,6 +1706,72 @@ export default function HeaderBuilderStudio() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Responsive Visibility Matrix */}
+              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2.5 mt-3">
+                <span className="font-bold text-slate-300 flex items-center gap-1.5 text-xs">
+                  <Monitor className="w-3.5 h-3.5 text-indigo-400" />
+                  Responsive Device Visibility
+                </span>
+                <p className="text-[11px] text-slate-400">
+                  Select which viewports this block should be displayed on:
+                </p>
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-slate-600 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={editingBlock.responsive?.desktop?.visible !== false}
+                      onChange={(e) => {
+                        setEditingBlock({
+                          ...editingBlock,
+                          responsive: {
+                            ...editingBlock.responsive,
+                            desktop: { visible: e.target.checked },
+                          },
+                        });
+                      }}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] font-semibold text-slate-200">Desktop</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-slate-600 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={editingBlock.responsive?.tablet?.visible !== false}
+                      onChange={(e) => {
+                        setEditingBlock({
+                          ...editingBlock,
+                          responsive: {
+                            ...editingBlock.responsive,
+                            tablet: { visible: e.target.checked },
+                          },
+                        });
+                      }}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] font-semibold text-slate-200">Tablet</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-slate-600 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={editingBlock.responsive?.mobile?.visible !== false}
+                      onChange={(e) => {
+                        setEditingBlock({
+                          ...editingBlock,
+                          responsive: {
+                            ...editingBlock.responsive,
+                            mobile: { visible: e.target.checked },
+                          },
+                        });
+                      }}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] font-semibold text-slate-200">Mobile</span>
+                  </label>
+                </div>
               </div>
             </div>
 
