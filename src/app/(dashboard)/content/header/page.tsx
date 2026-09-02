@@ -33,6 +33,7 @@ import {
   X,
   Clock,
   ArrowRight,
+  GripVertical,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast-context';
 import { ApiClient } from '@/services/api';
