@@ -14,6 +14,7 @@ import {
   ShoppingCart,
   Users,
   MessageSquare,
+  Mail,
   Percent,
   Image as ImageIcon,
   FileText,
@@ -228,7 +229,14 @@ function AdminSidebarInner({
           badge: '2 New',
           badgeColor: 'bg-rose-500/20 text-rose-300',
         },
-        { label: 'Customers', href: '/customers', icon: Users },
+        { label: 'Customers & CRM', href: '/customers', icon: Users },
+        {
+          label: 'Marketing & Automations',
+          href: '/marketing',
+          icon: Mail,
+          badge: 'Journeys',
+          badgeColor: 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white font-bold',
+        },
         {
           label: 'Customer Reviews',
           href: '/reviews',
