@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: 'Enterprise Multi-Tenant SaaS Control Plane, Visual CMS & Catalog Studio',
 };
 
+import { Suspense } from 'react';
+import { TopLoadingProgressBar } from '@/components/ui/TopLoadingProgressBar';
+
 export default function RootLayout({
   children,
 }: {
@@ -25,7 +28,12 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[#0F1117] text-slate-100 font-sans selection:bg-rose-500 selection:text-white">
         <AuthProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <Suspense fallback={null}>
+              <TopLoadingProgressBar />
+            </Suspense>
+            {children}
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

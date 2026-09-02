@@ -579,11 +579,24 @@ export default function HeaderBuilderStudio() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[70vh] bg-[#0A0C10] flex flex-col items-center justify-center text-slate-100 p-8 space-y-4">
-        <div className="w-10 h-10 rounded-full border-3 border-rose-500/20 border-t-rose-500 animate-spin" />
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-          Loading Header &amp; Navigation from MongoDB Atlas...
-        </p>
+      <div className="min-h-[75vh] flex flex-col items-center justify-center text-slate-100 p-8 space-y-6">
+        <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 via-indigo-500 to-purple-500 animate-pulse z-50" />
+        
+        <div className="relative flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full border-2 border-indigo-500/20 border-t-rose-500 border-r-indigo-500 animate-spin" />
+          <div className="absolute w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-950/50 text-xs font-bold text-white">
+            <Sparkles className="w-4 h-4" />
+          </div>
+        </div>
+
+        <div className="text-center space-y-2">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-white">
+            Loading Header &amp; Navigation Studio
+          </h3>
+          <p className="text-xs text-slate-400 font-mono">
+            Fetching tenant configuration &amp; live schema from MongoDB Atlas...
+          </p>
+        </div>
       </div>
     );
   }
