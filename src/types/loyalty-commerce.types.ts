@@ -18,15 +18,30 @@ export interface LoyaltyReward {
   status: 'active' | 'paused';
 }
 
-export interface LoyaltyPointLedgerEntry {
+export interface LoyaltyLedgerEntry {
   id: string;
   tenantId: string;
   customerId: string;
-  type: 'earned' | 'redeemed' | 'bonus' | 'referral' | 'refund_reversal' | 'adjustment';
-  amount: number;
+  type:
+    | 'EARN'
+    | 'REDEEM'
+    | 'EXPIRE'
+    | 'REVERSAL'
+    | 'REFUND'
+    | 'ADJUSTMENT'
+    | 'BONUS'
+    | 'REFERRAL'
+    | 'REVIEW'
+    | 'SIGNUP'
+    | 'BIRTHDAY'
+    | 'CAMPAIGN'
+    | 'TIER_BONUS';
+  points: number;
+  balanceBefore: number;
   balanceAfter: number;
+  source?: string;
+  sourceId?: string;
   description: string;
-  orderId?: string;
   createdAt: string;
 }
 
@@ -60,14 +75,47 @@ export interface GiftCard {
   updatedAt: string;
 }
 
-export interface StoreCreditLedgerEntry {
+export interface WalletLedgerEntry {
   id: string;
   tenantId: string;
   customerId: string;
-  type: 'refund_credit' | 'goodwill_credit' | 'redeemed' | 'adjustment';
-  amount: number;
-  balanceAfter: number;
+  type:
+    | 'CREDIT'
+    | 'DEBIT'
+    | 'REFUND'
+    | 'REVERSAL'
+    | 'EXPIRATION'
+    | 'ADJUSTMENT'
+    | 'PROMOTION'
+    | 'LOYALTY_CONVERSION';
+  amountMinor: number; // Integer minor currency units (paise/cents)
+  currency: string;
+  balanceBeforeMinor: number;
+  balanceAfterMinor: number;
+  source?: string;
+  sourceId?: string;
   description: string;
-  orderId?: string;
+  createdAt: string;
+}
+
+export interface CustomerWalletAccount {
+  tenantId: string;
+  customerId: string;
+  currency: string;
+  balanceMinor: number;
+  lifetimeCreditMinor: number;
+  lifetimeDebitMinor: number;
+  updatedAt: string;
+}
+
+export interface ReferralRecord {
+  id: string;
+  tenantId: string;
+  referrerCustomerId: string;
+  referredEmail: string;
+  referralCode: string;
+  status: 'invited' | 'registered' | 'order_completed' | 'rewarded';
+  rewardPoints: number;
+  rewardWalletCreditMinor: number;
   createdAt: string;
 }
