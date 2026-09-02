@@ -104,6 +104,13 @@ export interface HeaderConfig {
   theme: 'luxury-light' | 'luxury-dark' | 'minimal' | 'editorial' | 'modern' | 'classic';
   announcementBar: {
     enabled: boolean;
+    hideOnMobile?: boolean;
+    hideOnTablet?: boolean;
+    responsive?: {
+      desktop?: boolean;
+      tablet?: boolean;
+      mobile?: boolean;
+    };
     height: number;
     rotationEnabled: boolean;
     rotationInterval: number;
@@ -121,6 +128,13 @@ export interface HeaderConfig {
   };
   mainHeader: {
     enabled: boolean;
+    hideOnMobile?: boolean;
+    hideOnTablet?: boolean;
+    responsive?: {
+      desktop?: boolean;
+      tablet?: boolean;
+      mobile?: boolean;
+    };
     height: number;
     containerWidth: 'full' | 'contained' | 'custom';
     maxWidth?: number;

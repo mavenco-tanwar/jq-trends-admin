@@ -691,6 +691,89 @@ export default function HeaderBuilderStudio() {
               </div>
 
               <div className="flex items-center gap-3">
+                {/* Per-device bar visibility badges */}
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
+                  {/* Desktop Toggle */}
+                  <button
+                    onClick={() => {
+                      const current = config.announcementBar.responsive?.desktop !== false;
+                      const next = {
+                        ...config,
+                        announcementBar: {
+                          ...config.announcementBar,
+                          responsive: { ...config.announcementBar.responsive, desktop: !current },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                      showToast(`Announcement Bar ${!current ? 'enabled' : 'hidden'} on Desktop`, 'info');
+                    }}
+                    title="Toggle Bar on Desktop"
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                      config.announcementBar.responsive?.desktop !== false
+                        ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                        : 'bg-rose-950/40 text-rose-400 border border-rose-900/60 opacity-60'
+                    }`}
+                  >
+                    <Monitor className="w-3 h-3" />
+                    <span>Desktop</span>
+                  </button>
+
+                  {/* Tablet Toggle */}
+                  <button
+                    onClick={() => {
+                      const current = !config.announcementBar.hideOnTablet && config.announcementBar.responsive?.tablet !== false;
+                      const next = {
+                        ...config,
+                        announcementBar: {
+                          ...config.announcementBar,
+                          hideOnTablet: current,
+                          responsive: { ...config.announcementBar.responsive, tablet: !current },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                      showToast(`Announcement Bar ${!current ? 'enabled' : 'hidden'} on Tablet`, 'info');
+                    }}
+                    title="Toggle Bar on Tablet"
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                      !config.announcementBar.hideOnTablet && config.announcementBar.responsive?.tablet !== false
+                        ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                        : 'bg-rose-950/40 text-rose-400 border border-rose-900/60 opacity-60'
+                    }`}
+                  >
+                    <Tablet className="w-3 h-3" />
+                    <span>Tablet</span>
+                  </button>
+
+                  {/* Mobile Toggle */}
+                  <button
+                    onClick={() => {
+                      const current = !config.announcementBar.hideOnMobile && config.announcementBar.responsive?.mobile !== false;
+                      const next = {
+                        ...config,
+                        announcementBar: {
+                          ...config.announcementBar,
+                          hideOnMobile: current,
+                          responsive: { ...config.announcementBar.responsive, mobile: !current },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                      showToast(`Announcement Bar ${!current ? 'enabled' : 'hidden'} on Mobile`, 'info');
+                    }}
+                    title="Toggle Bar on Mobile"
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                      !config.announcementBar.hideOnMobile && config.announcementBar.responsive?.mobile !== false
+                        ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                        : 'bg-rose-950/40 text-rose-400 border border-rose-900/60 opacity-60'
+                    }`}
+                  >
+                    <Smartphone className="w-3 h-3" />
+                    <span>Mobile</span>
+                  </button>
+                </div>
+
                 <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                   <span>Enable Bar</span>
                   <input
@@ -1471,6 +1554,87 @@ export default function HeaderBuilderStudio() {
                 />
                 <span>Shrink Height on Scroll (80px &rarr; 68px)</span>
               </label>
+            </div>
+
+            {/* Responsive Device Display Rules Card */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-4">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
+                Responsive Device Display Rules
+              </h4>
+
+              <div className="space-y-3 text-xs">
+                <label className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors">
+                  <div>
+                    <span className="font-bold text-white block">Show Announcement Bar on Mobile</span>
+                    <span className="text-[11px] text-slate-400">Keep top promo alerts visible on mobile phones</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!config.announcementBar.hideOnMobile && config.announcementBar.responsive?.mobile !== false}
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        announcementBar: {
+                          ...config.announcementBar,
+                          hideOnMobile: !e.target.checked,
+                          responsive: { ...config.announcementBar.responsive, mobile: e.target.checked },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                    }}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors">
+                  <div>
+                    <span className="font-bold text-white block">Show Announcement Bar on Tablets</span>
+                    <span className="text-[11px] text-slate-400">Display promo alerts on tablets (768px–1024px)</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!config.announcementBar.hideOnTablet && config.announcementBar.responsive?.tablet !== false}
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        announcementBar: {
+                          ...config.announcementBar,
+                          hideOnTablet: !e.target.checked,
+                          responsive: { ...config.announcementBar.responsive, tablet: e.target.checked },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                    }}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors">
+                  <div>
+                    <span className="font-bold text-white block">Show Announcement Bar on Desktop</span>
+                    <span className="text-[11px] text-slate-400">Display promo alerts on full desktop monitors</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={config.announcementBar.responsive?.desktop !== false}
+                    onChange={(e) => {
+                      const next = {
+                        ...config,
+                        announcementBar: {
+                          ...config.announcementBar,
+                          responsive: { ...config.announcementBar.responsive, desktop: e.target.checked },
+                        },
+                      };
+                      setConfig(next);
+                      pushHistory(next);
+                    }}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-4">
