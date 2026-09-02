@@ -263,6 +263,13 @@ function AdminSidebarInner({
         },
         { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
         {
+          label: 'Tax & Compliance',
+          href: '/tax',
+          icon: Receipt,
+          badge: 'GST/VAT',
+          badgeColor: 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-bold',
+        },
+        {
           label: 'Gift Cards & Vouchers',
           href: '/gift-cards',
           icon: Gift,
