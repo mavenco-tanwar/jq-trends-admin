@@ -226,6 +226,13 @@ function AdminSidebarInner({
       items: [
         { label: 'Orders & Fulfillment', href: '/orders', icon: ShoppingCart },
         {
+          label: 'Shipping & Logistics',
+          href: '/shipping',
+          icon: Truck,
+          badge: 'Carriers',
+          badgeColor: 'bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-bold',
+        },
+        {
           label: 'Returns & Refunds',
           href: '/returns',
           icon: RotateCcw,
