@@ -177,7 +177,7 @@ function PlatformContent() {
   });
 
   // Blueprint Store Cloner State
-  const [blueprintSource, setBlueprintSource] = useState<string>('none');
+  const [blueprintSource, setBlueprintSource] = useState<string>('flagship');
 
   // Official GST / Tax Invoice Generator Modal State
   const [invoiceTenant, setInvoiceTenant] = useState<TenantStore | null>(null);
@@ -231,12 +231,33 @@ function PlatformContent() {
 
   const handleApplyBlueprint = (sourceSlug: string) => {
     setBlueprintSource(sourceSlug);
+    if (sourceSlug === 'flagship') {
+      setPrimaryColor('#0F172A');
+      setAccentColor('#E11D48');
+      setTagline('Curated Luxury Fashion & Contemporary Atelier');
+      showToast('Applied Flagship Luxury Atelier theme & layout blueprint!', 'success');
+      return;
+    }
+    if (sourceSlug === 'nordic') {
+      setPrimaryColor('#1E293B');
+      setAccentColor('#D97706');
+      setTagline('Artisanal Ceramic, Lighting & Architectural Objects');
+      showToast('Applied Nordic Home Living theme & layout blueprint!', 'info');
+      return;
+    }
+    if (sourceSlug === 'apex') {
+      setPrimaryColor('#09090B');
+      setAccentColor('#2563EB');
+      setTagline('High-Performance Technical Training & Athletic Apparel');
+      showToast('Applied Apex Performance Activewear blueprint!', 'info');
+      return;
+    }
     if (sourceSlug === 'none') return;
 
     const sourceTenant = tenants.find((t) => t.slug === sourceSlug);
     if (sourceTenant) {
       setPrimaryColor(sourceTenant.theme?.primaryColor || '#0F172A');
-      setAccentColor(sourceTenant.theme?.accentColor || '#6366F1');
+      setAccentColor(sourceTenant.theme?.accentColor || '#E11D48');
       setTagline(sourceTenant.tagline || 'Curated Modern Lifestyle Brand');
       if (sourceTenant.planId) {
         setSelectedPlanId(sourceTenant.planId);
@@ -1076,22 +1097,14 @@ function PlatformContent() {
     setCopiedCredentials(false);
     setStoreName('');
     setStoreSlug('');
-    setTagline('');
+    setTagline('Curated Luxury Fashion & Contemporary Atelier');
     setOwnerName('');
     setOwnerEmail('');
     setCurrency('INR');
     setStoreStatus('active');
     setCustomDomain('');
     setSelectedPlanId('plan_pro');
-    setCustomFeatures({
-      customDomains: true,
-      advancedAnalytics: true,
-      richCms: true,
-      productReviews: true,
-      abandonedCart: true,
-      aiFeatures: true,
-      apiAccess: true,
-    });
+    setCustomFeatures(PlatformService.getDefaultFeaturesForPlan('plan_pro'));
   };
 
   const handleToggleTenantStatus = async (tenant: TenantStore) => {
@@ -3272,27 +3285,37 @@ function PlatformContent() {
                       <span>1. Brand Identity &amp; Routing</span>
                     </div>
 
-                    {/* Optional Blueprint Template Cloner */}
-                    <div className="p-3 bg-[#0D0F16] rounded-2xl border border-rose-500/20 space-y-2">
+                    {/* Storefront Design Blueprint & Theme Preset */}
+                    <div className="p-3.5 bg-[#0D0F16] rounded-2xl border border-rose-500/30 space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-rose-300 flex items-center gap-1">
-                          <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-                          <span>Optional: Clone Blueprint from Existing Store</span>
+                        <span className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-rose-400 animate-pulse" />
+                          <span>Storefront Design Blueprint &amp; Default Theme</span>
                         </span>
-                        <span className="text-[9px] text-slate-400">Copies theme &amp; layouts</span>
+                        <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          BEST PRESET ACTIVE
+                        </span>
                       </div>
                       <select
                         value={blueprintSource}
                         onChange={(e) => handleApplyBlueprint(e.target.value)}
-                        className="w-full p-2 bg-[#141724] border border-slate-700/80 rounded-xl text-xs text-white focus:border-rose-500 focus:outline-none"
+                        className="w-full p-2.5 bg-[#141724] border border-slate-700 rounded-xl text-xs text-white focus:border-rose-500 focus:outline-hidden font-medium"
                       >
-                        <option value="none">✨ Clean Slate (Custom Configuration)</option>
+                        <option value="flagship">✨ Flagship Luxury Atelier (Recommended - Best Layout &amp; Theme Preset)</option>
+                        <option value="nordic">🌿 Nordic Minimalist &amp; Home Living (Warm Earth &amp; Terracotta)</option>
+                        <option value="apex">⚡ Apex Performance Activewear (Dark Obsidian &amp; Electric Cobalt)</option>
                         {tenants.map((t) => (
                           <option key={t.slug} value={t.slug}>
-                            🏬 Clone Blueprint from {t.name} ({t.planName})
+                            🏬 Clone From Existing Store: {t.name} ({t.planName})
                           </option>
                         ))}
+                        <option value="none">🛠️ Custom Clean Slate (Manual Configuration)</option>
                       </select>
+
+                      <div className="p-2.5 rounded-xl bg-gradient-to-r from-rose-950/30 via-[#12141F] to-amber-950/20 border border-rose-500/20 text-[11px] text-slate-300 flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Pre-loads our <strong>best editorial layout</strong>: Sticky Glass Navbar, Hero Lookbook Canvas, Minimalist Product Cards, and 4-Column Editorial Footer.</span>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

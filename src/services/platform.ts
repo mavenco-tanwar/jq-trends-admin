@@ -695,12 +695,16 @@ export class PlatformService {
       domains,
       theme: {
         logoUrl: '',
-        primaryColor: payload.primaryColor || '#111111',
+        primaryColor: payload.primaryColor || '#0F172A',
         secondaryColor: '#FFFFFF',
         accentColor: payload.accentColor || '#E11D48',
         headingFont: 'Playfair Display',
         bodyFont: 'Plus Jakarta Sans',
         borderRadius: 'md',
+        layoutPreset: 'flagship_luxury',
+        headerLayout: 'glassmorphism_mega',
+        footerLayout: 'editorial_4_column',
+        productCardStyle: 'minimal_hover_zoom',
       },
       metrics: {
         products: 4,
