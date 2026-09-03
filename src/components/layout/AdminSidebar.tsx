@@ -327,6 +327,13 @@ function AdminSidebarInner({
           badgeColor: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold',
         },
         { label: 'Advanced Analytics', href: '/analytics', icon: BarChart3 },
+        {
+          label: 'AI Intelligence Studio',
+          href: '/ai',
+          icon: Sparkles,
+          badge: 'AI Gen',
+          badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
+        },
       ],
     },
     {
