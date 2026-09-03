@@ -446,19 +446,86 @@ function PlatformContent() {
   const [proposalGmv, setProposalGmv] = useState<number>(1500000);
   const [proposalAppSpend, setProposalAppSpend] = useState<number>(35000);
 
-  // Surge Mode Active Tenant Stores
-  const [surgeModeStores, setSurgeModeStores] = useState<Record<string, boolean>>({});
+  // Surge Mode Active Tenant Stores & Studio Modal
+  const [surgeModeStores, setSurgeModeStores] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const saved = localStorage.getItem('jq_surge_mode_stores');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [surgeModalTenant, setSurgeModalTenant] = useState<TenantStore | null>(null);
+  const [selectedSurgeTier, setSelectedSurgeTier] = useState<'2x' | '5x' | '20x'>('5x');
+  const [isActivatingSurge, setIsActivatingSurge] = useState<boolean>(false);
+  const [surgeEdgeCache, setSurgeEdgeCache] = useState<boolean>(true);
+  const [surgeDbPool, setSurgeDbPool] = useState<boolean>(true);
+  const [surgeBotShield, setSurgeBotShield] = useState<boolean>(true);
+  const [surgeWaitingRoom, setSurgeWaitingRoom] = useState<boolean>(false);
 
-  const handleToggleSurgeMode = (tenantId: string, tenantName: string) => {
-    setSurgeModeStores((prev) => {
-      const updated = !prev[tenantId];
-      if (updated) {
-        showToast(`🚀 Surge Mode ACTIVATED for ${tenantName} (100% Edge Static ISR & Connection Pooling)`, 'success');
-      } else {
-        showToast(`Surge Mode deactivated for ${tenantName}`, 'info');
-      }
-      return { ...prev, [tenantId]: updated };
-    });
+  const handleOpenSurgeStudio = (tenant: TenantStore) => {
+    setSurgeModalTenant(tenant);
+    const existingTier = surgeModeStores[tenant.id] || surgeModeStores[tenant.slug];
+    if (existingTier && (existingTier === '2x' || existingTier === '5x' || existingTier === '20x')) {
+      setSelectedSurgeTier(existingTier);
+    } else {
+      setSelectedSurgeTier('5x');
+    }
+  };
+
+  const handleActivateSurge = (tenant: TenantStore) => {
+    setIsActivatingSurge(true);
+    setTimeout(() => {
+      const newSurgeMap = { ...surgeModeStores, [tenant.id]: selectedSurgeTier, [tenant.slug]: selectedSurgeTier };
+      setSurgeModeStores(newSurgeMap);
+      try {
+        localStorage.setItem('jq_surge_mode_stores', JSON.stringify(newSurgeMap));
+      } catch {}
+
+      PlatformService.logActivity({
+        id: `act_${Date.now()}`,
+        event: `Engaged ${selectedSurgeTier} High-Concurrency Flash Sale Surge Mode for ${tenant.name}`,
+        actor: 'superadmin@mavenco.com',
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        ipAddress: '127.0.0.1',
+        severity: 'warning',
+        timestamp: 'Just now',
+      });
+
+      setIsActivatingSurge(false);
+      setSurgeModalTenant(null);
+      showToast(`🔥 ${selectedSurgeTier} Surge Mode ACTIVATED for ${tenant.name}! Edge ISR & 10x DB Pool engaged.`, 'success');
+    }, 600);
+  };
+
+  const handleDeactivateSurge = (tenant: TenantStore) => {
+    setIsActivatingSurge(true);
+    setTimeout(() => {
+      const newSurgeMap = { ...surgeModeStores };
+      delete newSurgeMap[tenant.id];
+      delete newSurgeMap[tenant.slug];
+      setSurgeModeStores(newSurgeMap);
+      try {
+        localStorage.setItem('jq_surge_mode_stores', JSON.stringify(newSurgeMap));
+      } catch {}
+
+      PlatformService.logActivity({
+        id: `act_${Date.now()}`,
+        event: `Deactivated Surge Mode for ${tenant.name} - returned to standard 1x scale`,
+        actor: 'superadmin@mavenco.com',
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        ipAddress: '127.0.0.1',
+        severity: 'info',
+        timestamp: 'Just now',
+      });
+
+      setIsActivatingSurge(false);
+      setSurgeModalTenant(null);
+      showToast(`Surge Mode deactivated for ${tenant.name}. Reverted to baseline traffic profile.`, 'info');
+    }, 400);
   };
 
   const handleOpenWebhookSimulator = (tenant: TenantStore) => {
@@ -2001,16 +2068,16 @@ function PlatformContent() {
                       </button>
 
                       <button
-                        onClick={() => handleToggleSurgeMode(tenant.id, tenant.name)}
-                        className={`px-2 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 ${
-                          surgeModeStores[tenant.id]
-                            ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-900/40 animate-pulse'
-                            : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border-orange-500/20'
+                        onClick={() => handleOpenSurgeStudio(tenant)}
+                        className={`px-2 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 text-[11px] ${
+                          (surgeModeStores[tenant.id] || surgeModeStores[tenant.slug])
+                            ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-white border-amber-400/80 shadow-lg shadow-orange-950/60 font-bold animate-pulse'
+                            : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border-orange-500/20 hover:border-orange-500/40'
                         }`}
-                        title="Toggle High-Throughput Flash Sale Surge Mode"
+                        title="Open High-Throughput Flash Sale & Traffic Surge Studio"
                       >
-                        <Flame className="w-3 h-3 text-orange-400" />
-                        <span>{surgeModeStores[tenant.id] ? 'Surge ON' : 'Surge'}</span>
+                        <Flame className={`w-3 h-3 ${(surgeModeStores[tenant.id] || surgeModeStores[tenant.slug]) ? 'text-white fill-white' : 'text-orange-400'}`} />
+                        <span>{(surgeModeStores[tenant.id] || surgeModeStores[tenant.slug]) ? `Surge ON (${surgeModeStores[tenant.id] || surgeModeStores[tenant.slug]})` : 'Surge'}</span>
                       </button>
 
                       <button
@@ -4545,6 +4612,207 @@ function PlatformContent() {
                   Done
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* ========================================================================= */}
+      {/* HIGH-CONCURRENCY SURGE & FLASH SALE SCALER STUDIO MODAL */}
+      {/* ========================================================================= */}
+      {surgeModalTenant && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-[#12141F] border border-orange-500/40 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl relative">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 sm:p-6 pb-4 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-gradient-to-br from-amber-500/20 to-rose-500/20 border border-orange-500/30 text-orange-400">
+                  <Flame className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                    <span>High-Concurrency Flash Sale Surge Studio</span>
+                    {(surgeModeStores[surgeModalTenant.id] || surgeModeStores[surgeModalTenant.slug]) && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase animate-pulse">
+                        🔥 ACTIVE ({surgeModeStores[surgeModalTenant.id] || surgeModeStores[surgeModalTenant.slug]})
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Traffic pre-warming &amp; infrastructure scaling for <strong className="text-white">{surgeModalTenant.name}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSurgeModalTenant(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 scrollbar-thin text-xs">
+              {/* Concurrency Multipliers */}
+              <div className="space-y-2">
+                <label className="block text-[11px] uppercase font-bold text-orange-400 tracking-wider">
+                  1. Select Traffic Surge Multiplier:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { id: '2x', name: '2x Concurrency', desc: 'Weekend boost · Up to 3,000 req/min', badge: 'Weekend' },
+                    { id: '5x', name: '5x Flash Sale Drop', desc: 'Product launch · 10,000 req/min', badge: 'Recommended' },
+                    { id: '20x', name: '20x Mega Drop', desc: 'Black Friday · 25,000+ req/min', badge: 'Viral Drop' },
+                  ].map((tier) => (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      onClick={() => setSelectedSurgeTier(tier.id as any)}
+                      className={`p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
+                        selectedSurgeTier === tier.id
+                          ? 'bg-orange-500/15 border-orange-500 text-white shadow-lg shadow-orange-950/40 ring-1 ring-orange-400'
+                          : 'bg-[#0A0C10] border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-bold text-white text-xs">{tier.name}</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                          selectedSurgeTier === tier.id ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                          {tier.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-snug">{tier.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Infrastructure Toggles */}
+              <div className="space-y-2">
+                <label className="block text-[11px] uppercase font-bold text-slate-300 tracking-wider">
+                  2. Edge &amp; Database Resilience Subsystems:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div
+                    onClick={() => setSurgeEdgeCache(!surgeEdgeCache)}
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
+                      surgeEdgeCache ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' : 'bg-[#0A0C10] border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-white">Edge Static ISR &amp; Cache Warming</div>
+                      <div className="text-[11px] text-slate-400">Pre-caches top 50 products globally</div>
+                    </div>
+                    <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${surgeEdgeCache ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-500'}`}>
+                      {surgeEdgeCache ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setSurgeDbPool(!surgeDbPool)}
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
+                      surgeDbPool ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' : 'bg-[#0A0C10] border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-white">MongoDB Pool 10x Boost</div>
+                      <div className="text-[11px] text-slate-400">Surges socket pool to 100 connections</div>
+                    </div>
+                    <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${surgeDbPool ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-500'}`}>
+                      {surgeDbPool ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setSurgeBotShield(!surgeBotShield)}
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
+                      surgeBotShield ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' : 'bg-[#0A0C10] border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-white">Anti-Bot &amp; Turnstile Shield</div>
+                      <div className="text-[11px] text-slate-400">Throttles automated scalp bots</div>
+                    </div>
+                    <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${surgeBotShield ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-500'}`}>
+                      {surgeBotShield ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setSurgeWaitingRoom(!surgeWaitingRoom)}
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
+                      surgeWaitingRoom ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' : 'bg-[#0A0C10] border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-white">Virtual Waiting Room Queue</div>
+                      <div className="text-[11px] text-slate-400">Fair FIFO queue for checkout surges</div>
+                    </div>
+                    <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${surgeWaitingRoom ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-500'}`}>
+                      {surgeWaitingRoom ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Telemetry Health Indicator */}
+              <div className="p-4 bg-[#0A0C10] rounded-2xl border border-slate-800 space-y-2">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Live Edge Diagnostic Telemetry</div>
+                <div className="grid grid-cols-3 gap-2 text-center font-mono">
+                  <div className="p-2 bg-[#12141F] rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500">Edge Latency</div>
+                    <div className="text-emerald-400 font-bold text-xs mt-0.5">14ms</div>
+                  </div>
+                  <div className="p-2 bg-[#12141F] rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500">Cache Hit Ratio</div>
+                    <div className="text-emerald-400 font-bold text-xs mt-0.5">99.4%</div>
+                  </div>
+                  <div className="p-2 bg-[#12141F] rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500">DB Cluster Health</div>
+                    <div className="text-emerald-400 font-bold text-xs mt-0.5">100% OK</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-800 flex items-center justify-between bg-[#0F111A] shrink-0">
+              <button
+                type="button"
+                onClick={() => setSurgeModalTenant(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+              >
+                Close
+              </button>
+
+              <div className="flex items-center gap-2">
+                {(surgeModeStores[surgeModalTenant.id] || surgeModeStores[surgeModalTenant.slug]) && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeactivateSurge(surgeModalTenant)}
+                    disabled={isActivatingSurge}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all disabled:opacity-50"
+                  >
+                    Deactivate Surge
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleActivateSurge(surgeModalTenant)}
+                  disabled={isActivatingSurge}
+                  className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-950/50 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Flame className="w-4 h-4 text-white fill-white" />
+                  <span>
+                    {isActivatingSurge
+                      ? 'Pre-warming Edge...'
+                      : (surgeModeStores[surgeModalTenant.id] || surgeModeStores[surgeModalTenant.slug])
+                      ? `Update Surge (${selectedSurgeTier})`
+                      : `Engage ${selectedSurgeTier} Surge Mode`}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
