@@ -40,6 +40,8 @@ const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID || 'store_jq_trends';
 export interface ApiResponse<T> {
   data: T;
   meta?: Record<string, any>;
+  message?: string;
+  success?: boolean;
   error?: {
     code: string;
     message: string;

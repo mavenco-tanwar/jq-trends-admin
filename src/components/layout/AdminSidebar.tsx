@@ -57,6 +57,8 @@ import {
   ShoppingBag,
   Wand2,
   Code,
+  Cable,
+  Workflow,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PlatformService, TenantStore } from '@/services/platform';
@@ -462,6 +464,20 @@ function AdminSidebarInner({
     {
       title: 'ECOSYSTEM & DEVELOPERS',
       items: [
+        {
+          label: 'Integration Hub',
+          href: '/integrations',
+          icon: Cable,
+          badge: 'Sync Hub',
+          badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
+        },
+        {
+          label: 'No-Code Automations',
+          href: '/automations',
+          icon: Workflow,
+          badge: 'WHEN-IF',
+          badgeColor: 'bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold',
+        },
         {
           label: 'App Marketplace',
           href: '/apps',
