@@ -460,6 +460,25 @@ function AdminSidebarInner({
       ],
     },
     {
+      title: 'ECOSYSTEM & DEVELOPERS',
+      items: [
+        {
+          label: 'App Marketplace',
+          href: '/apps',
+          icon: Package,
+          badge: 'Verified',
+          badgeColor: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold',
+        },
+        {
+          label: 'Developer Portal & APIs',
+          href: '/developers',
+          icon: Code,
+          badge: 'OpenAPI',
+          badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
+        },
+      ],
+    },
+    {
       title: 'GOVERNANCE',
       items: [
         { label: 'Admin Users', href: '/users', icon: UserCheck },
