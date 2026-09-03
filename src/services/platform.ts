@@ -234,7 +234,7 @@ export class PlatformService {
       const stored = localStorage.getItem(PLATFORM_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch {}
     return [];

@@ -1292,10 +1292,10 @@ function PlatformContent() {
                 <Building2 className="w-4 h-4 text-rose-400" />
               </div>
               <div className="text-2xl font-bold text-white">
-                {metrics?.totalTenants || tenants.length}
+                {metrics?.totalTenants ?? tenants.length}
               </div>
               <div className="flex items-center gap-2 text-[11px]">
-                <span className="text-emerald-400 font-bold">{metrics?.activeTenants || tenants.filter(t => t.status === 'active').length} Active</span>
+                <span className="text-emerald-400 font-bold">{metrics?.activeTenants ?? tenants.filter(t => t.status === 'active').length} Active</span>
                 <span className="text-slate-500">•</span>
                 <span className="text-amber-400 font-bold">{metrics?.trialTenants || 0} Trial</span>
                 <span className="text-slate-500">•</span>
