@@ -576,7 +576,7 @@ export class PlatformService {
           ownerEmail: t.ownerEmail || t.contact?.email || 'owner@platform.com',
           ownerName: t.ownerName || 'Store Owner',
           primaryDomain: t.primaryDomain || `${t.slug}.com`,
-          features: t.features || PlatformService.getDefaultFeaturesForPlan(t.planId || 'plan_pro'),
+          features: (t.features && Object.keys(t.features).length > 0) ? t.features : PlatformService.getDefaultFeaturesForPlan(t.planId || 'plan_pro'),
           domains: t.domains || [
             {
               id: `dom_${t.slug}`,
@@ -799,7 +799,7 @@ export class PlatformService {
 
   public static async updateTenantDetails(
     id: string,
-    updates: Partial<Pick<TenantStore, 'name' | 'slug' | 'tagline' | 'currency' | 'ownerEmail' | 'ownerName' | 'planId' | 'status' | 'theme'>>
+    updates: Partial<Pick<TenantStore, 'name' | 'slug' | 'tagline' | 'currency' | 'ownerEmail' | 'ownerName' | 'planId' | 'status' | 'theme' | 'features'>>
   ): Promise<TenantStore | null> {
     const list = this.loadTenants();
     const plan = updates.planId ? this.plans.find((p) => p.id === updates.planId) : null;
@@ -810,6 +810,7 @@ export class PlatformService {
         updatedStore = {
           ...t,
           ...updates,
+          features: updates.features !== undefined ? updates.features : (t.features || {}),
           planName: plan ? plan.name : t.planName,
           theme: updates.theme ? { ...t.theme, ...updates.theme } : t.theme,
           updatedAt: new Date().toISOString(),
@@ -821,9 +822,15 @@ export class PlatformService {
 
     if (updatedStore) {
       this.saveTenants(updated);
+
+      // Notify window of updated tenant features
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tenant_updated', { detail: updatedStore }));
+      }
+
       this.logActivity({
         id: `act_${Date.now()}`,
-        event: `Tenant ${(updatedStore as TenantStore).name} configuration updated by Superadmin`,
+        event: `Tenant ${(updatedStore as TenantStore).name} configuration & feature flags updated by Superadmin`,
         actor: 'superadmin@mavenco.com',
         tenantId: id,
         tenantName: (updatedStore as TenantStore).name,
@@ -832,19 +839,22 @@ export class PlatformService {
         timestamp: 'Just now',
       });
 
-      // Real-time sync with storefront API
+      // Synchronize directly with live database API
       try {
-        fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${(updatedStore as TenantStore).slug}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: (updatedStore as TenantStore).name,
-            tagline: (updatedStore as TenantStore).tagline,
-            currency: (updatedStore as TenantStore).currency,
-            theme: (updatedStore as TenantStore).theme,
-          }),
-        }).catch(() => {});
-      } catch {}
+        await ApiClient.patch('/api/v1/platform/tenants', {
+          tenantId: (updatedStore as TenantStore).slug,
+          name: (updatedStore as TenantStore).name,
+          tagline: (updatedStore as TenantStore).tagline,
+          planId: (updatedStore as TenantStore).planId,
+          planName: (updatedStore as TenantStore).planName,
+          status: (updatedStore as TenantStore).status,
+          currency: (updatedStore as TenantStore).currency,
+          theme: (updatedStore as TenantStore).theme,
+          features: (updatedStore as TenantStore).features,
+        });
+      } catch (err) {
+        console.error('Failed to sync tenant updates to MongoDB API:', err);
+      }
     }
 
     return updatedStore;

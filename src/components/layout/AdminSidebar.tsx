@@ -102,11 +102,20 @@ function AdminSidebarInner({
 
   useEffect(() => {
     setMounted(true);
-    PlatformService.listTenants().then((list) => {
+    const refreshData = async () => {
+      const list = await PlatformService.listTenants();
       setAllTenants(list);
       setActiveTenant(PlatformService.getActiveTenant());
       setImpersonationState(PlatformService.getImpersonationState());
-    });
+    };
+
+    refreshData();
+    window.addEventListener('storage', refreshData);
+    window.addEventListener('tenant_updated', refreshData);
+    return () => {
+      window.removeEventListener('storage', refreshData);
+      window.removeEventListener('tenant_updated', refreshData);
+    };
   }, [pathname]);
 
   const handleImpersonateStore = (tenant: TenantStore) => {
@@ -601,8 +610,12 @@ function AdminSidebarInner({
           const visibleItems = section.items.filter((item) => {
             if (isSuperadminRoute) return true;
             if (!item.featureKey) return true;
-            if (activeTenant?.features && activeTenant.features[item.featureKey] !== undefined) {
-              return activeTenant.features[item.featureKey] !== false;
+            const features = (activeTenant?.features && Object.keys(activeTenant.features).length > 0)
+              ? activeTenant.features
+              : PlatformService.getDefaultFeaturesForPlan(activeTenant?.planId || 'plan_pro');
+
+            if (features && features[item.featureKey] !== undefined) {
+              return features[item.featureKey] === true;
             }
             return true;
           });
