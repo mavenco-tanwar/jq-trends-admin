@@ -21,6 +21,7 @@ import {
   Bell,
   Image as ImageIcon,
   FileText,
+  DollarSign,
   Compass,
   Megaphone,
   Tag,
@@ -275,6 +276,13 @@ function AdminSidebarInner({
           icon: CreditCard,
           badge: 'Online',
           badgeColor: 'bg-gradient-to-r from-emerald-500 to-indigo-500 text-white font-bold',
+        },
+        {
+          label: 'Finance & Ledger',
+          href: '/finance',
+          icon: DollarSign,
+          badge: 'GL',
+          badgeColor: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold',
         },
         {
           label: 'Tax & Compliance',
