@@ -84,13 +84,13 @@ export class ProductService {
 
   static async create(product: Partial<Product>): Promise<Product> {
     const newProd: Product = normalizeProduct({
+      id: product.id || `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       ...product,
-      id: `prod_${Date.now()}`,
     });
 
     try {
       const res = await ApiClient.post<Product>('/api/v1/products', newProd);
-      if (res.data) {
+      if (res.data && !Array.isArray(res.data) && (res.data.id || res.data.title)) {
         const norm = normalizeProduct(res.data);
         this.localProducts = [norm, ...this.localProducts];
         return norm;

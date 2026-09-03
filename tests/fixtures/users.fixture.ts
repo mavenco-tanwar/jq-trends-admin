@@ -1,0 +1,47 @@
+import type { AdminUser } from '@/types';
+
+export const mockUsersFixture: AdminUser[] = [
+  {
+    id: 'user_superadmin_01',
+    firstName: 'Platform',
+    lastName: 'Superadmin',
+    email: 'admin@mavenco.com',
+    roleId: 'superadmin',
+    roleName: 'Platform Superadmin',
+    status: 'active',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'user_owner_jqtrends',
+    firstName: 'Jatin',
+    lastName: 'Qureshi',
+    email: 'owner@jqtrends.com',
+    roleId: 'role_owner',
+    roleName: 'Store Owner & Administrator',
+    status: 'active',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'user_staff_catalog',
+    firstName: 'Pooja',
+    lastName: 'Verma',
+    email: 'pooja@jqtrends.com',
+    roleId: 'role_catalog_manager',
+    roleName: 'Catalog & Inventory Specialist',
+    status: 'active',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+    createdAt: '2026-01-15T00:00:00.000Z',
+  },
+  {
+    id: 'user_suspended_01',
+    firstName: 'Suspended',
+    lastName: 'Member',
+    email: 'suspended@example.com',
+    roleId: 'role_support',
+    roleName: 'Support Staff',
+    status: 'suspended',
+    createdAt: '2026-02-01T00:00:00.000Z',
+  },
+];
