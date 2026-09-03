@@ -320,6 +320,16 @@ const CURRENT_STORE_KEY = 'jq_saas_active_tenant_id';
 const IMPERSONATION_KEY = 'jq_saas_impersonation_state';
 
 export class PlatformService {
+  public static async seedTenant(tenantSlug: string, preset: string = 'apparel'): Promise<any> {
+    try {
+      const res = await ApiClient.post('/api/v1/platform/tenants/seed', { tenantSlug, preset });
+      if (res && res.success) return res;
+    } catch (err) {
+      console.warn('Primary platform seed failed, using products/seed fallback:', err);
+    }
+    return await ApiClient.post('/api/v1/products/seed', { tenantSlug, preset });
+  }
+
   public static getPlatformModules(): PlatformModuleMeta[] {
     return ALL_PLATFORM_MODULES;
   }

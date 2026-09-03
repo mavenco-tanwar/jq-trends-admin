@@ -387,14 +387,7 @@ function PlatformContent() {
     }, 900);
 
     try {
-      await fetch('/api/v1/platform/tenants/seed', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenantSlug: seederTenant.slug,
-          preset: seederPreset,
-        }),
-      });
+      await PlatformService.seedTenant(seederTenant.slug, seederPreset);
     } catch (e) {
       console.warn('Seeder API call warning:', e);
     }
