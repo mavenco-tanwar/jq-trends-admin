@@ -764,12 +764,12 @@ export class PlatformService {
       timestamp: 'Just now',
     });
 
-    // Real-time sync with storefront API to archive and invalidate storefront route
+    // Real-time sync with Database API to delete tenant from platform_tenants_registry & drop tenant DB
     try {
-      fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${tenant.slug}`, {
-        method: 'DELETE',
-      }).catch(() => {});
-    } catch {}
+      await ApiClient.delete(`/api/v1/platform/tenants?tenantId=${encodeURIComponent(tenant.slug || tenant.id)}`);
+    } catch (err) {
+      console.error("Failed to delete tenant from MongoDB:", err);
+    }
 
     return true;
   }
