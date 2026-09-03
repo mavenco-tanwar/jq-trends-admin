@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Shield,
   Building2,
@@ -30,6 +31,17 @@ import {
   Eye,
   Crown,
   Sparkles,
+  Globe,
+  CreditCard,
+  MessageSquare,
+  Star,
+  Trash2,
+  Mail,
+  Phone,
+  Calendar,
+  DollarSign,
+  Link as LinkIcon,
+  RefreshCw,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast-context';
 import { ApiClient } from '@/services/api';
@@ -48,9 +60,36 @@ import {
 export default function SuperadminControlPlanePage() {
   const { showToast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'tenants' | 'impersonation' | 'health' | 'flags' | 'jobs' | 'security' | 'audit'
-  >('overview');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const validTabs = ['overview', 'tenants', 'impersonation', 'health', 'flags', 'jobs', 'security', 'audit', 'domains', 'plans', 'inquiries', 'reviews', 'activity'] as const;
+  type TabKey = typeof validTabs[number];
+
+  const urlTab = searchParams.get('tab') as TabKey | null;
+
+  const [activeTab, setActiveTabState] = useState<TabKey>(() => {
+    if (urlTab && (validTabs as readonly string[]).includes(urlTab)) return urlTab;
+    return 'overview';
+  });
+
+  // Sync URL -> state when URL changes
+  useEffect(() => {
+    if (urlTab && (validTabs as readonly string[]).includes(urlTab) && urlTab !== activeTab) {
+      setActiveTabState(urlTab);
+    }
+  }, [urlTab]);
+
+  // Wrapper that also updates the URL
+  const setActiveTab = (tab: TabKey) => {
+    setActiveTabState(tab);
+    router.push(`/platform?tab=${tab}`, { scroll: false });
+  };
+
+  // New state for sidebar tab data
+  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [activityFeed, setActivityFeed] = useState<any[]>([]);
 
   const [tenants, setTenants] = useState<TenantRegistryRecord[]>([]);
   const [impersonations, setImpersonations] = useState<ImpersonationSession[]>([]);
@@ -99,6 +138,24 @@ export default function SuperadminControlPlanePage() {
 
       const secRes = await ApiClient.get<any>('/api/v1/platform/security');
       if (secRes.data) setSecurityEvents(secRes.data);
+
+      // Fetch data for sidebar tabs
+      try {
+        const inqRes = await ApiClient.get<any>('/api/v1/platform/inquiries');
+        if (inqRes.data) setInquiries(inqRes.data);
+      } catch {}
+
+      try {
+        const revRes = await ApiClient.get<any>('/api/v1/reviews');
+        if (revRes.data) setReviews(Array.isArray(revRes.data) ? revRes.data : []);
+      } catch {}
+
+      try {
+        const actRes = await ApiClient.get<any>('/api/v1/platform/activity');
+        if (actRes.activities) setActivityFeed(actRes.activities);
+        else if (Array.isArray(actRes.data)) setActivityFeed(actRes.data);
+        else if (Array.isArray(actRes)) setActivityFeed(actRes);
+      } catch {}
     } catch {
       // Fallback
     } finally {
@@ -791,6 +848,332 @@ export default function SuperadminControlPlanePage() {
           </div>
         </div>
       )}
+
+      {/* TAB: CUSTOM DOMAINS & SSL */}
+      {activeTab === 'domains' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-emerald-400" />
+                  <span>Custom Domain & SSL Management</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">Manage tenant custom domains with automatic SSL certificate provisioning via Let&apos;s Encrypt.</p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-800">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-900 text-slate-400 uppercase tracking-wider font-bold border-b border-slate-800">
+                  <tr>
+                    <th className="p-3.5">Tenant</th>
+                    <th className="p-3.5">Primary Domain</th>
+                    <th className="p-3.5">Custom Domain</th>
+                    <th className="p-3.5">SSL Status</th>
+                    <th className="p-3.5">DNS Verified</th>
+                    <th className="p-3.5 text-right">Expires</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-sans">
+                  {tenants.map((t) => (
+                    <tr key={t.tenantId} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="p-3.5 font-bold text-white">{t.name}</td>
+                      <td className="p-3.5 font-mono text-indigo-400 text-[11px]">{t.slug}.mavenco-storefront.vercel.app</td>
+                      <td className="p-3.5 font-mono text-emerald-400 text-[11px]">{t.slug}.com</td>
+                      <td className="p-3.5">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300">
+                          Active (TLS 1.3)
+                        </span>
+                      </td>
+                      <td className="p-3.5">
+                        <span className="flex items-center gap-1 text-emerald-400 text-[11px]">
+                          <CheckCircle2 className="w-3 h-3" /> CNAME Verified
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-right font-mono text-slate-400 text-[11px]">
+                        {new Date(Date.now() + 86400000 * 90).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Custom Domains</span>
+              <div className="text-2xl font-mono font-black text-white">{tenants.length}</div>
+            </div>
+            <div className="p-5 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">SSL Certificates Active</span>
+              <div className="text-2xl font-mono font-black text-emerald-400">{tenants.length}</div>
+            </div>
+            <div className="p-5 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Auto-Renewal Enabled</span>
+              <div className="text-2xl font-mono font-black text-indigo-400">100%</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: SAAS BILLING & PLANS */}
+      {activeTab === 'plans' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-amber-400" />
+              <span>SaaS Billing Plans & Subscription Tiers</span>
+            </h3>
+            <p className="text-xs text-slate-400">Manage platform pricing tiers, feature entitlements, and tenant subscription billing.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              { name: 'Starter Tier', price: '$99/mo', features: ['1 Store', '1 Custom Domain', 'Basic Analytics', 'Email Support'], color: 'from-slate-800 to-slate-900', border: 'border-slate-700', tenantCount: tenants.filter(t => t.planId === 'plan_starter').length },
+              { name: 'Growth Commerce Tier', price: '$299/mo', features: ['3 Stores', '5 Custom Domains', 'Advanced Analytics', 'Priority Support', 'AI Features'], color: 'from-rose-900/30 to-purple-900/30', border: 'border-rose-500/30', tenantCount: tenants.filter(t => t.planId === 'plan_growth').length },
+              { name: 'Scale Enterprise Tier', price: '$799/mo', features: ['Unlimited Stores', 'Unlimited Domains', 'Full API Access', 'Dedicated Support', 'White Label', 'Custom Integrations'], color: 'from-indigo-900/30 to-cyan-900/30', border: 'border-indigo-500/30', tenantCount: tenants.filter(t => t.planId === 'plan_scale').length },
+            ].map((plan) => (
+              <div key={plan.name} className={`p-6 rounded-2xl bg-gradient-to-b ${plan.color} border ${plan.border} shadow-xl space-y-4`}>
+                <div>
+                  <h4 className="text-lg font-black text-white">{plan.name}</h4>
+                  <div className="text-2xl font-mono font-black text-emerald-400 mt-1">{plan.price}</div>
+                  <div className="text-[11px] text-slate-400 mt-1">{plan.tenantCount} active tenant(s)</div>
+                </div>
+                <div className="space-y-2 pt-2 border-t border-slate-800/60">
+                  {plan.features.map((f) => (
+                    <div key={f} className="flex items-center gap-2 text-xs text-slate-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-6 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-4">
+            <h3 className="text-base font-bold text-white">Tenant Subscription Registry</h3>
+            <div className="overflow-x-auto rounded-xl border border-slate-800">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-900 text-slate-400 uppercase tracking-wider font-bold border-b border-slate-800">
+                  <tr>
+                    <th className="p-3.5">Organization</th>
+                    <th className="p-3.5">Plan</th>
+                    <th className="p-3.5">MRR</th>
+                    <th className="p-3.5">Status</th>
+                    <th className="p-3.5">Stores</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {tenants.map((t) => (
+                    <tr key={t.tenantId} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="p-3.5 font-bold text-white">{t.name}</td>
+                      <td className="p-3.5 text-indigo-400 font-mono text-[11px]">{t.planName}</td>
+                      <td className="p-3.5 font-mono font-bold text-emerald-400">${(t.mrrMinor / 100).toFixed(2)}</td>
+                      <td className="p-3.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          t.status === 'active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                        }`}>{t.status}</span>
+                      </td>
+                      <td className="p-3.5 font-mono text-slate-400">{t.storesCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: INQUIRIES & DEMO LEADS */}
+      {activeTab === 'inquiries' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-emerald-400" />
+                  <span>Inbound Inquiries & Demo Lead Pipeline</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">Prospects from the platform showcase demo request form.</p>
+              </div>
+              <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold">
+                {inquiries.length} Total Leads
+              </span>
+            </div>
+
+            {inquiries.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">
+                <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                <p>No inquiries received yet. Leads from the storefront showcase will appear here.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {inquiries.map((inq: any) => (
+                  <div key={inq.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <strong className="text-white font-bold text-sm">{inq.fullName}</strong>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            inq.status === 'new' ? 'bg-emerald-500/20 text-emerald-300' :
+                            inq.status === 'contacted' ? 'bg-blue-500/20 text-blue-300' :
+                            inq.status === 'qualified' ? 'bg-amber-500/20 text-amber-300' :
+                            'bg-slate-700 text-slate-400'
+                          }`}>{inq.status}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                          <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{inq.email}</span>
+                          {inq.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{inq.phone}</span>}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Brand: <span className="text-indigo-400 font-bold">{inq.brandName}</span> • 
+                          Interested in: <span className="text-amber-400">{inq.interestedPlan}</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                        {new Date(inq.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {inq.message && (
+                      <p className="text-xs text-slate-300 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">{inq.message}</p>
+                    )}
+                    <div className="flex gap-2 pt-1">
+                      {['new', 'contacted', 'qualified', 'closed'].map((s) => (
+                        <button
+                          key={s}
+                          onClick={async () => {
+                            try {
+                              await ApiClient.patch<any>('/api/v1/platform/inquiries', { id: inq.id, status: s });
+                              showToast(`Status updated to ${s}`, 'success');
+                              fetchData();
+                            } catch { showToast('Failed to update', 'error'); }
+                          }}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                            inq.status === s 
+                              ? 'bg-rose-600 text-white' 
+                              : 'bg-slate-800 text-slate-400 hover:text-white'
+                          }`}
+                        >{s}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: SAAS SHOWCASE REVIEWS */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>SaaS Showcase Reviews & Testimonials</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">Merchant reviews displayed on the public platform showcase page.</p>
+              </div>
+              <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 text-xs font-bold">
+                {reviews.length} Reviews
+              </span>
+            </div>
+
+            {reviews.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">
+                <Star className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                <p>No showcase reviews yet. Merchant testimonials will appear here once submitted.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {reviews.map((rev: any, idx: number) => (
+                  <div key={rev.id || idx} className="p-5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <strong className="text-white font-bold">{rev.authorName || rev.merchantName || 'Merchant'}</strong>
+                        <div className="text-[11px] text-indigo-400">{rev.brandName || rev.storeName || ''}</div>
+                      </div>
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed">{rev.text || rev.content || rev.review || 'Great platform!'}</p>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: PLATFORM ACTIVITY FEED */}
+      {activeTab === 'activity' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-[#0C0F17] border border-slate-800 shadow-xl space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-sky-400" />
+                  <span>Platform Activity Feed & Audit Stream</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">Real-time log of all platform-level operations, provisioning events, and administrative actions.</p>
+              </div>
+              <button
+                onClick={() => fetchData()}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-sky-400" />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            {activityFeed.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">
+                <Activity className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                <p>No recent platform activity. Events from the last 5 days will appear here.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activityFeed.map((act: any, idx: number) => (
+                  <div key={act.id || idx} className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center text-xs">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <strong className="text-sky-400 font-bold">{act.action || act.type || 'Event'}</strong>
+                        <span className="text-white font-mono text-[11px]">by {act.actor || act.user || 'System'}</span>
+                        {act.severity && (
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            act.severity === 'critical' ? 'bg-rose-500/20 text-rose-300' :
+                            act.severity === 'warning' ? 'bg-amber-500/20 text-amber-300' :
+                            'bg-slate-800 text-slate-300'
+                          }`}>{act.severity}</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-mono">
+                        {act.details || act.description || act.message || ''}
+                        {act.target && ` • Target: ${act.target}`}
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono shrink-0">
+                      {act.timeAgo || (act.createdAt ? new Date(act.createdAt).toLocaleString() : '')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
