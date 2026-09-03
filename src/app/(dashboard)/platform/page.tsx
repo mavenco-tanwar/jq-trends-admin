@@ -194,6 +194,42 @@ function PlatformContent() {
     }
   };
 
+  const getTenantRenewalInfo = (tenant: TenantStore) => {
+    const plan = plans.find((p) => p.id === tenant.planId);
+    const planFee = plan?.monthlyEquivalentInr || (tenant.planId === "plan_enterprise" ? 8000 : tenant.planId === "plan_starter" ? 2000 : 4000);
+
+    if (tenant.status === "trial") {
+      const createdTime = new Date(tenant.createdAt).getTime();
+      const elapsedDays = Math.floor((Date.now() - (isNaN(createdTime) ? Date.now() : createdTime)) / (1000 * 60 * 60 * 24));
+      const daysLeft = Math.max(0, 14 - elapsedDays);
+      return {
+        label: `Trial: Due in ${daysLeft} Days`,
+        color: daysLeft <= 3 ? "text-rose-400 font-bold" : "text-amber-400",
+        fee: "Free Sandbox",
+      };
+    }
+
+    if (tenant.status === "suspended") {
+      return {
+        label: "Renewal Overdue (Suspended)",
+        color: "text-rose-400 font-bold",
+        fee: `₹${planFee.toLocaleString("en-IN")}/mo`,
+      };
+    }
+
+    // Active paid plan: Monthly renewal cycle (30 days from creation)
+    const createdTime = new Date(tenant.createdAt).getTime();
+    const elapsedDays = Math.floor((Date.now() - (isNaN(createdTime) ? Date.now() : createdTime)) / (1000 * 60 * 60 * 24));
+    const cycleDays = 30;
+    const daysLeft = Math.max(1, cycleDays - (elapsedDays % cycleDays));
+
+    return {
+      label: `Due in ${daysLeft} Days`,
+      color: daysLeft <= 5 ? "text-rose-400 font-bold" : daysLeft <= 10 ? "text-amber-400" : "text-emerald-400",
+      fee: `₹${planFee.toLocaleString("en-IN")}/mo`,
+    };
+  };
+
   const handleApplyBlueprint = (sourceSlug: string) => {
     setBlueprintSource(sourceSlug);
     if (sourceSlug === 'none') return;
@@ -1880,10 +1916,15 @@ function PlatformContent() {
                     </div>
                     <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/80">
                       <span className="text-slate-500">Server Renewal:</span>
-                      <span className="text-amber-400 font-medium font-mono flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-amber-400" />
-                        <span>Due in 14 Days</span>
-                      </span>
+                      {(() => {
+                        const renewal = getTenantRenewalInfo(tenant);
+                        return (
+                          <span className={`font-medium font-mono flex items-center gap-1 ${renewal.color}`}>
+                            <Clock className="w-3 h-3" />
+                            <span>{renewal.label}</span>
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -3988,7 +4029,7 @@ function PlatformContent() {
                 <div className="text-right">
                   <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">PLATFORM TIER:</span>
                   <div className="font-bold text-rose-400 text-sm mt-0.5">{invoiceTenant.planName}</div>
-                  <div className="text-[11px] text-slate-400">Monthly Server Renewal: 14 Days Remaining</div>
+                  <div className="text-[11px] text-slate-400">Monthly Server Renewal: {getTenantRenewalInfo(invoiceTenant).label} ({getTenantRenewalInfo(invoiceTenant).fee})</div>
                 </div>
               </div>
 
