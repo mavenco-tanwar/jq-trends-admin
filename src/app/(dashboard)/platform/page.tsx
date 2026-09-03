@@ -445,6 +445,7 @@ function PlatformContent() {
   const [proposalTenant, setProposalTenant] = useState<TenantStore | null>(null);
   const [proposalGmv, setProposalGmv] = useState<number>(1500000);
   const [proposalAppSpend, setProposalAppSpend] = useState<number>(35000);
+  const [planCategoryTabs, setPlanCategoryTabs] = useState<Record<string, string>>({});
 
   // Surge Mode Active Tenant Stores & Studio Modal
   const [surgeModeStores, setSurgeModeStores] = useState<Record<string, string>>(() => {
@@ -1185,11 +1186,11 @@ function PlatformContent() {
     loadPlatformData();
   };
 
-  const handleTogglePlanFeature = async (planId: string, featureKey: keyof TenantPlan['features']) => {
+  const handleTogglePlanFeature = async (planId: string, featureKey: string) => {
     const targetPlan = plans.find((p) => p.id === planId);
     if (!targetPlan) return;
 
-    const currentVal = targetPlan.features[featureKey];
+    const currentVal = targetPlan.features?.[featureKey] !== false;
     await PlatformService.updatePlanFeatures(planId, {
       [featureKey]: !currentVal,
     });
@@ -2519,35 +2520,108 @@ function PlatformContent() {
                     </div>
                   </div>
 
-                  {/* Interactive Feature Flags */}
-                  <div className="space-y-2 pt-2 border-t border-slate-800">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      Interactive Feature Flags
-                    </div>
-                    {(Object.keys(p.features) as (keyof typeof p.features)[]).map((fKey) => {
-                      const enabled = p.features[fKey];
-                      return (
+                  {/* Interactive Plan Module Entitlements Studio */}
+                  <div className="space-y-3 pt-3 border-t border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                          Plan Modules
+                        </span>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-mono font-bold px-1.5 py-0.5 rounded">
+                          {ALL_PLATFORM_MODULES.filter(m => p.features?.[m.key] !== false).length} / {ALL_PLATFORM_MODULES.length} Active
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
                         <button
-                          key={fKey}
-                          onClick={() => handleTogglePlanFeature(p.id, fKey)}
                           type="button"
-                          className="w-full flex items-center justify-between p-2 rounded-lg bg-[#10121A] hover:bg-slate-800 text-xs text-left transition-all border border-slate-800"
+                          onClick={async () => {
+                            const allEnabled: Record<string, boolean> = {};
+                            ALL_PLATFORM_MODULES.forEach(m => { allEnabled[m.key] = true; });
+                            await PlatformService.updatePlanFeatures(p.id, allEnabled);
+                            showToast(`Enabled all ${ALL_PLATFORM_MODULES.length} modules for ${p.name}`, 'success');
+                            loadPlatformData();
+                          }}
+                          className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 hover:text-white transition-colors"
+                          title="Enable all modules for this plan"
                         >
-                          <span className="text-slate-300 font-mono text-[11px]">
-                            {fKey.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
-                              enabled
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                : 'bg-slate-800 text-slate-500'
+                          All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await PlatformService.resetPlanFeaturesToDefault(p.id);
+                            showToast(`Reset ${p.name} modules to default tier rule`, 'info');
+                            loadPlatformData();
+                          }}
+                          className="px-2 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-[10px] font-bold text-amber-300 border border-amber-500/20 transition-colors"
+                          title="Reset to default plan features"
+                        >
+                          Defaults
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Category Filter Chips */}
+                    <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px]">
+                      {['All', 'Catalog', 'Sales & Ops', 'Customers', 'Marketing & AI', 'CMS & Design', 'Ecosystem & Developers', 'Governance'].map((cat) => {
+                        const isSelected = (planCategoryTabs[p.id] || 'All') === cat;
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setPlanCategoryTabs(prev => ({ ...prev, [p.id]: cat }))}
+                            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-medium transition-all ${
+                              isSelected
+                                ? 'bg-amber-500 text-slate-950 font-bold'
+                                : 'bg-[#10121A] text-slate-400 hover:text-white border border-slate-800'
                             }`}
                           >
-                            {enabled ? 'ENABLED' : 'DISABLED'}
-                          </span>
-                        </button>
-                      );
-                    })}
+                            {cat === 'Ecosystem & Developers' ? 'Ecosystem' : cat}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Scrollable list of modules */}
+                    <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
+                      {ALL_PLATFORM_MODULES
+                        .filter(m => (planCategoryTabs[p.id] || 'All') === 'All' || m.category === (planCategoryTabs[p.id] || 'All'))
+                        .map((mod) => {
+                          const enabled = p.features?.[mod.key] !== false;
+                          return (
+                            <button
+                              key={mod.key}
+                              onClick={() => handleTogglePlanFeature(p.id, mod.key)}
+                              type="button"
+                              className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all border ${
+                                enabled
+                                  ? 'bg-[#10131F] hover:bg-[#151928] border-slate-800/80'
+                                  : 'bg-[#0A0C10] hover:bg-slate-800/60 border-slate-900 opacity-60'
+                              }`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="text-xs font-bold text-slate-200 truncate flex items-center gap-1.5">
+                                  <span>{mod.name}</span>
+                                  <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 font-normal">
+                                    {mod.category}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 truncate">{mod.desc}</div>
+                              </div>
+                              <span
+                                className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-all ${
+                                  enabled
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    : 'bg-slate-800 text-slate-500 border border-slate-700/50'
+                                }`}
+                              >
+                                {enabled ? 'ENABLED' : 'DISABLED'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
                   </div>
 
                   {/* Download Plan GST Invoice Button */}

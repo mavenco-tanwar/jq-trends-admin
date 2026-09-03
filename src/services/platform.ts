@@ -232,15 +232,7 @@ export const INITIAL_PLANS: TenantPlan[] = [
     maxOrdersMonthly: 1000,
     maxStorageMb: 2048,
     maxStaff: 3,
-    features: {
-      customDomains: true,
-      advancedAnalytics: false,
-      richCms: true,
-      productReviews: true,
-      abandonedCart: false,
-      aiFeatures: false,
-      apiAccess: false,
-    },
+    features: getDefaultFeaturesForPlan('plan_starter'),
     cloudCostBreakdown: {
       mongodbAtlas: 300,
       serverlessHosting: 400,
@@ -262,15 +254,7 @@ export const INITIAL_PLANS: TenantPlan[] = [
     maxOrdersMonthly: 10000,
     maxStorageMb: 10240,
     maxStaff: 15,
-    features: {
-      customDomains: true,
-      advancedAnalytics: true,
-      richCms: true,
-      productReviews: true,
-      abandonedCart: true,
-      aiFeatures: true,
-      apiAccess: true,
-    },
+    features: getDefaultFeaturesForPlan('plan_pro'),
     cloudCostBreakdown: {
       mongodbAtlas: 500,
       serverlessHosting: 800,
@@ -292,15 +276,7 @@ export const INITIAL_PLANS: TenantPlan[] = [
     maxOrdersMonthly: 250000,
     maxStorageMb: 102400,
     maxStaff: 100,
-    features: {
-      customDomains: true,
-      advancedAnalytics: true,
-      richCms: true,
-      productReviews: true,
-      abandonedCart: true,
-      aiFeatures: true,
-      apiAccess: true,
-    },
+    features: getDefaultFeaturesForPlan('plan_enterprise'),
     cloudCostBreakdown: {
       mongodbAtlas: 1200,
       serverlessHosting: 1800,
@@ -339,7 +315,28 @@ export class PlatformService {
   }
 
   private static tenants: TenantStore[] = this.loadTenants();
-  private static plans: TenantPlan[] = INITIAL_PLANS;
+  private static loadPlans(): TenantPlan[] {
+    if (typeof window === 'undefined') return INITIAL_PLANS;
+    try {
+      const stored = localStorage.getItem('jq_platform_plans_v4');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return INITIAL_PLANS;
+  }
+
+  private static savePlans(plans: TenantPlan[]) {
+    this.plans = plans;
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('jq_platform_plans_v4', JSON.stringify(plans));
+      } catch {}
+    }
+  }
+
+  private static plans: TenantPlan[] = this.loadPlans();
   private static activities: PlatformActivityLog[] = INITIAL_ACTIVITY_LOGS;
 
   private static loadTenants(): TenantStore[] {
@@ -901,12 +898,14 @@ export class PlatformService {
 
   public static async updatePlanFeatures(
     planId: string,
-    features: Partial<TenantPlan['features']>
+    features: Record<string, boolean>
   ): Promise<void> {
-    const plan = this.plans.find((p) => p.id === planId);
+    const list = this.loadPlans();
+    const plan = list.find((p) => p.id === planId);
     if (!plan) return;
 
     plan.features = { ...plan.features, ...features };
+    this.savePlans(list);
 
     this.logActivity({
       id: `act_${Date.now()}`,
@@ -919,8 +918,13 @@ export class PlatformService {
     });
   }
 
+  public static async resetPlanFeaturesToDefault(planId: string): Promise<void> {
+    const defaultFeatures = getDefaultFeaturesForPlan(planId);
+    await this.updatePlanFeatures(planId, defaultFeatures);
+  }
+
   public static async listPlans(): Promise<TenantPlan[]> {
-    return this.plans;
+    return this.loadPlans();
   }
 
   public static async listActivityLogs(): Promise<PlatformActivityLog[]> {
