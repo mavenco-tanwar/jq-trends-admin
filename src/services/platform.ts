@@ -244,7 +244,7 @@ export class PlatformService {
     try {
       const res = await ApiClient.get<TenantStore[]>('/api/v1/platform/tenants');
       const list = res?.data || [];
-      if (Array.isArray(list) && list.length > 0) {
+      if (Array.isArray(list)) {
         this.saveTenants(list);
         return list;
       }
@@ -457,7 +457,7 @@ export class PlatformService {
   public static async listTenants(): Promise<TenantStore[]> {
     try {
       const res = await ApiClient.get<any>('/api/v1/platform/tenants');
-      if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res && Array.isArray(res.data)) {
         const dbTenants: TenantStore[] = res.data.map((t: any) => ({
           id: t.id || `store_${t.slug}`,
           name: t.name,
