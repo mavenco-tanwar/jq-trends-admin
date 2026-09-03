@@ -3595,19 +3595,25 @@ function PlatformContent() {
       {/* EDIT TENANT MODAL */}
       {/* ========================================================================= */}
       {editingTenant && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#161822] border border-slate-700 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-[#161822] border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Pinned Modal Header */}
+            <div className="flex items-center justify-between p-5 sm:p-6 pb-4 border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Edit className="w-5 h-5 text-rose-400" />
-                <h3 className="text-lg font-bold text-white">Edit Store: {editingTenant.name}</h3>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Edit Store: {editingTenant.name}</h3>
+                  <p className="text-[11px] text-slate-400">Configure store settings, credentials, and enabled SaaS modules</p>
+                </div>
               </div>
-              <button onClick={() => setEditingTenant(null)} className="p-1 rounded-lg text-slate-400 hover:text-white">
+              <button onClick={() => setEditingTenant(null)} className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-4">
+            <form onSubmit={handleSaveEdit} className="flex-1 flex flex-col overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1 scrollbar-thin">
               <div>
                 <label className="text-xs text-slate-300 font-bold">Store Name</label>
                 <input
@@ -3652,7 +3658,7 @@ function PlatformContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs text-slate-300 font-bold">Currency</label>
                   <select
@@ -3846,17 +3852,20 @@ function PlatformContent() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+              </div>
+
+              {/* Pinned Modal Footer */}
+              <div className="p-4 sm:p-5 border-t border-slate-800 flex items-center justify-end gap-3 bg-[#12141D] shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingTenant(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg"
+                  className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.01]"
                 >
                   Save Store Settings
                 </button>
