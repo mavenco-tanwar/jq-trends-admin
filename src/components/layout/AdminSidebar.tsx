@@ -292,6 +292,13 @@ function AdminSidebarInner({
           badgeColor: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold',
         },
         {
+          label: 'Plans & SaaS Billing',
+          href: '/billing',
+          icon: Crown,
+          badge: 'SaaS',
+          badgeColor: 'bg-gradient-to-r from-amber-500 to-indigo-500 text-white font-bold',
+        },
+        {
           label: 'Tax & Compliance',
           href: '/tax',
           icon: Receipt,
