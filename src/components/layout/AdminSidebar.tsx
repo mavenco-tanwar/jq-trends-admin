@@ -264,6 +264,13 @@ function AdminSidebarInner({
         },
         { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
         {
+          label: 'Multi-Store & Channels',
+          href: '/stores',
+          icon: Store,
+          badge: 'Fleet',
+          badgeColor: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold',
+        },
+        {
           label: 'Invoices & Documents',
           href: '/invoices',
           icon: FileText,
