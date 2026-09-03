@@ -61,7 +61,7 @@ export class ApiClient {
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
     const token = this.getToken();
-    let currentTenantSlug = 'lumina';
+    let currentTenantSlug = 'demo';
     try {
       const storedTenantId = localStorage.getItem('jq_saas_active_tenant_id') || '';
       if (storedTenantId) {

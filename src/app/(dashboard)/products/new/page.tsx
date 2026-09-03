@@ -19,6 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { ProductService } from '@/services/products';
+import { PlatformService } from '@/services/platform';
 import { useToast } from '@/lib/toast-context';
 import { MediaPickerModal } from '@/components/ui/MediaPickerModal';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -131,7 +132,11 @@ export default function NewProductPage() {
 
     setIsSubmitting(true);
     try {
-      const newProduct: Partial<Product> = {
+      const activeTenant = PlatformService.getActiveTenant();
+      const newProduct: any = {
+        tenantId: activeTenant?.slug || 'demo',
+        tenantSlug: activeTenant?.slug || 'demo',
+        storeSlug: activeTenant?.slug || 'demo',
         title,
         slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         shortDescription: shortDesc,
