@@ -105,12 +105,16 @@ function PlatformContent() {
   const loadSaasReviews = async () => {
     setIsSaasReviewsLoading(true);
     try {
-      const res = await fetch('/api/v1/reviews?type=saas&status=all').then((r) => (r.ok ? r.json() : null));
+      const res = await ApiClient.get<any>('/api/v1/reviews?type=saas&status=all');
       if (res?.data && Array.isArray(res.data)) {
         setSaasReviews(res.data);
       }
     } catch (e) {
-      console.warn('Failed to load SaaS reviews:', e);
+      console.warn('Failed to load SaaS reviews via ApiClient, trying local fallback:', e);
+      try {
+        const localRes = await fetch('/api/v1/reviews?type=saas&status=all').then(r => r.ok ? r.json() : null);
+        if (localRes?.data && Array.isArray(localRes.data)) setSaasReviews(localRes.data);
+      } catch {}
     } finally {
       setIsSaasReviewsLoading(false);
     }
@@ -1288,16 +1292,20 @@ function PlatformContent() {
   const handleDeleteSaasReview = async (id: string) => {
     if (!confirm('Are you sure you want to delete this SaaS testimonial from MongoDB Atlas?')) return;
     try {
-      const res = await fetch(`/api/v1/reviews?id=${encodeURIComponent(id)}&type=saas`, {
-        method: 'DELETE',
-      }).then((r) => r.json());
-
-      if (res.success) {
+      const res = await ApiClient.delete(`/api/v1/reviews?id=${encodeURIComponent(id)}&type=saas`);
+      if (res && res.success !== false) {
         showToast('SaaS Testimonial removed from MongoDB Atlas', 'info');
         loadSaasReviews();
       }
     } catch (e) {
-      showToast('Failed to delete review', 'error');
+      console.warn('ApiClient delete failed, trying fallback:', e);
+      try {
+        await fetch(`/api/v1/reviews?id=${encodeURIComponent(id)}&type=saas`, { method: 'DELETE' });
+        showToast('SaaS Testimonial removed', 'info');
+        loadSaasReviews();
+      } catch {
+        showToast('Failed to delete review', 'error');
+      }
     }
   };
 
