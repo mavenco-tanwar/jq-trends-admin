@@ -64,6 +64,7 @@ import {
   PlatformMetrics,
   PlatformActivityLog,
   PlatformInquiry,
+  ALL_PLATFORM_MODULES,
 } from '@/services/platform';
 import { useToast } from '@/lib/toast-context';
 import { Modal } from '@/components/ui/Modal';
