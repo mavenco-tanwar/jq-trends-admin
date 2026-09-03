@@ -181,7 +181,7 @@ function PlatformContent() {
   });
 
   // Blueprint Store Cloner State
-  const [blueprintSource, setBlueprintSource] = useState<string>('flagship');
+  const [blueprintSource, setBlueprintSource] = useState<string>('demo');
 
   // Official GST / Tax Invoice Generator Modal State
   const [invoiceTenant, setInvoiceTenant] = useState<TenantStore | null>(null);
@@ -235,28 +235,17 @@ function PlatformContent() {
 
   const handleApplyBlueprint = (sourceSlug: string) => {
     setBlueprintSource(sourceSlug);
-    if (sourceSlug === 'flagship') {
+    if (sourceSlug === 'demo' || sourceSlug === 'flagship') {
       setPrimaryColor('#0F172A');
       setAccentColor('#E11D48');
       setTagline('Curated Luxury Fashion & Contemporary Atelier');
-      showToast('Applied Flagship Luxury Atelier theme & layout blueprint!', 'success');
+      showToast('Applied Official Demo Store theme & layout blueprint!', 'success');
       return;
     }
-    if (sourceSlug === 'nordic') {
-      setPrimaryColor('#1E293B');
-      setAccentColor('#D97706');
-      setTagline('Artisanal Ceramic, Lighting & Architectural Objects');
-      showToast('Applied Nordic Home Living theme & layout blueprint!', 'info');
+    if (sourceSlug === 'none') {
+      showToast('Clean slate selected (manual configuration)', 'info');
       return;
     }
-    if (sourceSlug === 'apex') {
-      setPrimaryColor('#09090B');
-      setAccentColor('#2563EB');
-      setTagline('High-Performance Technical Training & Athletic Apparel');
-      showToast('Applied Apex Performance Activewear blueprint!', 'info');
-      return;
-    }
-    if (sourceSlug === 'none') return;
 
     const sourceTenant = tenants.find((t) => t.slug === sourceSlug);
     if (sourceTenant) {
@@ -3309,14 +3298,14 @@ function PlatformContent() {
                         onChange={(e) => handleApplyBlueprint(e.target.value)}
                         className="w-full p-2.5 bg-[#141724] border border-slate-700 rounded-xl text-xs text-white focus:border-rose-500 focus:outline-hidden font-medium"
                       >
-                        <option value="flagship">✨ Flagship Luxury Atelier (Recommended - Best Layout &amp; Theme Preset)</option>
-                        <option value="nordic">🌿 Nordic Minimalist &amp; Home Living (Warm Earth &amp; Terracotta)</option>
-                        <option value="apex">⚡ Apex Performance Activewear (Dark Obsidian &amp; Electric Cobalt)</option>
-                        {tenants.map((t) => (
-                          <option key={t.slug} value={t.slug}>
-                            🏬 Clone From Existing Store: {t.name} ({t.planName})
-                          </option>
-                        ))}
+                        <option value="demo">✨ Clone from Demo Store (Recommended - Best Layout &amp; Theme Preset)</option>
+                        {tenants
+                          .filter((t) => t.slug !== 'demo')
+                          .map((t) => (
+                            <option key={t.slug} value={t.slug}>
+                              🏬 Clone From Existing Store: {t.name} ({t.planName || 'Custom'})
+                            </option>
+                          ))}
                         <option value="none">🛠️ Custom Clean Slate (Manual Configuration)</option>
                       </select>
 
