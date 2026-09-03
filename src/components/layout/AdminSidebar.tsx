@@ -266,11 +266,18 @@ function AdminSidebarInner({
         },
         { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
         {
-          label: 'Multi-Store & Channels',
+          label: 'Multi-Store & Fleet',
           href: '/stores',
           icon: Store,
           badge: 'Fleet',
           badgeColor: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold',
+        },
+        {
+          label: 'Channels & Headless API',
+          href: '/channels',
+          icon: Cable,
+          badge: 'Omni',
+          badgeColor: 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold',
         },
         {
           label: 'Invoices & Documents',
