@@ -71,6 +71,7 @@ interface NavItem {
   badge?: string;
   badgeColor?: string;
   isExternal?: boolean;
+  featureKey?: string;
 }
 
 interface NavSection {
@@ -207,16 +208,16 @@ function AdminSidebarInner({
       title: 'CATALOG',
       items: [
         {
-          label: 'Products',
+          label: 'Products', featureKey: 'products',
           href: '/products',
           icon: Package,
           badge: mounted ? `${activeTenant.metrics?.products || 16}` : undefined,
           badgeColor: 'bg-emerald-500/20 text-emerald-300',
         },
-        { label: 'Categories', href: '/categories', icon: FolderTree },
-        { label: 'Collections', href: '/collections', icon: Layers },
+        { label: 'Categories', featureKey: 'categories', href: '/categories', icon: FolderTree },
+        { label: 'Collections', featureKey: 'collections', href: '/collections', icon: Layers },
         {
-          label: 'Inventory',
+          label: 'Inventory', featureKey: 'inventory',
           href: '/inventory',
           icon: Boxes,
           badge: '1 Low',
@@ -227,117 +228,117 @@ function AdminSidebarInner({
     {
       title: 'SALES & CUSTOMERS',
       items: [
-        { label: 'Orders & Fulfillment', href: '/orders', icon: ShoppingCart },
+        { label: 'Orders & Fulfillment', featureKey: 'orders', href: '/orders', icon: ShoppingCart },
         {
-          label: 'Shipping & Logistics',
+          label: 'Shipping & Logistics', featureKey: 'shipping',
           href: '/shipping',
           icon: Truck,
           badge: 'Carriers',
           badgeColor: 'bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-bold',
         },
         {
-          label: 'Returns & Refunds',
+          label: 'Returns & Refunds', featureKey: 'returns',
           href: '/returns',
           icon: RotateCcw,
           badge: '2 New',
           badgeColor: 'bg-rose-500/20 text-rose-300',
         },
-        { label: 'Customers & CRM', href: '/customers', icon: Users },
+        { label: 'Customers & CRM', featureKey: 'customers', href: '/customers', icon: Users },
         {
-          label: 'Marketing & Automations',
+          label: 'Marketing & Automations', featureKey: 'marketing',
           href: '/marketing',
           icon: Mail,
           badge: 'Journeys',
           badgeColor: 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white font-bold',
         },
         {
-          label: 'Omnichannel Communications',
+          label: 'Omnichannel Communications', featureKey: 'communications',
           href: '/communications',
           icon: Bell,
           badge: 'Gateways',
           badgeColor: 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-bold',
         },
         {
-          label: 'Customer Reviews',
+          label: 'Customer Reviews', featureKey: 'reviews',
           href: '/reviews',
           icon: MessageSquare,
           badge: '3',
           badgeColor: 'bg-sky-500/20 text-sky-300',
         },
-        { label: 'Discounts & Coupons', href: '/discounts', icon: Percent },
+        { label: 'Discounts & Coupons', featureKey: 'discounts', href: '/discounts', icon: Percent },
         {
-          label: 'Multi-Store & Fleet',
+          label: 'Multi-Store & Fleet', featureKey: 'multiStore',
           href: '/stores',
           icon: Store,
           badge: 'Fleet',
           badgeColor: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold',
         },
         {
-          label: 'Channels & Headless API',
+          label: 'Channels & Headless API', featureKey: 'channels',
           href: '/channels',
           icon: Cable,
           badge: 'Omni',
           badgeColor: 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold',
         },
         {
-          label: 'Invoices & Documents',
+          label: 'Invoices & Documents', featureKey: 'invoices',
           href: '/invoices',
           icon: FileText,
           badge: 'PDF',
           badgeColor: 'bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold',
         },
         {
-          label: 'Payments & Gateways',
+          label: 'Payments & Gateways', featureKey: 'payments',
           href: '/payments',
           icon: CreditCard,
           badge: 'Online',
           badgeColor: 'bg-gradient-to-r from-emerald-500 to-indigo-500 text-white font-bold',
         },
         {
-          label: 'Finance & Ledger',
+          label: 'Finance & Ledger', featureKey: 'finance',
           href: '/finance',
           icon: DollarSign,
           badge: 'GL',
           badgeColor: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold',
         },
         {
-          label: 'Plans & SaaS Billing',
+          label: 'Plans & SaaS Billing', featureKey: 'billing',
           href: '/billing',
           icon: Crown,
           badge: 'SaaS',
           badgeColor: 'bg-gradient-to-r from-amber-500 to-indigo-500 text-white font-bold',
         },
         {
-          label: 'Tax & Compliance',
+          label: 'Tax & Compliance', featureKey: 'tax',
           href: '/tax',
           icon: Receipt,
           badge: 'GST/VAT',
           badgeColor: 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-bold',
         },
         {
-          label: 'Gift Cards & Vouchers',
+          label: 'Gift Cards & Vouchers', featureKey: 'giftCards',
           href: '/gift-cards',
           icon: Gift,
           badge: 'Vouchers',
           badgeColor: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold',
         },
         {
-          label: 'Loyalty & VIP Club',
+          label: 'Loyalty & VIP Club', featureKey: 'loyalty',
           href: '/loyalty',
           icon: Crown,
           badge: 'VIP Club',
           badgeColor: 'bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold',
         },
         {
-          label: 'Search & Discovery Studio',
+          label: 'Search & Discovery Studio', featureKey: 'search',
           href: '/marketing/search',
           icon: SearchIcon,
           badge: 'Smart Discovery',
           badgeColor: 'bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold',
         },
-        { label: 'Advanced Analytics', href: '/analytics', icon: BarChart3 },
+        { label: 'Advanced Analytics', featureKey: 'analytics', href: '/analytics', icon: BarChart3 },
         {
-          label: 'AI Intelligence Studio',
+          label: 'AI Intelligence Studio', featureKey: 'ai',
           href: '/ai',
           icon: Sparkles,
           badge: 'AI Gen',
@@ -349,14 +350,14 @@ function AdminSidebarInner({
       title: 'APPEARANCE & THEME',
       items: [
         {
-          label: 'Theme & Design Studio',
+          label: 'Theme & Design Studio', featureKey: 'themeStudio',
           href: '/appearance/theme',
           icon: Palette,
           badge: 'Design System',
           badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
         },
         {
-          label: 'Product Card Builder',
+          label: 'Product Card Builder', featureKey: 'productCards',
           href: '/appearance/product-cards',
           icon: ShoppingBag,
           badge: 'Catalog Card',
@@ -368,132 +369,132 @@ function AdminSidebarInner({
       title: 'CONTENT & CMS',
       items: [
         {
-          label: 'Header & Navbar Builder',
+          label: 'Header & Navbar Builder', featureKey: 'headerBuilder',
           href: '/content/header',
           icon: LayoutTemplate,
           badge: 'Navbar',
           badgeColor: 'bg-indigo-600 text-white font-bold',
         },
         {
-          label: 'Footer Builder',
+          label: 'Footer Builder', featureKey: 'footerBuilder',
           href: '/content/footer',
           icon: PanelBottom,
           badge: 'Footer',
           badgeColor: 'bg-emerald-600 text-white font-bold',
         },
         {
-          label: 'Homepage Builder',
+          label: 'Homepage Builder', featureKey: 'homepageBuilder',
           href: '/content/homepage',
           icon: Sparkles,
           badge: 'Visual',
           badgeColor: 'bg-rose-600 text-white font-bold',
         },
         {
-          label: 'Collection Pages',
+          label: 'Collection Pages', featureKey: 'collectionsBuilder',
           href: '/content/collections',
           icon: Layers,
           badge: 'PLP Studio',
           badgeColor: 'bg-amber-600 text-white font-bold',
         },
         {
-          label: 'Product Page Builder',
+          label: 'Product Page Builder', featureKey: 'productPageBuilder',
           href: '/content/product-page',
           icon: Package,
           badge: 'PDP',
           badgeColor: 'bg-amber-500/20 text-amber-300 font-bold',
         },
         {
-          label: 'Collection Page Builder',
+          label: 'Collection Page Builder', featureKey: 'collectionsBuilder',
           href: '/content/collection-page',
           icon: FolderTree,
           badge: 'PLP',
           badgeColor: 'bg-sky-500/20 text-sky-300 font-bold',
         },
         {
-          label: 'Brand Story & About',
+          label: 'Brand Story & About', featureKey: 'customPages',
           href: '/content/about-page',
           icon: FileText,
           badge: 'Story',
           badgeColor: 'bg-pink-500/20 text-pink-300 font-bold',
         },
         {
-          label: 'Contact & Store Locator',
+          label: 'Contact & Store Locator', featureKey: 'customPages',
           href: '/content/contact-page',
           icon: Store,
           badge: 'Stores',
           badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold',
         },
-        { label: 'Custom Pages', href: '/content/pages', icon: FileText },
-        { label: 'Block Library', href: '/content/blocks', icon: Layers },
-        { label: 'Media Library', href: '/media', icon: ImageIcon },
-        { label: 'Navigation Menus', href: '/navigation', icon: Compass },
+        { label: 'Custom Pages', featureKey: 'customPages', href: '/content/pages', icon: FileText },
+        { label: 'Block Library', featureKey: 'richCms', href: '/content/blocks', icon: Layers },
+        { label: 'Media Library', featureKey: 'media', href: '/media', icon: ImageIcon },
+        { label: 'Navigation Menus', featureKey: 'navigation', href: '/navigation', icon: Compass },
       ],
     },
     {
       title: 'MARKETING & AUTOMATION',
       items: [
         {
-          label: 'Abandoned Carts',
+          label: 'Abandoned Carts', featureKey: 'abandonedCart',
           href: '/marketing/abandoned-carts',
           icon: ShoppingBag,
           badge: '4 Live',
           badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold',
         },
         {
-          label: 'AI Studio',
+          label: 'AI Studio', featureKey: 'ai',
           href: '/marketing/ai',
           icon: Wand2,
           badge: 'AI',
           badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
         },
-        { label: 'Campaigns', href: '/marketing/campaigns', icon: Megaphone },
-        { label: 'Coupons', href: '/marketing/coupons', icon: Tag },
-        { label: 'SEO Settings', href: '/marketing/seo', icon: SearchIcon },
+        { label: 'Campaigns', featureKey: 'campaigns', href: '/marketing/campaigns', icon: Megaphone },
+        { label: 'Coupons', featureKey: 'coupons', href: '/marketing/coupons', icon: Tag },
+        { label: 'SEO Settings', featureKey: 'seoSettings', href: '/marketing/seo', icon: SearchIcon },
       ],
     },
     {
       title: 'STORE & THEME',
       items: [
-        { label: 'Store Settings', href: '/settings', icon: Sliders },
+        { label: 'Store Settings', featureKey: 'storeSettings', href: '/settings', icon: Sliders },
         {
-          label: 'Theme Tokens',
+          label: 'Theme Tokens', featureKey: 'themeStudio',
           href: '/settings/theme',
           icon: Palette,
           badge: activeTenant.planName ? activeTenant.planName.split(' ')[0] : 'Pro',
           badgeColor: 'bg-rose-500/20 text-rose-300',
         },
-        { label: 'Shipping & Delivery', href: '/settings/shipping', icon: Truck },
-        { label: 'Payment Gateways', href: '/settings/payments', icon: CreditCard },
-        { label: 'Taxes & GST', href: '/settings/tax', icon: Receipt },
-        { label: 'REST API & Webhooks', href: '/settings/api', icon: Code },
+        { label: 'Shipping & Delivery', featureKey: 'shipping', href: '/settings/shipping', icon: Truck },
+        { label: 'Payment Gateways', featureKey: 'payments', href: '/settings/payments', icon: CreditCard },
+        { label: 'Taxes & GST', featureKey: 'tax', href: '/settings/tax', icon: Receipt },
+        { label: 'REST API & Webhooks', featureKey: 'apiAccess', href: '/settings/api', icon: Code },
       ],
     },
     {
       title: 'ECOSYSTEM & DEVELOPERS',
       items: [
         {
-          label: 'Integration Hub',
+          label: 'Integration Hub', featureKey: 'integrations',
           href: '/integrations',
           icon: Cable,
           badge: 'Sync Hub',
           badgeColor: 'bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold',
         },
         {
-          label: 'No-Code Automations',
+          label: 'No-Code Automations', featureKey: 'automations',
           href: '/automations',
           icon: Workflow,
           badge: 'WHEN-IF',
           badgeColor: 'bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold',
         },
         {
-          label: 'App Marketplace',
+          label: 'App Marketplace', featureKey: 'apps',
           href: '/apps',
           icon: Package,
           badge: 'Verified',
           badgeColor: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold',
         },
         {
-          label: 'Developer Portal & APIs',
+          label: 'Developer Portal & APIs', featureKey: 'developers',
           href: '/developers',
           icon: Code,
           badge: 'OpenAPI',
@@ -504,9 +505,9 @@ function AdminSidebarInner({
     {
       title: 'GOVERNANCE',
       items: [
-        { label: 'Admin Users', href: '/users', icon: UserCheck },
-        { label: 'Roles & RBAC', href: '/roles', icon: KeyRound },
-        { label: 'Activity Logs', href: '/activity', icon: Activity },
+        { label: 'Admin Users', featureKey: 'users', href: '/users', icon: UserCheck },
+        { label: 'Roles & RBAC', featureKey: 'roles', href: '/roles', icon: KeyRound },
+        { label: 'Activity Logs', featureKey: 'activity', href: '/activity', icon: Activity },
       ],
     },
   ];
@@ -596,15 +597,27 @@ function AdminSidebarInner({
 
       {/* Navigation Sections */}
       <div className="flex-1 overflow-y-auto px-2.5 py-4 space-y-6 scrollbar-thin">
-        {currentSections.map((section) => (
-          <div key={section.title} className="space-y-1">
-            {!isCollapsed && (
-              <div className="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                {section.title}
-              </div>
-            )}
-            <div className="space-y-0.5">
-              {section.items.map((item) => {
+        {currentSections.map((section) => {
+          const visibleItems = section.items.filter((item) => {
+            if (isSuperadminRoute) return true;
+            if (!item.featureKey) return true;
+            if (activeTenant?.features && activeTenant.features[item.featureKey] !== undefined) {
+              return activeTenant.features[item.featureKey] !== false;
+            }
+            return true;
+          });
+
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={section.title} className="space-y-1">
+              {!isCollapsed && (
+                <div className="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {section.title}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {visibleItems.map((item) => {
                 const isTabMatch = isSuperadminRoute && item.tabKey ? activeTabParam === item.tabKey : false;
                 const isExactMatch = !isSuperadminRoute && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
                 const isActive = isTabMatch || isExactMatch;
@@ -655,7 +668,8 @@ function AdminSidebarInner({
               })}
             </div>
           </div>
-        ))}
+        );
+        })}
 
         {/* Live Infrastructure Telemetry Card (Superadmin Mode Only) */}
         {isSuperadminRoute && !isCollapsed && (

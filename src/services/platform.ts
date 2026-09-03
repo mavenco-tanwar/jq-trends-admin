@@ -13,15 +13,7 @@ export interface TenantPlan {
   maxOrdersMonthly: number;
   maxStorageMb: number;
   maxStaff: number;
-  features: {
-    customDomains: boolean;
-    advancedAnalytics: boolean;
-    richCms: boolean;
-    productReviews: boolean;
-    abandonedCart: boolean;
-    aiFeatures: boolean;
-    apiAccess: boolean;
-  };
+  features: Record<string, boolean>;
   cloudCostBreakdown: {
     mongodbAtlas: number;
     serverlessHosting: number;
@@ -50,6 +42,7 @@ export interface TenantStore {
   status: 'active' | 'trial' | 'suspended' | 'provisioning' | 'archived';
   planId: string;
   planName: string;
+  features?: Record<string, boolean>;
   databaseName: string;
   currency: string;
   ownerEmail: string;
@@ -120,6 +113,109 @@ export interface PlatformMetrics {
     apiLatencyMs: number;
     dbClusterStatus: string;
   };
+}
+
+export interface PlatformModuleMeta {
+  key: string;
+  name: string;
+  category: "Catalog" | "Sales & Ops" | "Customers" | "Marketing & AI" | "CMS & Design" | "Ecosystem & Developers" | "Governance";
+  desc: string;
+}
+
+export const ALL_PLATFORM_MODULES: PlatformModuleMeta[] = [
+  // 1. Catalog & Products
+  { key: "products", name: "Products & SKUs", category: "Catalog", desc: "Product catalog, multidimensional variants & inventory sync" },
+  { key: "categories", name: "Categories & Taxonomy", category: "Catalog", desc: "Hierarchical categories and taxonomy filters" },
+  { key: "collections", name: "Collections & Merchandising", category: "Catalog", desc: "Manual & automated curated product collections" },
+  { key: "inventory", name: "Inventory & Warehouses", category: "Catalog", desc: "Multi-location inventory tracking & transfer alerts" },
+
+  // 2. Sales & Operations
+  { key: "orders", name: "Orders & Fulfillment", category: "Sales & Ops", desc: "Order tracking, processing workflows & dispatch" },
+  { key: "shipping", name: "Shipping & Logistics", category: "Sales & Ops", desc: "Carrier integrations, zone rules & live delivery rates" },
+  { key: "returns", name: "Returns & Refunds", category: "Sales & Ops", desc: "Return authorizations, size exchanges & refund approvals" },
+  { key: "invoices", name: "Invoices & Documents", category: "Sales & Ops", desc: "Automated GST/VAT compliance invoices & PDF series" },
+  { key: "payments", name: "Payment Gateways Orchestration", category: "Sales & Ops", desc: "Razorpay, Stripe, COD & unified checkout gateways" },
+  { key: "finance", name: "Finance & General Ledger", category: "Sales & Ops", desc: "Double-entry platform ledger, payouts & settlements" },
+  { key: "tax", name: "Tax & Compliance", category: "Sales & Ops", desc: "Automated GST/VAT rates, nexus rules & tax exemptions" },
+
+  // 3. Customers & Loyalty
+  { key: "customers", name: "Customers & CRM", category: "Customers", desc: "Customer directory, 360-degree purchase history & tags" },
+  { key: "reviews", name: "Customer Reviews & UGC", category: "Customers", desc: "Verified buyer reviews, star ratings & moderation" },
+  { key: "loyalty", name: "Loyalty & VIP Club", category: "Customers", desc: "Points earn/burn program, VIP tiers & client wallet" },
+  { key: "giftCards", name: "Gift Cards & Store Credit", category: "Customers", desc: "Digital vouchers, store credit & gift certificates" },
+
+  // 4. Marketing & AI
+  { key: "marketing", name: "Marketing Automations", category: "Marketing & AI", desc: "Lifecycle marketing, event journeys & triggers" },
+  { key: "communications", name: "Omnichannel Communications", category: "Marketing & AI", desc: "Transactional SMS, WhatsApp alerts & broadcast notifications" },
+  { key: "discounts", name: "Discounts & Rule Engine", category: "Marketing & AI", desc: "BOGO, percentage, fixed amount & automatic discounts" },
+  { key: "abandonedCart", name: "Abandoned Cart Recovery", category: "Marketing & AI", desc: "Automated recovery emails, SMS nudges & analytics" },
+  { key: "campaigns", name: "Marketing Campaigns", category: "Marketing & AI", desc: "Seasonal promotional blast broadcasts & analytics" },
+  { key: "coupons", name: "Coupons & Vouchers", category: "Marketing & AI", desc: "Single-use and bulk promotional voucher generation" },
+  { key: "seoSettings", name: "SEO Settings & Studio", category: "Marketing & AI", desc: "Custom meta tags, OpenGraph previews & XML sitemaps" },
+  { key: "search", name: "Search & Product Discovery", category: "Marketing & AI", desc: "Instant search, autocomplete, synonyms & merchandising rules" },
+  { key: "ai", name: "AI Copywriting & Intelligence Studio", category: "Marketing & AI", desc: "Generative product descriptions, visual tags & smart suggestions" },
+  { key: "analytics", name: "Advanced Funnel Analytics", category: "Marketing & AI", desc: "Multi-touch attribution, conversion funnels & retention cohorts" },
+
+  // 5. CMS & Design
+  { key: "themeStudio", name: "Theme & Design Studio", category: "CMS & Design", desc: "Theme colors, typography, layout tokens & appearance" },
+  { key: "productCards", name: "Product Card Builder", category: "CMS & Design", desc: "Custom product card hover badges, swatches & CTAs" },
+  { key: "headerBuilder", name: "Header & Navbar Builder", category: "CMS & Design", desc: "Visual mega menu, announcement bar & header layout studio" },
+  { key: "footerBuilder", name: "Footer Builder", category: "CMS & Design", desc: "Multi-column footer layout designer & legal links" },
+  { key: "homepageBuilder", name: "Homepage Visual Builder", category: "CMS & Design", desc: "Drag-and-drop section builder with real-time preview" },
+  { key: "collectionsBuilder", name: "Collection Pages Studio", category: "CMS & Design", desc: "PLP product grid layouts, banner hero & filter sidebar" },
+  { key: "productPageBuilder", name: "Product Page Builder", category: "CMS & Design", desc: "PDP layout designer with sticky add-to-cart & tabs" },
+  { key: "customPages", name: "Custom Pages Studio", category: "CMS & Design", desc: "About, Contact, FAQ & custom markdown landing pages" },
+  { key: "richCms", name: "Visual Drag-Drop CMS & Blocks", category: "CMS & Design", desc: "Modular block library, promotional banners & widgets" },
+  { key: "media", name: "Media Library & CDN", category: "CMS & Design", desc: "Cloud media asset management, WebP optimization & CDN" },
+  { key: "navigation", name: "Navigation Menus", category: "CMS & Design", desc: "Header, footer & mobile navigation menu trees" },
+
+  // 6. Ecosystem & Developers
+  { key: "multiStore", name: "Multi-Store & Fleet Management", category: "Ecosystem & Developers", desc: "Multi-tenant store branches, domain partitioning & localized stores" },
+  { key: "channels", name: "Channels & Headless Commerce", category: "Ecosystem & Developers", desc: "Headless storefront SDK, mobile app & marketplace feeds" },
+  { key: "customDomains", name: "Custom Domains & SSL Ingress", category: "Ecosystem & Developers", desc: "White-label custom domain binding with automatic TLS certs" },
+  { key: "apiAccess", name: "REST API & Webhooks Engine", category: "Ecosystem & Developers", desc: "API key management, webhook dispatchers & developer logs" },
+  { key: "integrations", name: "Integration Hub & Connectors", category: "Ecosystem & Developers", desc: "Third-party accounting, CRM, ERP & courier connectors" },
+  { key: "automations", name: "No-Code Workflow Automations", category: "Ecosystem & Developers", desc: "Event-driven triggers, conditional filters & webhook actions" },
+  { key: "apps", name: "App Marketplace", category: "Ecosystem & Developers", desc: "1-click modular SaaS plugins & add-on extensions" },
+  { key: "developers", name: "Developer Portal & Sandbox", category: "Ecosystem & Developers", desc: "Interactive API documentation, SDKs & sandbox tester" },
+
+  // 7. Governance
+  { key: "users", name: "Admin Users & Team Access", category: "Governance", desc: "Multi-user staff accounts & login credentials" },
+  { key: "roles", name: "Roles & Fine-Grained RBAC", category: "Governance", desc: "Custom roles, granular permission matrices & policy guards" },
+  { key: "activity", name: "Audit Activity Logs", category: "Governance", desc: "Immutable platform activity audit trail & security monitoring" },
+  { key: "billing", name: "Plans & SaaS Billing Console", category: "Governance", desc: "Merchant plan subscription self-service & server renewal" },
+];
+
+export function getDefaultFeaturesForPlan(planId: string = "plan_pro"): Record<string, boolean> {
+  const allKeys = ALL_PLATFORM_MODULES.map(m => m.key);
+  const result: Record<string, boolean> = {};
+
+  if (planId === "plan_enterprise") {
+    allKeys.forEach(k => { result[k] = true; });
+    return result;
+  }
+
+  if (planId === "plan_pro") {
+    const disabledForPro = new Set(["multiStore", "channels", "finance", "communications", "automations", "apps", "developers", "activity"]);
+    allKeys.forEach(k => {
+      result[k] = !disabledForPro.has(k);
+    });
+    return result;
+  }
+
+  // Starter Boutique: Essential retail core only
+  const starterEnabled = new Set([
+    "products", "categories", "collections", "inventory",
+    "orders", "shipping", "returns", "invoices", "payments", "tax",
+    "customers", "reviews", "discounts", "coupons",
+    "themeStudio", "productCards", "headerBuilder", "footerBuilder",
+    "homepageBuilder", "customPages", "richCms", "media", "navigation",
+    "users", "billing"
+  ]);
+  allKeys.forEach(k => {
+    result[k] = starterEnabled.has(k);
+  });
+  return result;
 }
 
 export const INITIAL_PLANS: TenantPlan[] = [
@@ -224,6 +320,14 @@ const CURRENT_STORE_KEY = 'jq_saas_active_tenant_id';
 const IMPERSONATION_KEY = 'jq_saas_impersonation_state';
 
 export class PlatformService {
+  public static getPlatformModules(): PlatformModuleMeta[] {
+    return ALL_PLATFORM_MODULES;
+  }
+
+  public static getDefaultFeaturesForPlan(planId: string): Record<string, boolean> {
+    return getDefaultFeaturesForPlan(planId);
+  }
+
   private static tenants: TenantStore[] = this.loadTenants();
   private static plans: TenantPlan[] = INITIAL_PLANS;
   private static activities: PlatformActivityLog[] = INITIAL_ACTIVITY_LOGS;
@@ -472,6 +576,7 @@ export class PlatformService {
           ownerEmail: t.ownerEmail || t.contact?.email || 'owner@platform.com',
           ownerName: t.ownerName || 'Store Owner',
           primaryDomain: t.primaryDomain || `${t.slug}.com`,
+          features: t.features || PlatformService.getDefaultFeaturesForPlan(t.planId || 'plan_pro'),
           domains: t.domains || [
             {
               id: `dom_${t.slug}`,

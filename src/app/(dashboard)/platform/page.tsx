@@ -188,10 +188,8 @@ function PlatformContent() {
 
   const handleSelectPlan = (planId: string) => {
     setSelectedPlanId(planId);
-    const plan = plans.find((p) => p.id === planId);
-    if (plan?.features) {
-      setCustomFeatures({ ...plan.features });
-    }
+    const defaults = PlatformService.getDefaultFeaturesForPlan(planId);
+    setCustomFeatures(defaults);
   };
 
   const getTenantRenewalInfo = (tenant: TenantStore) => {
@@ -709,6 +707,9 @@ function PlatformContent() {
   const [editPrimaryColor, setEditPrimaryColor] = useState('#111111');
   const [editAccentColor, setEditAccentColor] = useState('#E11D48');
   const [editStatus, setEditStatus] = useState<TenantStore['status']>('active');
+  const [editFeatures, setEditFeatures] = useState<Record<string, boolean>>({});
+  const [wizardFeatureCategory, setWizardFeatureCategory] = useState<string>('All');
+  const [editFeatureCategory, setEditFeatureCategory] = useState<string>('All');
   const [editTempPassword, setEditTempPassword] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
@@ -1056,6 +1057,7 @@ function PlatformContent() {
     setEditAccentColor(tenant.theme?.accentColor || '#E11D48');
     setEditStatus(tenant.status);
     setEditTempPassword(`Mavenco@2026!${tenant.slug}`);
+    setEditFeatures(tenant.features || PlatformService.getDefaultFeaturesForPlan(tenant.planId || 'plan_pro'));
   };
 
   const handleResetMerchantPassword = async () => {
@@ -1106,6 +1108,7 @@ function PlatformContent() {
         primaryColor: editPrimaryColor,
         accentColor: editAccentColor,
       },
+      features: editFeatures,
     });
 
     showToast(`Updated store configuration for ${editName}`, 'success');
@@ -3344,68 +3347,100 @@ function PlatformContent() {
                     </div>
                   </div>
 
-                  {/* Step 4: Active SaaS Feature Flags Studio */}
+                  {/* Step 4: Full Enterprise SaaS Feature Flags & Modules Studio */}
                   <div className="p-4 bg-[#10121A] rounded-2xl border border-slate-800 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
-                        <Zap className="w-3.5 h-3.5 text-amber-400" />
-                        <span>4. Feature Flags &amp; Capabilities Studio</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
+                          <Zap className="w-3.5 h-3.5 text-amber-400" />
+                          <span>4. Store Modules &amp; Feature Flags Studio</span>
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded">
+                            {ALL_PLATFORM_MODULES.filter(m => customFeatures[m.key] !== false).length} / {ALL_PLATFORM_MODULES.length} Active
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Toggled modules dynamically control the client admin sidebar &amp; backend capabilities
+                        </p>
                       </div>
-                      <span className="text-[10px] text-slate-400">
-                        Toggle client features on/off
-                      </span>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allOn: Record<string, boolean> = {};
+                            ALL_PLATFORM_MODULES.forEach(m => { allOn[m.key] = true; });
+                            setCustomFeatures(allOn);
+                          }}
+                          className="text-[10px] font-bold px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors"
+                        >
+                          Enable All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCustomFeatures(PlatformService.getDefaultFeaturesForPlan(selectedPlanId))}
+                          className="text-[10px] font-bold px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg transition-colors"
+                        >
+                          Plan Defaults
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {[
-                        { key: 'customDomains', label: 'Custom Domains & SSL Ingress', desc: 'White-label CNAME & TLS certificates', icon: Globe },
-                        { key: 'abandonedCart', label: 'Abandoned Cart Recovery', desc: 'SMS/Email recovery workflows', icon: ShoppingBag },
-                        { key: 'aiFeatures', label: 'AI Copywriting & SEO Studio', desc: 'Generative descriptions & SEO meta', icon: Sparkles },
-                        { key: 'advancedAnalytics', label: 'Advanced Funnel Analytics', desc: 'Cohort retention & conversion rates', icon: BarChart3 },
-                        { key: 'richCms', label: 'Visual Drag-Drop CMS Studio', desc: 'Dynamic lookbooks & promo banners', icon: LayoutDashboard },
-                        { key: 'productReviews', label: 'Verified Customer Reviews', desc: 'Photo reviews & star ratings', icon: CheckSquare },
-                        { key: 'apiAccess', label: 'Headless REST API & Webhooks', desc: 'Developer API tokens & webhooks', icon: Key },
-                      ].map((item) => {
-                        const Icon = item.icon || Zap;
-                        const isEnabled = !!customFeatures[item.key];
-                        return (
-                          <button
-                            key={item.key}
-                            type="button"
-                            onClick={() => handleToggleCustomFeature(item.key)}
-                            className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
-                              isEnabled
-                                ? 'bg-emerald-500/10 border-emerald-500/40 text-slate-200'
-                                : 'bg-[#0B0D13] border-slate-800/80 text-slate-500'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 pr-2">
-                              <Icon
-                                className={`w-4 h-4 shrink-0 ${
-                                  isEnabled ? 'text-emerald-400' : 'text-slate-600'
-                                }`}
-                              />
-                              <div className="min-w-0">
-                                <div className="text-[11px] font-semibold truncate text-white">
-                                  {item.label}
-                                </div>
-                                <div className="text-[9px] text-slate-400 truncate">
-                                  {item.desc}
-                                </div>
-                              </div>
-                            </div>
-                            <span
-                              className={`text-[9px] font-bold px-2 py-0.5 rounded font-mono shrink-0 ${
+                    {/* Category Filter Tabs */}
+                    <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px]">
+                      {['All', 'Catalog', 'Sales & Ops', 'Customers', 'Marketing & AI', 'CMS & Design', 'Ecosystem & Developers', 'Governance'].map(cat => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setWizardFeatureCategory(cat)}
+                          className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-colors ${
+                            wizardFeatureCategory === cat
+                              ? 'bg-rose-600 text-white shadow-sm shadow-rose-900/50'
+                              : 'bg-[#141724] text-slate-400 hover:text-slate-200 border border-slate-800'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Modules Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                      {ALL_PLATFORM_MODULES
+                        .filter(m => wizardFeatureCategory === 'All' || m.category === wizardFeatureCategory)
+                        .map((mod) => {
+                          const isEnabled = customFeatures[mod.key] !== false;
+                          return (
+                            <button
+                              key={mod.key}
+                              type="button"
+                              onClick={() => setCustomFeatures(prev => ({ ...prev, [mod.key]: !isEnabled }))}
+                              className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
                                 isEnabled
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  : 'bg-slate-800 text-slate-500'
+                                  ? 'bg-emerald-500/10 border-emerald-500/40 text-slate-200 shadow-sm shadow-emerald-950/20'
+                                  : 'bg-[#0B0D13] border-slate-800/80 text-slate-500 hover:border-slate-700'
                               }`}
                             >
-                              {isEnabled ? 'ENABLED' : 'DISABLED'}
-                            </span>
-                          </button>
-                        );
-                      })}
+                              <div className="min-w-0 pr-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[11px] font-bold text-white truncate">{mod.name}</span>
+                                  <span className="text-[8px] px-1 py-0.2 rounded font-mono bg-slate-800 text-slate-400 shrink-0">
+                                    {mod.category}
+                                  </span>
+                                </div>
+                                <div className="text-[9px] text-slate-400 truncate mt-0.5">{mod.desc}</div>
+                              </div>
+                              <span
+                                className={`text-[9px] font-bold px-2 py-0.5 rounded font-mono shrink-0 ${
+                                  isEnabled
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    : 'bg-slate-800 text-slate-500'
+                                }`}
+                              >
+                                {isEnabled ? 'ENABLED' : 'DISABLED'}
+                              </span>
+                            </button>
+                          );
+                        })}
                     </div>
                   </div>
 
@@ -3634,7 +3669,11 @@ function PlatformContent() {
                   <label className="text-xs text-slate-300 font-bold">Plan</label>
                   <select
                     value={editPlanId}
-                    onChange={(e) => setEditPlanId(e.target.value)}
+                    onChange={(e) => {
+                      const newP = e.target.value;
+                      setEditPlanId(newP);
+                      setEditFeatures(PlatformService.getDefaultFeaturesForPlan(newP));
+                    }}
                     className="w-full mt-1 p-2.5 bg-[#10121A] border border-slate-700 rounded-xl text-xs text-white"
                   >
                     <option value="plan_starter">Starter Boutique (₹24,999 One-Time + ₹2,000/mo server)</option>
@@ -3674,6 +3713,103 @@ function PlatformContent() {
                     onChange={(e) => setEditAccentColor(e.target.value)}
                     className="w-full h-10 mt-1 p-1 bg-[#10121A] border border-slate-700 rounded-xl cursor-pointer"
                   />
+                </div>
+              </div>
+
+              {/* Store Module Entitlements & Feature Studio */}
+              <div className="p-4 bg-[#10121A] border border-slate-800 rounded-2xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                      <Zap className="w-4 h-4 text-amber-400" />
+                      <span>Store Module Entitlements &amp; Capabilities</span>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded">
+                        {ALL_PLATFORM_MODULES.filter(m => editFeatures[m.key] !== false).length} / {ALL_PLATFORM_MODULES.length} Active
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Toggle modules on/off to dynamically control what appears in this client's admin panel
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allOn: Record<string, boolean> = {};
+                        ALL_PLATFORM_MODULES.forEach(m => { allOn[m.key] = true; });
+                        setEditFeatures(allOn);
+                      }}
+                      className="text-[10px] font-bold px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors"
+                    >
+                      Enable All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditFeatures(PlatformService.getDefaultFeaturesForPlan(editPlanId))}
+                      className="text-[10px] font-bold px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg transition-colors"
+                    >
+                      Plan Defaults
+                    </button>
+                  </div>
+                </div>
+
+                {/* Category Filter Tabs */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px]">
+                  {['All', 'Catalog', 'Sales & Ops', 'Customers', 'Marketing & AI', 'CMS & Design', 'Ecosystem & Developers', 'Governance'].map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setEditFeatureCategory(cat)}
+                      className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-colors ${
+                        editFeatureCategory === cat
+                          ? 'bg-rose-600 text-white shadow-sm shadow-rose-900/50'
+                          : 'bg-[#141724] text-slate-400 hover:text-slate-200 border border-slate-800'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Modules Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                  {ALL_PLATFORM_MODULES
+                    .filter(m => editFeatureCategory === 'All' || m.category === editFeatureCategory)
+                    .map((mod) => {
+                      const isEnabled = editFeatures[mod.key] !== false;
+                      return (
+                        <button
+                          key={mod.key}
+                          type="button"
+                          onClick={() => setEditFeatures(prev => ({ ...prev, [mod.key]: !isEnabled }))}
+                          className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                            isEnabled
+                              ? 'bg-emerald-500/10 border-emerald-500/40 text-slate-200 shadow-sm shadow-emerald-950/20'
+                              : 'bg-[#0B0D13] border-slate-800/80 text-slate-500 hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="min-w-0 pr-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-bold text-white truncate">{mod.name}</span>
+                              <span className="text-[8px] px-1 py-0.2 rounded font-mono bg-slate-800 text-slate-400 shrink-0">
+                                {mod.category}
+                              </span>
+                            </div>
+                            <div className="text-[9px] text-slate-400 truncate mt-0.5">{mod.desc}</div>
+                          </div>
+                          <span
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded font-mono shrink-0 ${
+                              isEnabled
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-slate-800 text-slate-500'
+                            }`}
+                          >
+                            {isEnabled ? 'ENABLED' : 'DISABLED'}
+                          </span>
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
 
