@@ -131,7 +131,7 @@ function AdminSidebarInner({
           href: '/platform?tab=tenants',
           tabKey: 'tenants',
           icon: Store,
-          badge: `${allTenants.length || 4} Stores`,
+          badge: `${allTenants.length} Stores`,
           badgeColor: 'bg-rose-500/20 text-rose-300 font-bold',
         },
         {
