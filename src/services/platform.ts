@@ -443,8 +443,8 @@ export class PlatformService {
       mrrUsd,
       totalProducts: products,
       totalOrders: orders,
-      totalPlatformSalesInr: totalPlatformSalesInr || 1245000,
-      totalPlatformSalesUsd: 579000,
+      totalPlatformSalesInr,
+      totalPlatformSalesUsd: Math.round(totalPlatformSalesInr / 83),
       systemHealth: {
         status: 'healthy',
         uptimePercentage: 99.98,

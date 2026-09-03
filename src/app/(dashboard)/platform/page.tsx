@@ -1310,10 +1310,10 @@ function PlatformContent() {
                 <CreditCard className="w-4 h-4 text-emerald-400" />
               </div>
               <div className="text-2xl font-bold text-white">
-                ₹{(metrics?.mrrInr || 35496).toLocaleString('en-IN')} /mo
+                ₹{(metrics?.mrrInr ?? 0).toLocaleString('en-IN')} /mo
               </div>
               <p className="text-[11px] text-emerald-400 font-medium">
-                +18.4% MRR growth vs previous month (INR)
+                {metrics?.mrrInr ? '+18.4% MRR growth vs previous month (INR)' : '₹0 MRR (0 Active Subscriptions)'}
               </p>
             </div>
 
@@ -1324,10 +1324,10 @@ function PlatformContent() {
                 <TrendingUp className="w-4 h-4 text-sky-400" />
               </div>
               <div className="text-2xl font-bold text-white">
-                ₹{(metrics?.totalPlatformSalesInr || 1245000).toLocaleString('en-IN')}
+                ₹{(metrics?.totalPlatformSalesInr ?? 0).toLocaleString('en-IN')}
               </div>
               <p className="text-[11px] text-sky-400 font-medium">
-                +24.6% merchant volume this month
+                {metrics?.totalPlatformSalesInr ? '+24.6% merchant volume this month' : '₹0 GMV recorded across platform'}
               </p>
             </div>
 
