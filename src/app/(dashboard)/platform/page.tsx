@@ -56,6 +56,7 @@ import {
   Flame,
   Star,
 } from 'lucide-react';
+import { ApiClient } from '@/services/api';
 import {
   PlatformService,
   TenantStore,

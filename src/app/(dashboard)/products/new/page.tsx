@@ -17,6 +17,7 @@ import {
   Plus,
   Trash2,
   Check,
+  Upload,
 } from 'lucide-react';
 import { ProductService } from '@/services/products';
 import { MediaService, optimizeImageFile } from '@/services/media';
