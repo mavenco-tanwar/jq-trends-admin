@@ -45,6 +45,15 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     fetchCategories();
+    const handleTenantChange = () => {
+      fetchCategories();
+    };
+    window.addEventListener('tenant_updated', handleTenantChange);
+    window.addEventListener('storage', handleTenantChange);
+    return () => {
+      window.removeEventListener('tenant_updated', handleTenantChange);
+      window.removeEventListener('storage', handleTenantChange);
+    };
   }, []);
 
   const openCreateModal = (parent?: string) => {
@@ -52,7 +61,7 @@ export default function CategoriesPage() {
     setName('');
     setSlug('');
     setDescription('');
-    setImageUrl('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&auto=format&fit=crop');
+    setImageUrl('');
     setParentId(parent || null);
     setIsVisible(true);
     setIsModalOpen(true);
@@ -134,7 +143,32 @@ export default function CategoriesPage() {
 
       {/* Category Hierarchy List */}
       <div className="space-y-4">
-        {categories.map((parent) => (
+        {isLoading ? (
+          <div className="bg-[#161822] border border-slate-800 rounded-xl p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-3">
+            <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+            <span>Loading store categories...</span>
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="bg-[#161822] border border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-sm">
+            <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shadow-inner">
+              <FolderTree className="w-8 h-8" />
+            </div>
+            <div className="max-w-md">
+              <h3 className="text-lg font-bold text-white">No Categories Created Yet</h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                This store currently has no product categories. Add your own departments and sub-categories to organize your catalog and storefront navigation menu.
+              </p>
+            </div>
+            <button
+              onClick={() => openCreateModal()}
+              className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/40 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Add Department</span>
+            </button>
+          </div>
+        ) : (
+          categories.map((parent) => (
           <div key={parent.id} className="bg-[#161822] border border-slate-800 rounded-xl overflow-hidden shadow-sm">
             {/* Parent Category Header */}
             <div className="p-4 bg-[#12141D] flex items-center justify-between gap-3 border-b border-slate-800/80">
@@ -225,7 +259,7 @@ export default function CategoriesPage() {
               </div>
             )}
           </div>
-        ))}
+        )))}
       </div>
 
       {/* CREATE / EDIT CATEGORY MODAL */}

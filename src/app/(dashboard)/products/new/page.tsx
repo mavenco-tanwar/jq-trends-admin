@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import { CategoryService } from '@/services/categories';
+import type { Category } from '@/types';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -39,7 +42,17 @@ export default function NewProductPage() {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [brand, setBrand] = useState('JQ Trends');
-  const [category, setCategory] = useState('cat_women');
+  const [category, setCategory] = useState('');
+  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    CategoryService.getAll().then((list) => {
+      setAvailableCategories(list);
+      if (list.length > 0) {
+        setCategory(list[0].id || list[0].slug);
+      }
+    });
+  }, []);
   const [shortDesc, setShortDesc] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('1499');
@@ -350,14 +363,22 @@ export default function NewProductPage() {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
+                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white text-xs"
               >
-                <option value="cat_women">Women › Dresses &amp; Gowns</option>
-                <option value="cat_kurtis">Women › Kurtis &amp; Sets</option>
-                <option value="cat_coords">Women › Co-ords</option>
-                <option value="cat_sarees">Women › Sarees</option>
-                <option value="cat_kids_girls">Kids › Girls Party Dresses</option>
-                <option value="cat_kids_boys">Kids › Boys Ethnic Sets</option>
+                {availableCategories.length === 0 ? (
+                  <option value="">No categories created yet (Create one in Categories menu)</option>
+                ) : (
+                  availableCategories.map((c) => (
+                    <React.Fragment key={c.id}>
+                      <option value={c.id || c.slug}>{c.name}</option>
+                      {c.children && c.children.map((sub) => (
+                        <option key={sub.id} value={sub.id || sub.slug}>
+                          &nbsp;&nbsp;↳ {sub.name}
+                        </option>
+                      ))}
+                    </React.Fragment>
+                  ))
+                )}
               </select>
             </div>
 
