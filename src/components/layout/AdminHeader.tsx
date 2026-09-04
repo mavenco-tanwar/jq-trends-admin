@@ -37,6 +37,10 @@ export function AdminHeader({
   const isSuperadminRoute = pathname === '/platform' || pathname.startsWith('/platform');
 
   const { user } = useAuth();
+  const isSuperadminUser =
+    user?.role === 'superadmin' ||
+    user?.roleId === 'role_superadmin' ||
+    (user?.email ? user.email.toLowerCase().includes('superadmin') || user.email.toLowerCase() === 'admin@mavenco.com' : false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
@@ -202,8 +206,19 @@ export function AdminHeader({
               <span className="hidden sm:inline text-slate-500">•</span>
               <span className="hidden sm:inline text-rose-400 font-mono font-bold">{tenants.length} Tenant Partitions</span>
             </div>
+          ) : !isSuperadminUser ? (
+            /* Client Admin Panel: Clean Static Store Badge (NO DROPDOWN, NO OTHER STORES) */
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161822] border border-slate-700/80 rounded-lg text-xs font-bold text-white shadow-sm select-none">
+              <div
+                className="w-4 h-4 rounded flex items-center justify-center text-[10px] text-white shrink-0 font-bold"
+                style={{ backgroundColor: activeTenant.theme?.primaryColor || '#111111' }}
+              >
+                {activeTenant.code || activeTenant.name.substring(0, 1)}
+              </div>
+              <span className="max-w-[140px] sm:max-w-[200px] truncate">{activeTenant.name}</span>
+            </div>
           ) : (
-            /* Store Switcher Dropdown */
+            /* Store Switcher Dropdown (Superadmin only) */
             <div className="relative">
               <button
                 onClick={() => setIsStoreSwitcherOpen(!isStoreSwitcherOpen)}

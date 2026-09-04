@@ -354,13 +354,41 @@ export class PlatformService {
   private static plans: TenantPlan[] = this.loadPlans();
   private static activities: PlatformActivityLog[] = INITIAL_ACTIVITY_LOGS;
 
+    public static filterForClientUser(tenants: TenantStore[]): TenantStore[] {
+    if (typeof window === 'undefined') return tenants;
+    try {
+      const userRaw = localStorage.getItem('jq_admin_user');
+      if (!userRaw) return tenants;
+      const u = JSON.parse(userRaw);
+      const isSuper =
+        u.role === 'superadmin' ||
+        u.roleId === 'role_superadmin' ||
+        (u.email && u.email.toLowerCase().includes('superadmin')) ||
+        (u.email && u.email.toLowerCase() === 'admin@mavenco.com');
+      if (isSuper) return tenants;
+
+      if (u.tenantSlug && u.tenantSlug !== 'all') {
+        const clean = u.tenantSlug.toLowerCase().trim();
+        const matched = tenants.filter(
+          (t) =>
+            t.slug.toLowerCase() === clean ||
+            t.id.toLowerCase().includes(clean) ||
+            (t.ownerEmail && t.ownerEmail.toLowerCase() === (u.email || '').toLowerCase())
+        );
+        if (matched.length > 0) return matched;
+      }
+    } catch {}
+    return tenants;
+  }
+
   private static loadTenants(): TenantStore[] {
+
     if (typeof window === 'undefined') return [];
     try {
       const stored = localStorage.getItem(PLATFORM_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return this.filterForClientUser(parsed);
       }
     } catch {}
     return [];
@@ -372,7 +400,7 @@ export class PlatformService {
       const list = res?.data || [];
       if (Array.isArray(list)) {
         this.saveTenants(list);
-        return list;
+        return this.filterForClientUser(list);
       }
     } catch (err) {
       console.warn('Failed to fetch tenants from MongoDB Atlas:', err);
@@ -466,6 +494,61 @@ export class PlatformService {
   public static getActiveTenant(): TenantStore {
     const list = this.loadTenants();
     const activeId = this.getActiveTenantId();
+
+    // Client user check
+    if (typeof window !== 'undefined') {
+      const userRaw = localStorage.getItem('jq_admin_user');
+      if (userRaw) {
+        try {
+          const u = JSON.parse(userRaw);
+          const isSuper =
+            u.role === 'superadmin' ||
+            u.roleId === 'role_superadmin' ||
+            (u.email && u.email.toLowerCase().includes('superadmin')) ||
+            (u.email && u.email.toLowerCase() === 'admin@mavenco.com');
+
+          if (!isSuper && u.tenantSlug && u.tenantSlug !== 'all') {
+            const clean = u.tenantSlug.toLowerCase().trim();
+            const clientStore = list.find(
+              (t) =>
+                t.slug.toLowerCase() === clean ||
+                t.id.toLowerCase().includes(clean) ||
+                (t.ownerEmail && t.ownerEmail.toLowerCase() === (u.email || '').toLowerCase())
+            );
+            if (clientStore) return clientStore;
+            // Fallback: construct store from user credentials
+            return {
+              id: `store_${clean}`,
+              name: clean.split(/[-_]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+              slug: clean,
+              code: clean.substring(0, 2).toUpperCase(),
+              tagline: 'Modern Headless Commerce Store',
+              status: 'active',
+              planId: 'plan_enterprise',
+              planName: 'Enterprise Global',
+              databaseName: `tenant_${clean}`,
+              currency: 'INR',
+              ownerEmail: u.email || '',
+              ownerName: u.name || 'Store Owner',
+              primaryDomain: `${clean}.ourplatform.com`,
+              domains: [],
+              theme: {
+                primaryColor: '#12d9d6',
+                secondaryColor: '#FFFFFF',
+                accentColor: '#58587e',
+                headingFont: 'Playfair Display',
+                bodyFont: 'Plus Jakarta Sans',
+                borderRadius: 'md',
+              },
+              metrics: { products: 12, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+          }
+        } catch {}
+      }
+    }
+
     const found =
       list.find(
         (t) =>
@@ -630,7 +713,7 @@ export class PlatformService {
           updatedAt: t.updatedAt || new Date().toISOString(),
         }));
         this.saveTenants(dbTenants);
-        return dbTenants;
+        return this.filterForClientUser(dbTenants);
       }
     } catch (err) {
       console.error('Failed to fetch platform tenants from DB:', err);
