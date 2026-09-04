@@ -129,14 +129,22 @@ export class ProductService {
       window.dispatchEvent(new CustomEvent('products_updated', { detail: this.localProducts.length }));
     }
     try {
-      await ApiClient.delete(`/api/v1/products/${id}`);
-    } catch {
-      // Mock Fallback
+      await ApiClient.delete(`/api/v1/products/${encodeURIComponent(id)}`);
+    } catch (err) {
+      console.error('Failed to delete product from database:', err);
     }
   }
 
   static async bulkDelete(ids: string[]): Promise<void> {
     this.localProducts = this.localProducts.filter((p) => !ids.includes(p.id));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('products_updated', { detail: this.localProducts.length }));
+    }
+    try {
+      await ApiClient.delete(`/api/v1/products?ids=${encodeURIComponent(ids.join(','))}`);
+    } catch (err) {
+      console.error('Failed to bulk delete products from database:', err);
+    }
   }
 
   static async bulkUpdateStatus(ids: string[], status: 'draft' | 'published' | 'archived'): Promise<void> {
