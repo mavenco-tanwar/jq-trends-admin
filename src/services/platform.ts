@@ -1084,12 +1084,28 @@ export class PlatformService {
   // Global Platform Broadcast Management
   public static async getPlatformBroadcast(): Promise<PlatformBroadcast | null> {
     try {
-      const res = await fetch('/api/v1/platform/broadcast').then((r) => (r.ok ? r.json() : null));
-      if (res?.broadcast) {
+      let bcast: PlatformBroadcast | null = null;
+      // 1. Try local admin API
+      try {
+        const res = await fetch('/api/v1/platform/broadcast').then((r) => (r.ok ? r.json() : null));
+        if (res?.broadcast) bcast = res.broadcast;
+      } catch {}
+
+      // 2. Fallback to ApiClient (storefront API)
+      if (!bcast) {
+        try {
+          const apiRes = await ApiClient.get<{ broadcast: PlatformBroadcast | null }>('/api/v1/platform/broadcast');
+          if (apiRes?.data?.broadcast || (apiRes as any)?.broadcast) {
+            bcast = apiRes.data?.broadcast || (apiRes as any).broadcast;
+          }
+        } catch {}
+      }
+
+      if (bcast) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('jq_platform_active_broadcast', JSON.stringify(res.broadcast));
+          localStorage.setItem('jq_platform_active_broadcast', JSON.stringify(bcast));
         }
-        return res.broadcast;
+        return bcast;
       }
     } catch (err) {
       console.warn('Failed to fetch broadcast from DB:', err);
