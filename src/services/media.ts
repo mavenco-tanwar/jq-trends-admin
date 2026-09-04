@@ -10,42 +10,52 @@ export async function optimizeImageFile(
   maxHeight = 1600,
   quality = 0.82
 ): Promise<{ dataUrl: string; width: number; height: number; sizeBytes: number }> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onerror = reject;
+    reader.onerror = () => {
+      resolve({ dataUrl: '', width: 1200, height: 1200, sizeBytes: file.size });
+    };
     reader.onload = (e) => {
+      const rawResult = e.target?.result as string;
       const img = new Image();
-      img.onerror = reject;
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve({
-            dataUrl: e.target?.result as string,
-            width: img.width,
-            height: img.height,
-            sizeBytes: file.size,
-          });
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        const approxSize = Math.round((dataUrl.length * 3) / 4);
-        resolve({ dataUrl, width, height, sizeBytes: approxSize });
+      img.onerror = () => {
+        resolve({ dataUrl: rawResult, width: 1200, height: 1200, sizeBytes: file.size });
       };
-      img.src = e.target?.result as string;
+      img.onload = () => {
+        try {
+          let { width, height } = img;
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve({
+              dataUrl: rawResult,
+              width: img.width,
+              height: img.height,
+              sizeBytes: file.size,
+            });
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const mime = file.type.includes('png') ? 'image/png' : 'image/jpeg';
+          const dataUrl = canvas.toDataURL(mime, quality);
+          const approxSize = Math.round((dataUrl.length * 3) / 4);
+          resolve({ dataUrl, width, height, sizeBytes: approxSize });
+        } catch {
+          resolve({ dataUrl: rawResult, width: img.width, height: img.height, sizeBytes: file.size });
+        }
+      };
+      img.src = rawResult;
     };
     reader.readAsDataURL(file);
   });

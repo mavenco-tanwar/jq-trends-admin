@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -97,6 +97,7 @@ export default function EditProductPage() {
   }, [id]);
 
   const [isUploadingDirect, setIsUploadingDirect] = useState(false);
+  const directFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDirectPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
@@ -109,16 +110,34 @@ export default function EditProductPage() {
     try {
       setIsUploadingDirect(true);
       showToast('Optimizing and uploading image...', 'info');
-      const optimized = await optimizeImageFile(file);
+      let dataUrl = '';
+      let width = 1200;
+      let height = 1200;
+      let sizeBytes = file.size;
+
+      try {
+        const optimized = await optimizeImageFile(file);
+        dataUrl = optimized.dataUrl;
+        width = optimized.width;
+        height = optimized.height;
+        sizeBytes = optimized.sizeBytes;
+      } catch {
+        dataUrl = await new Promise((res) => {
+          const r = new FileReader();
+          r.onload = () => res((r.result as string) || '');
+          r.readAsDataURL(file);
+        });
+      }
+
       const asset = await MediaService.upload({
         filename: file.name,
-        url: optimized.dataUrl,
+        url: dataUrl,
         altText: title || file.name.replace(/\.[^/.]+$/, ''),
         folder: 'Products',
-        mimeType: 'image/jpeg',
-        sizeBytes: optimized.sizeBytes,
-        width: optimized.width,
-        height: optimized.height,
+        mimeType: file.type || 'image/jpeg',
+        sizeBytes,
+        width,
+        height,
       });
 
       const newImg = {
@@ -127,8 +146,18 @@ export default function EditProductPage() {
         altText: asset.altText || title,
         isPrimary: images.length === 0,
       };
-      setImages((prev) => [...prev, newImg]);
-      showToast('Photo uploaded & added to gallery', 'success');
+
+      const updatedImages = [...images, newImg];
+      setImages(updatedImages);
+
+      // Auto-persist immediately to the product
+      try {
+        await ProductService.update(id as string, { images: updatedImages });
+      } catch (e) {
+        console.warn('Auto-save to product failed, will save on form submit:', e);
+      }
+
+      showToast('Photo uploaded and added to product gallery!', 'success');
     } catch (err: any) {
       showToast('Failed to upload image: ' + (err.message || 'Error'), 'error');
     } finally {
@@ -344,17 +373,23 @@ export default function EditProductPage() {
               <p className="text-xs text-slate-400 mt-0.5">Upload high-res imagery and designate the primary storefront card thumbnail.</p>
             </div>
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md cursor-pointer transition-all text-xs">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleDirectPhotoUpload}
-                  disabled={isUploadingDirect}
-                  className="sr-only"
-                />
-                <Upload className="w-4 h-4" />
+              <input
+                ref={directFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleDirectPhotoUpload}
+                disabled={isUploadingDirect}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => directFileInputRef.current?.click()}
+                disabled={isUploadingDirect}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md cursor-pointer transition-all text-xs"
+              >
+                {isUploadingDirect ? <Sparkles className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 <span>{isUploadingDirect ? 'Uploading...' : 'Upload From Device'}</span>
-              </label>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsMediaPickerOpen(true)}
@@ -400,13 +435,24 @@ export default function EditProductPage() {
             ))}
 
             {/* Direct Device Upload Card in the Grid */}
-            <label className="relative aspect-3/4 rounded-xl border-2 border-dashed border-slate-700 hover:border-rose-500 bg-[#10121A] hover:bg-slate-900/70 transition-all flex flex-col items-center justify-center gap-2.5 text-center p-4 cursor-pointer group">
+            <div
+              onClick={() => directFileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                  handleDirectPhotoUpload({ target: { files: e.dataTransfer.files } } as any);
+                }
+              }}
+              className="relative aspect-3/4 rounded-xl border-2 border-dashed border-slate-700 hover:border-rose-500 bg-[#10121A] hover:bg-slate-900/70 transition-all flex flex-col items-center justify-center gap-2.5 text-center p-4 cursor-pointer group overflow-hidden"
+            >
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleDirectPhotoUpload}
                 disabled={isUploadingDirect}
-                className="sr-only"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                title="Click to upload photo from computer or phone"
               />
               <div className="w-11 h-11 rounded-full bg-slate-800 group-hover:bg-rose-600/20 text-slate-400 group-hover:text-rose-400 flex items-center justify-center transition-colors shadow-inner">
                 {isUploadingDirect ? <Sparkles className="w-5 h-5 animate-spin text-rose-400" /> : <Upload className="w-5 h-5" />}
@@ -417,7 +463,7 @@ export default function EditProductPage() {
                 </span>
                 <span className="text-[10px] text-slate-400 block">From Computer / Phone</span>
               </div>
-            </label>
+            </div>
           </div>
         </div>
       )}

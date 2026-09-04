@@ -376,7 +376,7 @@ export default function MediaLibraryPage() {
             {uploadMode === 'device' && (
               <div>
                 {!filePreview ? (
-                  <label
+                  <div
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOver(true);
@@ -393,7 +393,7 @@ export default function MediaLibraryPage() {
                       type="file"
                       accept="image/*"
                       onChange={handleFileInputChange}
-                      className="sr-only"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                     />
                     <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
                       {isProcessing ? <Sparkles className="w-6 h-6 animate-spin text-rose-400" /> : <Upload className="w-6 h-6" />}
@@ -410,7 +410,7 @@ export default function MediaLibraryPage() {
                       <Upload className="w-3.5 h-3.5" />
                       <span>Browse Device Files</span>
                     </span>
-                  </label>
+                  </div>
                 ) : (
                   <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl flex items-center gap-4">
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-black">
