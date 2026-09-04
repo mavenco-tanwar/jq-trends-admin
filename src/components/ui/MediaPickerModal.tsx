@@ -293,7 +293,7 @@ export function MediaPickerModal({
                   accept="image/*"
                   onChange={handleFileInputChange}
                   disabled={isProcessing}
-                  className="hidden"
+                  className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-1 h-1"
                 />
 
                 {!filePreview ? (

@@ -373,7 +373,7 @@ export default function EditProductPage() {
             accept="image/*"
             onChange={handleDirectPhotoUpload}
             disabled={isUploadingDirect}
-            className="hidden"
+            className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-1 h-1"
           />
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
