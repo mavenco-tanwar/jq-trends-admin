@@ -5,8 +5,9 @@ export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get('host') || '';
   const tenantParam = url.searchParams.get('tenant');
+  const cookieTenant = request.cookies.get('jq_saas_active_tenant_slug')?.value;
 
-  let tenantSlug = 'jqtrends';
+  let tenantSlug = 'jq-trends';
 
   // 1. Path-based tenant resolution: /stores/[slug] or /tenant/[slug]
   const pathMatch = url.pathname.match(/^\/(stores|tenant)\/([a-zA-Z0-9_-]+)(.*)/);
@@ -26,13 +27,17 @@ export function middleware(request: NextRequest) {
   if (tenantParam) {
     tenantSlug = tenantParam.toLowerCase();
   }
-  // 3. Domain / Subdomain resolution (e.g. admin.auraliving.com)
+  // 3. Cookie resolution
+  else if (cookieTenant && cookieTenant !== 'lumina' && cookieTenant !== 'all') {
+    tenantSlug = cookieTenant.toLowerCase();
+  }
+  // 4. Domain / Subdomain resolution
   else if (hostname.includes('auraliving') || hostname.startsWith('auraliving.')) {
     tenantSlug = 'auraliving';
   } else if (hostname.includes('apexathletics') || hostname.startsWith('apexathletics.')) {
     tenantSlug = 'apexathletics';
   } else if (hostname.includes('jqtrends') || hostname.startsWith('jqtrends.')) {
-    tenantSlug = 'jqtrends';
+    tenantSlug = 'jq-trends';
   }
 
   const response = NextResponse.next();

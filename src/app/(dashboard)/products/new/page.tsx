@@ -207,10 +207,11 @@ export default function NewProductPage() {
     setIsSubmitting(true);
     try {
       const activeTenant = PlatformService.getActiveTenant();
+      const targetSlug = activeTenant?.slug || 'jq-trends';
       const newProduct: any = {
-        tenantId: activeTenant?.slug || 'demo',
-        tenantSlug: activeTenant?.slug || 'demo',
-        storeSlug: activeTenant?.slug || 'demo',
+        tenantId: `store_${targetSlug}`,
+        tenantSlug: targetSlug,
+        storeSlug: targetSlug,
         title,
         slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         shortDescription: shortDesc,

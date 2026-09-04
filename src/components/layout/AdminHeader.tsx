@@ -110,9 +110,15 @@ export function AdminHeader({
 
   const handleSelectStore = (store: TenantStore) => {
     PlatformService.setActiveTenantId(store.id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jq_saas_active_tenant_slug', store.slug);
+      localStorage.setItem('jq_saas_active_tenant_id', store.id);
+      document.cookie = `jq_saas_active_tenant_slug=${store.slug}; path=/; max-age=31536000; SameSite=Lax`;
+      window.dispatchEvent(new CustomEvent('tenant_updated', { detail: store }));
+    }
     setActiveTenant(store);
     setIsStoreSwitcherOpen(false);
-    window.location.href = `/stores/${store.slug}`;
+    window.location.href = `/products?tenant=${store.slug}`;
   };
 
   const handleExitImpersonation = () => {

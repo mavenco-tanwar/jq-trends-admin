@@ -44,11 +44,11 @@ export default function ProductsListPage() {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
+      const currentTenant = PlatformService.getActiveTenant();
       const [list, plans] = await Promise.all([
-        ProductService.getAll(),
+        ProductService.getAll(currentTenant.slug),
         Promise.resolve(PlatformService.listPlans()),
       ]);
-      const currentTenant = PlatformService.getActiveTenant();
       const plan = plans.find((p) => p.id === currentTenant.planId) || plans[0];
       setProducts(list);
       setActivePlan(plan);
@@ -61,6 +61,9 @@ export default function ProductsListPage() {
 
   useEffect(() => {
     fetchProducts();
+    const handleTenantUpdated = () => fetchProducts();
+    window.addEventListener('tenant_updated', handleTenantUpdated);
+    return () => window.removeEventListener('tenant_updated', handleTenantUpdated);
   }, []);
 
   const handleDuplicate = async (p: Product) => {

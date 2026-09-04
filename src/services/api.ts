@@ -86,34 +86,57 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const baseUrl = getApiBaseUrl();
-    const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-    const token = this.getToken();
     let currentTenantSlug = '';
     try {
       if (typeof window !== 'undefined') {
-        const storedTenantId = localStorage.getItem('jq_saas_active_tenant_id') || '';
-        if (storedTenantId) {
-          currentTenantSlug = storedTenantId.replace(/^store_/, '').trim();
+        const urlParams = new URLSearchParams(window.location.search);
+        const qTenant = urlParams.get('tenant');
+        if (qTenant && qTenant !== 'all' && qTenant !== 'lumina') {
+          currentTenantSlug = qTenant.replace(/^store_/, '').trim().toLowerCase();
+        }
+        if (!currentTenantSlug) {
+          const storedTenantSlug = localStorage.getItem('jq_saas_active_tenant_slug');
+          const storedTenantId = localStorage.getItem('jq_saas_active_tenant_id');
+          const effective = storedTenantSlug || storedTenantId || '';
+          if (effective && effective !== 'all' && effective !== 'lumina') {
+            currentTenantSlug = effective.replace(/^store_/, '').trim().toLowerCase();
+          }
         }
         if (!currentTenantSlug) {
           const userRaw = localStorage.getItem('jq_admin_user');
           if (userRaw) {
             const u = JSON.parse(userRaw);
             if (u.tenantSlug && u.tenantSlug !== 'all') {
-              currentTenantSlug = u.tenantSlug.replace(/^store_/, '').trim();
+              currentTenantSlug = u.tenantSlug.replace(/^store_/, '').trim().toLowerCase();
             } else if (u.tenantId) {
-              currentTenantSlug = u.tenantId.replace(/^store_/, '').trim();
+              currentTenantSlug = u.tenantId.replace(/^store_/, '').trim().toLowerCase();
             }
           }
         }
       }
     } catch {}
 
+    if (!currentTenantSlug || currentTenantSlug === 'all') {
+      currentTenantSlug = 'jq-trends';
+    }
+
+    // Explicitly append tenant query param if not already present
+    let finalEndpoint = endpoint;
+    if (!finalEndpoint.includes('tenant=') && currentTenantSlug) {
+      const sep = finalEndpoint.includes('?') ? '&' : '?';
+      finalEndpoint = `${finalEndpoint}${sep}tenant=${encodeURIComponent(currentTenantSlug)}`;
+    }
+
+    const url = `${baseUrl}${finalEndpoint.startsWith('/') ? finalEndpoint : `/${finalEndpoint}`}`;
+    const token = this.getToken();
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'X-Store-ID': STORE_ID,
+      'X-Store-ID': `store_${currentTenantSlug}`,
+      'X-Tenant-Slug': currentTenantSlug,
+      'x-tenant-slug': currentTenantSlug,
+      'x-store-slug': currentTenantSlug,
       'X-API-Key': 'sk_live_master_admin_key_9921',
-      ...(currentTenantSlug ? { 'x-tenant-slug': currentTenantSlug } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...((options.headers as Record<string, string>) || {}),
     };

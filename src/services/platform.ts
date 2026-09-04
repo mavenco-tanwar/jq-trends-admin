@@ -593,18 +593,48 @@ export class PlatformService {
       }
     }
 
+    const cleanSlug = activeId.replace(/^store_/, '').toLowerCase().trim();
     const found =
       list.find(
         (t) =>
           t.slug !== 'lumina' &&
           t.id !== 'store_lumina' &&
-          (t.id === activeId ||
-            t.slug === activeId ||
-            activeId.includes(t.slug) ||
-            t.id.includes(activeId) ||
-            (t.code && t.code.toLowerCase() === activeId.toLowerCase()))
-      ) || list.find(t => t.slug !== 'lumina') || null;
-    if (found && found.slug !== 'lumina') return found;
+          (t.id.toLowerCase() === activeId.toLowerCase() ||
+            t.slug.toLowerCase() === cleanSlug ||
+            t.id.toLowerCase() === `store_${cleanSlug}` ||
+            (t.code && t.code.toLowerCase() === cleanSlug))
+      );
+    if (found) return found;
+
+    if (cleanSlug === 'muskan-clothing-store' || cleanSlug === 'muskan-clothing') {
+      return {
+        id: 'store_muskan-clothing-store',
+        name: 'Muskan Clothing Store',
+        slug: 'muskan-clothing-store',
+        code: 'MUSK',
+        tagline: 'Luxury Boutique Fashion',
+        status: 'active',
+        planId: 'plan_starter',
+        planName: 'Starter Boutique',
+        databaseName: 'tenant_muskan-clothing-store',
+        currency: 'INR',
+        ownerEmail: 'muskan@clothing.com',
+        ownerName: 'Muskan Tanwar',
+        primaryDomain: 'muskanclothing.ourplatform.com',
+        domains: [],
+        theme: {
+          primaryColor: '#e11d48',
+          secondaryColor: '#FFFFFF',
+          accentColor: '#58587e',
+          headingFont: 'Playfair Display',
+          bodyFont: 'Plus Jakarta Sans',
+          borderRadius: 'md',
+        },
+        metrics: { products: 2, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 4 },
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+    }
 
     return {
       id: 'store_jq-trends',
@@ -617,21 +647,21 @@ export class PlatformService {
       planName: 'Enterprise Global',
       databaseName: 'tenant_jq-trends',
       currency: 'INR',
-      ownerEmail: 'owner@jqtrends.com',
-      ownerName: 'Store Owner',
-      primaryDomain: 'jq-trends.ourplatform.com',
+      ownerEmail: 'admin@jqtrends.com',
+      ownerName: 'Store Admin',
+      primaryDomain: 'jqtrends.com',
       domains: [],
       theme: {
-        primaryColor: '#12d9d6',
+        primaryColor: '#e11d48',
         secondaryColor: '#FFFFFF',
-        accentColor: '#58587e',
+        accentColor: '#4f46e5',
         headingFont: 'Playfair Display',
         bodyFont: 'Plus Jakarta Sans',
         borderRadius: 'md',
       },
       metrics: { products: 2, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
     };
   }
 

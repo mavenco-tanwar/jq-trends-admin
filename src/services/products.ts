@@ -54,14 +54,23 @@ function normalizeProduct(raw: any): Product {
   };
 }
 
+import { PlatformService } from './platform';
+
 export class ProductService {
   private static localProducts: Product[] = [...INITIAL_PRODUCTS];
 
-  static async getAll(): Promise<Product[]> {
+  static async getAll(tenantSlug?: string): Promise<Product[]> {
     try {
-      const res = await ApiClient.get<any[]>('/api/v1/products');
+      const activeTenant = PlatformService.getActiveTenant();
+      const slug = tenantSlug || activeTenant?.slug || 'jq-trends';
+      const res = await ApiClient.get<any[]>(`/api/v1/products?tenant=${encodeURIComponent(slug)}`);
       if (res.data && Array.isArray(res.data)) {
-        const normalized = res.data.map(normalizeProduct);
+        // Enforce strict tenant filtering client-side as defense in depth
+        const filtered = res.data.filter((raw: any) => {
+          const pSlug = (raw.tenantSlug || raw.storeSlug || raw.tenantId || '').replace(/^store_/, '').toLowerCase();
+          return !pSlug || pSlug === slug.toLowerCase();
+        });
+        const normalized = filtered.map(normalizeProduct);
         this.localProducts = normalized;
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('products_updated', { detail: normalized.length }));
@@ -76,7 +85,9 @@ export class ProductService {
 
   static async getById(id: string): Promise<Product | null> {
     try {
-      const res = await ApiClient.get<any>(`/api/v1/products/${id}`);
+      const activeTenant = PlatformService.getActiveTenant();
+      const slug = activeTenant?.slug || 'jq-trends';
+      const res = await ApiClient.get<any>(`/api/v1/products/${encodeURIComponent(id)}?tenant=${encodeURIComponent(slug)}`);
       if (res.data) return normalizeProduct(res.data);
     } catch {
       // Mock Fallback
@@ -86,13 +97,18 @@ export class ProductService {
   }
 
   static async create(product: Partial<Product>): Promise<Product> {
+    const activeTenant = PlatformService.getActiveTenant();
+    const slug = (product as any).tenantSlug || activeTenant?.slug || 'jq-trends';
     const newProd: Product = normalizeProduct({
       id: product.id || `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       ...product,
+      tenantId: `store_${slug}`,
+      tenantSlug: slug,
+      storeSlug: slug,
     });
 
     try {
-      const res = await ApiClient.post<Product>('/api/v1/products', newProd);
+      const res = await ApiClient.post<Product>(`/api/v1/products?tenant=${encodeURIComponent(slug)}`, newProd);
       if (res.data && !Array.isArray(res.data) && (res.data.id || res.data.title)) {
         const norm = normalizeProduct(res.data);
         this.localProducts = [norm, ...this.localProducts];
