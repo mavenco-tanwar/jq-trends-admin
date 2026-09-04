@@ -77,12 +77,74 @@ export function AdminHeader({
     window.location.href = '/platform';
   };
 
-  const [broadcast, setBroadcast] = useState<{ id: string; message: string; type: 'info' | 'warning' } | null>({
-    id: 'bcast_1',
-    message: '🚀 Platform Notice: Scheduled global edge maintenance on Sunday at 2:00 AM IST. Storefront checkout and sub-50ms CDN routing will remain 100% uninterrupted.',
-    type: 'info',
-  });
+  const [broadcast, setBroadcast] = useState<{ id: string; message: string; type: 'info' | 'warning' } | null>(null);
   const [isBroadcastDismissed, setIsBroadcastDismissed] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncBroadcast = async () => {
+      try {
+        const activeBcast = await PlatformService.getPlatformBroadcast();
+        if (isMounted && activeBcast && activeBcast.message) {
+          const dismissedRaw = typeof window !== 'undefined' ? localStorage.getItem('jq_dismissed_broadcasts') : null;
+          const dismissedList: string[] = dismissedRaw ? JSON.parse(dismissedRaw) : [];
+          if (!dismissedList.includes(activeBcast.id)) {
+            setBroadcast({
+              id: activeBcast.id,
+              message: activeBcast.message,
+              type: activeBcast.type || 'info',
+            });
+            setIsBroadcastDismissed(false);
+          } else {
+            setIsBroadcastDismissed(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Broadcast sync notice:', err);
+      }
+    };
+
+    syncBroadcast();
+
+    const handleBroadcastUpdated = (e: any) => {
+      const newBcast = e.detail;
+      if (newBcast && newBcast.message) {
+        setBroadcast({
+          id: newBcast.id,
+          message: newBcast.message,
+          type: newBcast.type || 'info',
+        });
+        setIsBroadcastDismissed(false);
+      }
+    };
+
+    const handleBroadcastDismissed = (e: any) => {
+      if (broadcast && broadcast.id === e.detail?.id) {
+        setIsBroadcastDismissed(true);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('platform_broadcast_updated', handleBroadcastUpdated);
+      window.addEventListener('platform_broadcast_dismissed', handleBroadcastDismissed);
+    }
+
+    return () => {
+      isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('platform_broadcast_updated', handleBroadcastUpdated);
+        window.removeEventListener('platform_broadcast_dismissed', handleBroadcastDismissed);
+      }
+    };
+  }, []);
+
+  const handleDismissBanner = () => {
+    if (broadcast) {
+      PlatformService.dismissPlatformBroadcast(broadcast.id);
+      setIsBroadcastDismissed(true);
+    }
+  };
 
   return (
     <>
@@ -95,7 +157,7 @@ export function AdminHeader({
           </div>
 
           <button
-            onClick={() => setIsBroadcastDismissed(true)}
+            onClick={handleDismissBanner}
             className="text-amber-400 hover:text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded hover:bg-amber-500/20 transition-all shrink-0"
           >
             Dismiss ✕

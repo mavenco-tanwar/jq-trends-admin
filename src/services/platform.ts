@@ -74,6 +74,17 @@ export interface TenantStore {
   updatedAt: string;
 }
 
+export interface PlatformBroadcast {
+  id: string;
+  message: string;
+  type: 'info' | 'warning';
+  status?: 'active' | 'archived';
+  active?: boolean;
+  publishedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface PlatformActivityLog {
   id: string;
   event: string;
@@ -1069,4 +1080,75 @@ export class PlatformService {
       return false;
     }
   }
+
+  // Global Platform Broadcast Management
+  public static async getPlatformBroadcast(): Promise<PlatformBroadcast | null> {
+    try {
+      const res = await fetch('/api/v1/platform/broadcast').then((r) => (r.ok ? r.json() : null));
+      if (res?.broadcast) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('jq_platform_active_broadcast', JSON.stringify(res.broadcast));
+        }
+        return res.broadcast;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch broadcast from DB:', err);
+    }
+
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('jq_platform_active_broadcast');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {}
+      }
+    }
+    return null;
+  }
+
+  public static async publishPlatformBroadcast(message: string, type: 'info' | 'warning' = 'info'): Promise<PlatformBroadcast> {
+    const payload = { message, type, publishedBy: 'superadmin@platform.com' };
+    const res = await fetch('/api/v1/platform/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then((r) => (r.ok ? r.json() : null));
+
+    const bcast: PlatformBroadcast = res?.broadcast || {
+      id: `bcast_${Date.now()}`,
+      message,
+      type,
+      status: 'active',
+      active: true,
+      publishedBy: 'superadmin@platform.com',
+      createdAt: new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jq_platform_active_broadcast', JSON.stringify(bcast));
+      try {
+        const dismissed = JSON.parse(localStorage.getItem('jq_dismissed_broadcasts') || '[]');
+        const updated = dismissed.filter((id: string) => id !== bcast.id);
+        localStorage.setItem('jq_dismissed_broadcasts', JSON.stringify(updated));
+      } catch {}
+
+      window.dispatchEvent(new CustomEvent('platform_broadcast_updated', { detail: bcast }));
+    }
+
+    return bcast;
+  }
+
+  public static dismissPlatformBroadcast(id: string): void {
+    if (typeof window !== 'undefined') {
+      try {
+        const dismissed = JSON.parse(localStorage.getItem('jq_dismissed_broadcasts') || '[]');
+        if (!dismissed.includes(id)) {
+          dismissed.push(id);
+          localStorage.setItem('jq_dismissed_broadcasts', JSON.stringify(dismissed));
+        }
+      } catch {}
+      window.dispatchEvent(new CustomEvent('platform_broadcast_dismissed', { detail: { id } }));
+    }
+  }
+
 }

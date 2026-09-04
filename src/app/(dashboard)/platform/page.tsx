@@ -352,11 +352,16 @@ function PlatformContent() {
     showToast(`Prepared official Welcome Onboarding Kit email for ${tenant.ownerEmail}!`, 'info');
   };
 
-  const handlePublishBroadcast = () => {
+  const handlePublishBroadcast = async () => {
     if (!broadcastMsg.trim()) return;
-    setActiveBroadcast(broadcastMsg);
-    setIsBroadcastModalOpen(false);
-    showToast('Platform-wide announcement broadcasted to all merchant dashboards!', 'success');
+    try {
+      const published = await PlatformService.publishPlatformBroadcast(broadcastMsg.trim());
+      setActiveBroadcast(published.message);
+      setIsBroadcastModalOpen(false);
+      showToast('Live broadcast published and synchronized to all merchant dashboards!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to publish broadcast', 'error');
+    }
   };
 
   // Scoped API Key Manager Modal State
@@ -423,6 +428,12 @@ function PlatformContent() {
       setSeedComplete(true);
       showToast(`✨ Seeded 12 starter products into ${seederTenant.name} database!`, 'success');
       loadPlatformData();
+    PlatformService.getPlatformBroadcast().then((b) => {
+      if (b && b.message) {
+        setActiveBroadcast(b.message);
+        setBroadcastMsg(b.message);
+      }
+    });
     }, 1400);
   };
 
