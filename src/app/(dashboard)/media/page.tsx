@@ -375,30 +375,34 @@ export default function MediaLibraryPage() {
             {/* Mode A: Device File Upload */}
             {uploadMode === 'device' && (
               <div>
+                <input
+                  id="media-library-page-file-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileInputChange}
+                  disabled={isProcessing}
+                  className="hidden"
+                />
+
                 {!filePreview ? (
-                  <div
+                  <label
+                    htmlFor="media-library-page-file-input"
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOver(true);
                     }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 block ${
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 block select-none ${
                       dragOver
                         ? 'border-rose-500 bg-rose-500/10'
                         : 'border-slate-700 bg-[#10121A] hover:border-rose-500 hover:bg-slate-900'
                     }`}
                   >
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileInputChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                    />
-                    <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
+                    <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md pointer-events-none">
                       {isProcessing ? <Sparkles className="w-6 h-6 animate-spin text-rose-400" /> : <Upload className="w-6 h-6" />}
                     </div>
-                    <div>
+                    <div className="pointer-events-none">
                       <p className="font-bold text-white text-xs">
                         {isProcessing ? 'Optimizing Image...' : 'Click to browse from Computer / Phone or drag & drop'}
                       </p>
@@ -406,11 +410,11 @@ export default function MediaLibraryPage() {
                         High resolution JPG, PNG, WEBP, SVG or GIF (auto-optimized)
                       </p>
                     </div>
-                    <span className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs inline-flex items-center gap-1.5 transition-all mt-1">
+                    <span className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs inline-flex items-center gap-1.5 transition-all mt-1 pointer-events-none">
                       <Upload className="w-3.5 h-3.5" />
                       <span>Browse Device Files</span>
                     </span>
-                  </div>
+                  </label>
                 ) : (
                   <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl flex items-center gap-4">
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-black">
@@ -423,14 +427,11 @@ export default function MediaLibraryPage() {
                       <p className="text-[11px] text-slate-400">
                         {optimizedData ? `${(optimizedData.sizeBytes / 1024).toFixed(1)} KB (Optimized)` : (selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload')}
                       </p>
-                      <label className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer">
-                        <span>Change Image</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileInputChange}
-                          className="sr-only"
-                        />
+                      <label
+                        htmlFor="media-library-page-file-input"
+                        className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer select-none"
+                      >
+                        Change Image
                       </label>
                     </div>
                     <button
