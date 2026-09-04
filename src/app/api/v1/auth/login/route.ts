@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       $or: [
         { ownerEmail: cleanEmail },
         { 'contact.email': cleanEmail },
+        { email: cleanEmail },
         { slug: cleanEmail.split('@')[0] },
         ...(tenantQuery ? [{ slug: tenantQuery.toLowerCase().trim() }] : []),
       ],
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
         $or: [
           { ownerEmail: cleanEmail },
           { 'contact.email': cleanEmail },
+          { email: cleanEmail },
           { slug: cleanEmail.split('@')[0] },
           ...(tenantQuery ? [{ slug: tenantQuery.toLowerCase().trim() }] : []),
         ],

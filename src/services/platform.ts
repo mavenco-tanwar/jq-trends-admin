@@ -754,7 +754,7 @@ export class PlatformService {
           planName: t.planName || 'Starter Boutique',
           databaseName: t.databaseName || `tenant_${t.slug}`,
           currency: t.currency || 'USD',
-          ownerEmail: t.ownerEmail || t.contact?.email || 'owner@platform.com',
+          ownerEmail: t.ownerEmail || t.contact?.email || t.email || '',
           ownerName: t.ownerName || 'Store Owner',
           primaryDomain: t.primaryDomain || `${t.slug}.com`,
           features: (t.features && Object.keys(t.features).length > 0) ? t.features : PlatformService.getDefaultFeaturesForPlan(t.planId || 'plan_pro'),
@@ -931,6 +931,11 @@ export class PlatformService {
           tagline: newStore.tagline,
           currency: newStore.currency,
           theme: newStore.theme,
+          ownerName: newStore.ownerName,
+          ownerEmail: newStore.ownerEmail,
+          contact: {
+            email: newStore.ownerEmail,
+          },
         }),
       }).catch(() => {});
     } catch {}
