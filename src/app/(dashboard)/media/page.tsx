@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Image as ImageIcon,
   Upload,
@@ -13,8 +13,9 @@ import {
   Smartphone,
   Link as LinkIcon,
   X,
+  Sparkles,
 } from 'lucide-react';
-import { MediaService } from '@/services/media';
+import { MediaService, optimizeImageFile } from '@/services/media';
 import { useToast } from '@/lib/toast-context';
 import { Modal } from '@/components/ui/Modal';
 import type { MediaAsset } from '@/types';
@@ -28,13 +29,19 @@ export default function MediaLibraryPage() {
   const [search, setSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Upload state
   const [uploadMode, setUploadMode] = useState<'device' | 'url'>('device');
   const [dragOver, setDragOver] = useState(false);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [optimizedData, setOptimizedData] = useState<{
+    dataUrl: string;
+    width: number;
+    height: number;
+    sizeBytes: number;
+  } | null>(null);
 
   const [uploadUrl, setUploadUrl] = useState('');
   const [uploadFilename, setUploadFilename] = useState('');
@@ -55,39 +62,58 @@ export default function MediaLibraryPage() {
     setUploadMode('device');
     setFilePreview(null);
     setSelectedFile(null);
+    setOptimizedData(null);
     setUploadUrl('');
     setUploadFilename('');
     setUploadAlt('');
     setUploadFolder('Products');
+    setIsProcessing(false);
   };
 
   const handleCopyUrl = (id: string, url: string) => {
     navigator.clipboard.writeText(url);
     setCopiedId(id);
-    showToast('Copied image CDN link to clipboard!', 'info');
+    showToast('Copied image link to clipboard!', 'info');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleFileSelect = (file: File) => {
+  const processFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       showToast('Please select a valid image file (PNG, JPG, WEBP, SVG, GIF)', 'error');
       return;
     }
 
-    setSelectedFile(file);
-    setUploadFilename(file.name);
-    setUploadAlt(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
+    try {
+      setIsProcessing(true);
+      setSelectedFile(file);
+      setUploadFilename(file.name);
+      setUploadAlt(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFilePreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+      const optimized = await optimizeImageFile(file);
+      setOptimizedData(optimized);
+      setFilePreview(optimized.dataUrl);
+    } catch (err) {
+      console.error('Image optimization failed:', err);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawUrl = e.target?.result as string;
+        setFilePreview(rawUrl);
+        setOptimizedData({
+          dataUrl: rawUrl,
+          width: 1200,
+          height: 1200,
+          sizeBytes: file.size,
+        });
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleFileSelect(e.target.files[0]);
+      processFile(e.target.files[0]);
     }
   };
 
@@ -95,7 +121,7 @@ export default function MediaLibraryPage() {
     e.preventDefault();
     setDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+      processFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -105,28 +131,41 @@ export default function MediaLibraryPage() {
     let finalUrl = uploadUrl;
     let finalSize = 250000;
     let finalMime = 'image/jpeg';
+    let width = 1200;
+    let height = 1200;
 
     if (uploadMode === 'device') {
-      if (!filePreview) return;
-      finalUrl = filePreview;
-      finalSize = selectedFile?.size || 250000;
+      if (!optimizedData && !filePreview) return;
+      finalUrl = optimizedData?.dataUrl || filePreview!;
+      finalSize = optimizedData?.sizeBytes || selectedFile?.size || 250000;
       finalMime = selectedFile?.type || 'image/jpeg';
+      width = optimizedData?.width || 1200;
+      height = optimizedData?.height || 1200;
     } else {
       if (!uploadUrl) return;
     }
 
-    await MediaService.upload({
-      url: finalUrl,
-      filename: uploadFilename || (selectedFile?.name || `upload-${Date.now()}.jpg`),
-      altText: uploadAlt,
-      folder: uploadFolder,
-      mimeType: finalMime,
-      sizeBytes: finalSize,
-    });
+    setIsProcessing(true);
+    try {
+      await MediaService.upload({
+        filename: uploadFilename || (selectedFile?.name || `upload-${Date.now()}.jpg`),
+        url: finalUrl,
+        altText: uploadAlt,
+        folder: uploadFolder,
+        mimeType: finalMime,
+        sizeBytes: finalSize,
+        width,
+        height,
+      });
 
-    showToast('Image added to media library', 'success');
-    resetUploadState();
-    fetchAssets();
+      showToast('Image successfully added to media library', 'success');
+      resetUploadState();
+      fetchAssets();
+    } catch (err: any) {
+      showToast('Upload error: ' + (err.message || 'Unknown'), 'error');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -160,8 +199,9 @@ export default function MediaLibraryPage() {
         </div>
 
         <button
+          type="button"
           onClick={() => setIsUploadOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-md shadow-rose-950/40 transition-all"
+          className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-md shadow-rose-950/40 transition-all cursor-pointer"
         >
           <Upload className="w-4 h-4" />
           <span>Upload Media</span>
@@ -174,8 +214,9 @@ export default function MediaLibraryPage() {
           {FOLDERS.map((f) => (
             <button
               key={f}
+              type="button"
               onClick={() => setSelectedFolder(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 selectedFolder === f
                   ? 'bg-rose-600 text-white shadow-xs'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -199,62 +240,85 @@ export default function MediaLibraryPage() {
         </div>
       </div>
 
-      {/* Media Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {filtered.map((asset) => (
-          <div
-            key={asset.id}
-            className="bg-[#161822] border border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between group hover:border-slate-700 transition-all"
+      {/* Assets Grid */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-20 bg-[#161822] border border-dashed border-slate-800 rounded-2xl p-8">
+          <ImageIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+          <p className="text-slate-300 font-bold text-sm">No media assets found</p>
+          <p className="text-slate-500 text-xs mt-1 mb-4">
+            {search ? 'Try adjusting your search query' : 'Upload photos from your computer or phone'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsUploadOpen(true)}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow cursor-pointer"
           >
-            {/* Image Preview */}
-            <div className="relative aspect-square bg-[#10121A] overflow-hidden">
-              <img
-                src={asset.url}
-                alt={asset.altText || asset.filename}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
-                <button
-                  onClick={() => handleCopyUrl(asset.id, asset.url)}
-                  className="p-1.5 bg-slate-800 text-white hover:bg-slate-700 rounded-lg shadow"
-                  title="Copy CDN Link"
-                >
-                  {copiedId === asset.id ? (
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleDelete(asset.id)}
-                  className="p-1.5 bg-rose-600 text-white hover:bg-rose-500 rounded-lg shadow"
-                  title="Delete File"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            Upload First Asset
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {filtered.map((asset) => (
+            <div
+              key={asset.id}
+              className="group bg-[#161822] border border-slate-800/90 hover:border-rose-500/50 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col"
+            >
+              {/* Image Preview Container */}
+              <div className="relative aspect-square w-full bg-black/40 overflow-hidden">
+                <img
+                  src={asset.url}
+                  alt={asset.altText || asset.filename}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
 
-            {/* Metadata Footer */}
-            <div className="p-2.5 bg-[#12141D] border-t border-slate-800/80 space-y-1 text-xs">
-              <div className="font-semibold text-white text-[11px] truncate" title={asset.filename}>
-                {asset.filename}
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-slate-500">
-                <span>{asset.folder}</span>
-                <span>{(asset.sizeBytes / 1024).toFixed(0)} KB</span>
-              </div>
-              {asset.usedInCount ? (
-                <div className="text-[10px] text-rose-300 font-semibold truncate" title={asset.usedIn?.join(', ')}>
-                  Used in: {asset.usedInCount} section(s)
+                {/* Hover overlay with action buttons */}
+                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyUrl(asset.id, asset.url)}
+                    className="p-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg shadow text-xs flex items-center gap-1 cursor-pointer"
+                    title="Copy Image URL"
+                  >
+                    {copiedId === asset.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(asset.id)}
+                    className="p-2 bg-rose-600/90 hover:bg-rose-500 text-white rounded-lg shadow text-xs cursor-pointer"
+                    title="Delete Media Asset"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-              ) : null}
-            </div>
-          </div>
-        ))}
-      </div>
 
-      {/* UPLOAD MODAL */}
+                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-slate-300 font-mono">
+                  {asset.folder}
+                </div>
+              </div>
+
+              {/* Metadata */}
+              <div className="p-3 flex-1 flex flex-col justify-between text-xs">
+                <div>
+                  <h4 className="text-white font-medium truncate text-xs" title={asset.filename}>
+                    {asset.filename}
+                  </h4>
+                  <p className="text-slate-400 text-[11px] truncate mt-0.5">
+                    {asset.altText || 'No description'}
+                  </p>
+                </div>
+
+                <div className="mt-2 pt-2 border-t border-slate-800/70 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                  <span>{((asset.sizeBytes || 250000) / 1024).toFixed(0)} KB</span>
+                  <span>{new Date(asset.createdAt || Date.now()).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload Modal */}
       {isUploadOpen && (
         <Modal
           isOpen={isUploadOpen}
@@ -269,7 +333,7 @@ export default function MediaLibraryPage() {
                 <button
                   type="button"
                   onClick={() => setUploadMode('device')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                     uploadMode === 'device'
                       ? 'bg-slate-800 text-rose-400 border border-slate-700'
                       : 'text-slate-400 hover:text-white'
@@ -281,7 +345,7 @@ export default function MediaLibraryPage() {
                 <button
                   type="button"
                   onClick={() => setUploadMode('url')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                     uploadMode === 'url'
                       ? 'bg-slate-800 text-rose-400 border border-slate-700'
                       : 'text-slate-400 hover:text-white'
@@ -311,41 +375,42 @@ export default function MediaLibraryPage() {
             {/* Mode A: Device File Upload */}
             {uploadMode === 'device' && (
               <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileInputChange}
-                  className="sr-only"
-                />
-
                 {!filePreview ? (
-                  <div
+                  <label
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOver(true);
                     }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 block ${
                       dragOver
                         ? 'border-rose-500 bg-rose-500/10'
-                        : 'border-slate-700 bg-[#10121A] hover:border-slate-500 hover:bg-slate-900'
+                        : 'border-slate-700 bg-[#10121A] hover:border-rose-500 hover:bg-slate-900'
                     }`}
                   >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileInputChange}
+                      className="sr-only"
+                    />
                     <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
-                      <Upload className="w-6 h-6" />
+                      {isProcessing ? <Sparkles className="w-6 h-6 animate-spin text-rose-400" /> : <Upload className="w-6 h-6" />}
                     </div>
                     <div>
                       <p className="font-bold text-white text-xs">
-                        Click to browse from Computer / Phone or drag &amp; drop
+                        {isProcessing ? 'Optimizing Image...' : 'Click to browse from Computer / Phone or drag & drop'}
                       </p>
                       <p className="text-[11px] text-slate-400 mt-1">
-                        High resolution JPG, PNG, WEBP, SVG or GIF (up to 20MB)
+                        High resolution JPG, PNG, WEBP, SVG or GIF (auto-optimized)
                       </p>
                     </div>
-                  </div>
+                    <span className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs inline-flex items-center gap-1.5 transition-all mt-1">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Browse Device Files</span>
+                    </span>
+                  </label>
                 ) : (
                   <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl flex items-center gap-4">
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-black">
@@ -356,23 +421,26 @@ export default function MediaLibraryPage() {
                         {selectedFile?.name || 'Uploaded Image'}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload'}
+                        {optimizedData ? `${(optimizedData.sizeBytes / 1024).toFixed(1)} KB (Optimized)` : (selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload')}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block"
-                      >
-                        Change Image
-                      </button>
+                      <label className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer">
+                        <span>Change Image</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileInputChange}
+                          className="sr-only"
+                        />
+                      </label>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
                         setFilePreview(null);
                         setSelectedFile(null);
+                        setOptimizedData(null);
                       }}
-                      className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg"
+                      className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -413,7 +481,7 @@ export default function MediaLibraryPage() {
             </div>
 
             <div>
-              <label className="block text-slate-300 font-bold mb-1">Alt Text (Accessibility &amp; SEO)</label>
+              <label className="block text-slate-300 font-bold mb-1">Alt Text (Accessibility & SEO)</label>
               <input
                 type="text"
                 placeholder="Descriptive image caption..."
@@ -427,16 +495,17 @@ export default function MediaLibraryPage() {
               <button
                 type="button"
                 onClick={resetUploadState}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={uploadMode === 'device' ? !filePreview : !uploadUrl}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md disabled:opacity-40 transition-all"
+                disabled={isProcessing || (uploadMode === 'device' ? !filePreview : !uploadUrl)}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md disabled:opacity-40 transition-all cursor-pointer inline-flex items-center gap-1.5"
               >
-                Add to Library
+                {isProcessing && <Sparkles className="w-3.5 h-3.5 animate-spin" />}
+                <span>Add to Library</span>
               </button>
             </div>
           </form>

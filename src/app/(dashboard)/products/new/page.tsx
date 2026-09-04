@@ -19,6 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { ProductService } from '@/services/products';
+import { MediaService, optimizeImageFile } from '@/services/media';
 import { PlatformService } from '@/services/platform';
 import { useToast } from '@/lib/toast-context';
 import { MediaPickerModal } from '@/components/ui/MediaPickerModal';
@@ -43,7 +44,7 @@ export default function NewProductPage() {
   const [price, setPrice] = useState('1499');
   const [compareAtPrice, setCompareAtPrice] = useState('2299');
   const [costPrice, setCostPrice] = useState('650');
-  const [sku, setSku] = useState(`JQT-${Date.now().toString().slice(-6)}`);
+  const [sku, setSku] = useState('JQT-WMN-DRS-101');
   const [stock, setStock] = useState('50');
   const [lowStockThreshold, setLowStockThreshold] = useState('10');
   const [trackInventory, setTrackInventory] = useState(true);
@@ -52,10 +53,21 @@ export default function NewProductPage() {
     { id: 'img_default', url: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&auto=format&fit=crop', isPrimary: true },
   ]);
   const [variants, setVariants] = useState<ProductVariant[]>([
-    { id: 'v_s', sku: `${sku}-S`, title: 'S / Default', price: 1499, stock: 20, options: { size: 'S' } },
-    { id: 'v_m', sku: `${sku}-M`, title: 'M / Default', price: 1499, stock: 20, options: { size: 'M' } },
-    { id: 'v_l', sku: `${sku}-L`, title: 'L / Default', price: 1499, stock: 10, options: { size: 'L' } },
+    { id: 'v_s', sku: 'JQT-WMN-DRS-101-S', title: 'S / Default', price: 1499, stock: 20, options: { size: 'S' } },
+    { id: 'v_m', sku: 'JQT-WMN-DRS-101-M', title: 'M / Default', price: 1499, stock: 20, options: { size: 'M' } },
+    { id: 'v_l', sku: 'JQT-WMN-DRS-101-L', title: 'L / Default', price: 1499, stock: 10, options: { size: 'L' } },
   ]);
+
+  React.useEffect(() => {
+    const randomSuffix = Date.now().toString().slice(-6);
+    const initialSku = `JQT-${randomSuffix}`;
+    setSku(initialSku);
+    setVariants([
+      { id: 'v_s', sku: `${initialSku}-S`, title: 'S / Default', price: 1499, stock: 20, options: { size: 'S' } },
+      { id: 'v_m', sku: `${initialSku}-M`, title: 'M / Default', price: 1499, stock: 20, options: { size: 'M' } },
+      { id: 'v_l', sku: `${initialSku}-L`, title: 'L / Default', price: 1499, stock: 10, options: { size: 'L' } },
+    ]);
+  }, []);
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDesc, setSeoDesc] = useState('');
   const [weightKg, setWeightKg] = useState('0.4');
@@ -69,6 +81,47 @@ export default function NewProductPage() {
     setTitle(val);
     if (!slug || slug === title.toLowerCase().replace(/[^a-z0-9]+/g, '-')) {
       setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+    }
+  };
+
+  const [isUploadingDirect, setIsUploadingDirect] = useState(false);
+
+  const handleDirectPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WEBP, SVG, GIF)', 'error');
+      return;
+    }
+
+    try {
+      setIsUploadingDirect(true);
+      showToast('Optimizing and uploading image...', 'info');
+      const optimized = await optimizeImageFile(file);
+      const asset = await MediaService.upload({
+        filename: file.name,
+        url: optimized.dataUrl,
+        altText: title || file.name.replace(/\.[^/.]+$/, ''),
+        folder: 'Products',
+        mimeType: 'image/jpeg',
+        sizeBytes: optimized.sizeBytes,
+        width: optimized.width,
+        height: optimized.height,
+      });
+
+      const newImg = {
+        id: asset.id,
+        url: asset.url,
+        altText: asset.altText || title,
+        isPrimary: images.length === 0,
+      };
+      setImages((prev) => [...prev, newImg]);
+      showToast('Photo uploaded & added to gallery', 'success');
+    } catch (err: any) {
+      showToast('Failed to upload image: ' + (err.message || 'Error'), 'error');
+    } finally {
+      setIsUploadingDirect(false);
+      e.target.value = '';
     }
   };
 
@@ -332,19 +385,32 @@ export default function NewProductPage() {
       {/* TAB 2: MEDIA GALLERY */}
       {activeTab === 'media' && (
         <div className="bg-[#161822] p-6 rounded-xl border border-slate-800 space-y-4 text-xs">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-white">Product Photo Gallery</h3>
               <p className="text-xs text-slate-400 mt-0.5">Upload high-res imagery and designate the primary storefront card thumbnail.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsMediaPickerOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add From Media Library</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md cursor-pointer transition-all text-xs">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleDirectPhotoUpload}
+                  disabled={isUploadingDirect}
+                  className="sr-only"
+                />
+                <Upload className="w-4 h-4" />
+                <span>{isUploadingDirect ? 'Uploading...' : 'Upload From Device'}</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsMediaPickerOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold rounded-lg shadow-md border border-slate-700 text-xs transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Media Library</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
@@ -361,7 +427,7 @@ export default function NewProductPage() {
                     <button
                       type="button"
                       onClick={() => removeImage(img.id)}
-                      className="p-1 bg-rose-600 text-white rounded hover:bg-rose-500"
+                      className="p-1 bg-rose-600 text-white rounded hover:bg-rose-500 cursor-pointer"
                       title="Remove Photo"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -370,7 +436,7 @@ export default function NewProductPage() {
                   <button
                     type="button"
                     onClick={() => setPrimaryImage(img.id)}
-                    className={`w-full py-1 rounded text-[10px] font-bold ${
+                    className={`w-full py-1 rounded text-[10px] font-bold cursor-pointer ${
                       img.isPrimary ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
                     }`}
                   >
@@ -379,6 +445,26 @@ export default function NewProductPage() {
                 </div>
               </div>
             ))}
+
+            {/* Direct Device Upload Card in the Grid */}
+            <label className="relative aspect-3/4 rounded-xl border-2 border-dashed border-slate-700 hover:border-rose-500 bg-[#10121A] hover:bg-slate-900/70 transition-all flex flex-col items-center justify-center gap-2.5 text-center p-4 cursor-pointer group">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleDirectPhotoUpload}
+                disabled={isUploadingDirect}
+                className="sr-only"
+              />
+              <div className="w-11 h-11 rounded-full bg-slate-800 group-hover:bg-rose-600/20 text-slate-400 group-hover:text-rose-400 flex items-center justify-center transition-colors shadow-inner">
+                {isUploadingDirect ? <Sparkles className="w-5 h-5 animate-spin text-rose-400" /> : <Upload className="w-5 h-5" />}
+              </div>
+              <div className="space-y-0.5">
+                <span className="font-bold text-white text-xs block group-hover:text-rose-300 transition-colors">
+                  {isUploadingDirect ? 'Optimizing...' : 'Upload Photo'}
+                </span>
+                <span className="text-[10px] text-slate-400 block">From Computer / Phone</span>
+              </div>
+            </label>
           </div>
         </div>
       )}

@@ -95,7 +95,7 @@ function AdminSidebarInner({
   const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getActiveTenant());
+  const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getDefaultTenant());
   const [productCount, setProductCount] = useState<number | null>(null);
 
   useEffect(() => {

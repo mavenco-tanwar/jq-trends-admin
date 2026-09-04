@@ -743,7 +743,7 @@ export default function PromotionsPage() {
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-sans">
                 <tr className="hover:bg-slate-800/30 transition-colors">
-                  <td className="p-3.5 text-slate-400 font-mono text-[11px]">{new Date().toLocaleString()}</td>
+                  <td className="p-3.5 text-slate-400 font-mono text-[11px]">Sep 4, 2026, 05:30 PM</td>
                   <td className="p-3.5 font-mono font-bold text-rose-300">FESTIVE20</td>
                   <td className="p-3.5 font-mono text-slate-300">LUM-100234</td>
                   <td className="p-3.5 text-slate-300">Aanya Kapoor</td>
@@ -751,7 +751,7 @@ export default function PromotionsPage() {
                   <td className="p-3.5 text-right font-mono font-bold text-white">$1,499</td>
                 </tr>
                 <tr className="hover:bg-slate-800/30 transition-colors">
-                  <td className="p-3.5 text-slate-400 font-mono text-[11px]">{new Date(Date.now() - 86400000).toLocaleString()}</td>
+                  <td className="p-3.5 text-slate-400 font-mono text-[11px]">Sep 3, 2026, 05:30 PM</td>
                   <td className="p-3.5 font-mono font-bold text-rose-300">WELCOME10</td>
                   <td className="p-3.5 font-mono text-slate-300">LUM-100289</td>
                   <td className="p-3.5 text-slate-300">Rohan Mehra</td>

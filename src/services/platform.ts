@@ -505,6 +505,36 @@ export class PlatformService {
     }
   }
 
+  public static getDefaultTenant(): TenantStore {
+    return {
+      id: 'store_jq-trends',
+      name: 'JQ Trends',
+      slug: 'jq-trends',
+      code: 'JQ',
+      tagline: 'Modern Headless Commerce Store',
+      status: 'active',
+      planId: 'plan_enterprise',
+      planName: 'Enterprise Global',
+      databaseName: 'tenant_jq-trends',
+      currency: 'INR',
+      ownerEmail: 'admin@jqtrends.com',
+      ownerName: 'Store Admin',
+      primaryDomain: 'jqtrends.com',
+      domains: [],
+      theme: {
+        primaryColor: '#e11d48',
+        secondaryColor: '#FFFFFF',
+        accentColor: '#4f46e5',
+        headingFont: 'Playfair Display',
+        bodyFont: 'Plus Jakarta Sans',
+        borderRadius: 'md',
+      },
+      metrics: { products: 2, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+  }
+
   public static getActiveTenant(): TenantStore {
     const list = this.loadTenants();
     const activeId = this.getActiveTenantId();

@@ -88,7 +88,7 @@ export function AdminHeader({
 
   // Multi-Tenant Context
   const [tenants, setTenants] = useState<TenantStore[]>([]);
-  const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getActiveTenant());
+  const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getDefaultTenant());
   const [impersonationState, setImpersonationState] = useState(PlatformService.getImpersonationState());
 
   useEffect(() => {

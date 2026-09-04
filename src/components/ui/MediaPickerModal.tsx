@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Upload,
@@ -10,8 +10,9 @@ import {
   Smartphone,
   Link as LinkIcon,
   Image as ImageIcon,
+  Sparkles,
 } from 'lucide-react';
-import { MediaService } from '@/services/media';
+import { MediaService, optimizeImageFile } from '@/services/media';
 import type { MediaAsset } from '@/types';
 import { Modal } from './Modal';
 
@@ -39,14 +40,17 @@ export function MediaPickerModal({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMode, setUploadMode] = useState<'device' | 'url'>('device');
   const [dragOver, setDragOver] = useState(false);
-
-  // File Input References for 100% Reliable Native File Picker
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const changeFileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // File from computer / phone state
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [optimizedData, setOptimizedData] = useState<{
+    dataUrl: string;
+    width: number;
+    height: number;
+    sizeBytes: number;
+  } | null>(null);
 
   // URL state
   const [uploadUrl, setUploadUrl] = useState('');
@@ -71,33 +75,52 @@ export function MediaPickerModal({
     setIsUploading(false);
     setFilePreview(null);
     setSelectedFile(null);
+    setOptimizedData(null);
     setUploadUrl('');
     setUploadFilename('');
     setUploadAlt('');
     setUploadMode('device');
     setUploadFolder('Products');
+    setIsProcessing(false);
   };
 
-  const handleFileSelect = (file: File) => {
+  const processFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Please select a valid image file (PNG, JPG, WEBP, SVG, GIF, AVIF)');
       return;
     }
 
-    setSelectedFile(file);
-    setUploadFilename(file.name);
-    setUploadAlt(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
+    try {
+      setIsProcessing(true);
+      setSelectedFile(file);
+      setUploadFilename(file.name);
+      setUploadAlt(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFilePreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+      const optimized = await optimizeImageFile(file);
+      setOptimizedData(optimized);
+      setFilePreview(optimized.dataUrl);
+    } catch (err) {
+      console.error('Image optimization failed, falling back:', err);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawUrl = e.target?.result as string;
+        setFilePreview(rawUrl);
+        setOptimizedData({
+          dataUrl: rawUrl,
+          width: 1200,
+          height: 1200,
+          sizeBytes: file.size,
+        });
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleFileSelect(e.target.files[0]);
+      processFile(e.target.files[0]);
     }
   };
 
@@ -105,7 +128,7 @@ export function MediaPickerModal({
     e.preventDefault();
     setDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+      processFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -115,32 +138,45 @@ export function MediaPickerModal({
     let finalUrl = uploadUrl;
     let finalSize = 250000;
     let finalMime = 'image/jpeg';
+    let width = 1200;
+    let height = 1200;
 
     if (uploadMode === 'device') {
-      if (!filePreview) return;
-      finalUrl = filePreview;
-      finalSize = selectedFile?.size || 250000;
+      if (!optimizedData && !filePreview) return;
+      finalUrl = optimizedData?.dataUrl || filePreview!;
+      finalSize = optimizedData?.sizeBytes || selectedFile?.size || 250000;
       finalMime = selectedFile?.type || 'image/jpeg';
+      width = optimizedData?.width || 1200;
+      height = optimizedData?.height || 1200;
     } else {
       if (!uploadUrl) return;
     }
 
-    const newAsset = await MediaService.upload({
-      filename: uploadFilename || (selectedFile?.name || `upload-${Date.now()}.jpg`),
-      url: finalUrl,
-      altText: uploadAlt,
-      folder: (uploadFolder !== 'All' ? uploadFolder : 'Products') as any,
-      mimeType: finalMime,
-      sizeBytes: finalSize,
-    });
+    setIsProcessing(true);
+    try {
+      const newAsset = await MediaService.upload({
+        filename: uploadFilename || (selectedFile?.name || `upload-${Date.now()}.jpg`),
+        url: finalUrl,
+        altText: uploadAlt || uploadFilename,
+        folder: (uploadFolder !== 'All' ? uploadFolder : 'Products') as any,
+        mimeType: finalMime,
+        sizeBytes: finalSize,
+        width,
+        height,
+      });
 
-    setAssets((prev) => [newAsset, ...prev]);
-    setSelectedAsset(newAsset);
-    resetUploadForm();
+      setAssets((prev) => [newAsset, ...prev]);
+      setSelectedAsset(newAsset);
+      resetUploadForm();
 
-    // Automatically select and close with newly uploaded image
-    onSelect(newAsset.url, newAsset);
-    onClose();
+      // Automatically select and close with newly uploaded image
+      onSelect(newAsset.url, newAsset);
+      onClose();
+    } catch (err: any) {
+      alert('Upload failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const filteredAssets = assets.filter((a) => {
@@ -189,10 +225,10 @@ export function MediaPickerModal({
             <button
               type="button"
               onClick={() => setIsUploading(!isUploading)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md transition-all shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md transition-all shrink-0 cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>{isUploading ? 'Cancel' : 'Upload Media'}</span>
+              <span>{isUploading ? 'Hide Upload' : 'Upload Media'}</span>
             </button>
           </div>
         </div>
@@ -209,7 +245,7 @@ export function MediaPickerModal({
                 <button
                   type="button"
                   onClick={() => setUploadMode('device')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                     uploadMode === 'device'
                       ? 'bg-slate-800 text-rose-400 border border-slate-700'
                       : 'text-slate-400 hover:text-white'
@@ -221,7 +257,7 @@ export function MediaPickerModal({
                 <button
                   type="button"
                   onClick={() => setUploadMode('url')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                     uploadMode === 'url'
                       ? 'bg-slate-800 text-rose-400 border border-slate-700'
                       : 'text-slate-400 hover:text-white'
@@ -252,8 +288,7 @@ export function MediaPickerModal({
             {uploadMode === 'device' && (
               <div>
                 {!filePreview ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
+                  <label
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOver(true);
@@ -266,41 +301,32 @@ export function MediaPickerModal({
                         : 'border-slate-700 bg-slate-900/60 hover:border-rose-500 hover:bg-slate-900'
                     }`}
                   >
-                    <div className="flex flex-col items-center justify-center gap-2.5">
-                      <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
-                        <Upload className="w-6 h-6" />
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="font-bold text-white text-xs">
-                          Click to browse from Computer / Phone or drag &amp; drop
-                        </p>
-                        <p className="text-[11px] text-slate-400">
-                          High resolution JPG, PNG, WEBP, SVG, GIF or AVIF (up to 20MB)
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          fileInputRef.current?.click();
-                        }}
-                        className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs inline-flex items-center gap-1.5 transition-all mt-1 cursor-pointer"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Browse Device Files</span>
-                      </button>
-                    </div>
-
                     <input
-                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleFileInputChange}
                       className="sr-only"
                     />
-                  </div>
+                    <div className="flex flex-col items-center justify-center gap-2.5">
+                      <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
+                        {isProcessing ? <Sparkles className="w-6 h-6 animate-spin text-rose-400" /> : <Upload className="w-6 h-6" />}
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="font-bold text-white text-xs">
+                          {isProcessing ? 'Optimizing Image...' : 'Click to browse from Computer / Phone or drag & drop'}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          High resolution JPG, PNG, WEBP, SVG, GIF or AVIF (auto-optimized)
+                        </p>
+                      </div>
+
+                      <span className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs inline-flex items-center gap-1.5 transition-all mt-1">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Browse Device Files</span>
+                      </span>
+                    </div>
+                  </label>
                 ) : (
                   <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl flex items-center gap-4">
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-black">
@@ -311,28 +337,24 @@ export function MediaPickerModal({
                         {selectedFile?.name || 'Uploaded Image'}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload'}
+                        {optimizedData ? `${(optimizedData.sizeBytes / 1024).toFixed(1)} KB (Optimized)` : (selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload')}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => changeFileInputRef.current?.click()}
-                        className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer"
-                      >
-                        Change Image
-                      </button>
-                      <input
-                        ref={changeFileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileInputChange}
-                        className="sr-only"
-                      />
+                      <label className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer">
+                        <span>Change Image</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileInputChange}
+                          className="sr-only"
+                        />
+                      </label>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
                         setFilePreview(null);
                         setSelectedFile(null);
+                        setOptimizedData(null);
                       }}
                       className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer"
                     >
@@ -381,10 +403,11 @@ export function MediaPickerModal({
               </span>
               <button
                 type="submit"
-                disabled={uploadMode === 'device' ? !filePreview : !uploadUrl}
-                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg disabled:opacity-40 shadow-md transition-all cursor-pointer"
+                disabled={isProcessing || (uploadMode === 'device' ? !filePreview : !uploadUrl)}
+                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg disabled:opacity-40 shadow-md transition-all cursor-pointer inline-flex items-center gap-1.5"
               >
-                Save &amp; Select Image
+                {isProcessing && <Sparkles className="w-3.5 h-3.5 animate-spin" />}
+                <span>Save & Select Image</span>
               </button>
             </div>
           </form>
@@ -438,7 +461,7 @@ export function MediaPickerModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg cursor-pointer"
             >
               Cancel
             </button>
