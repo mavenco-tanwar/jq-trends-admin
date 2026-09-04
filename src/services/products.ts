@@ -26,7 +26,7 @@ function normalizeProduct(raw: any): Product {
     : ['cat_women'];
 
   return {
-    id: raw.id || `prod_${Date.now()}`,
+    id: raw.id || (raw._id ? (typeof raw._id === "object" ? raw._id.toString() : String(raw._id)) : undefined) || raw.slug || `prod_${Date.now()}`,
     title: raw.title || raw.name || 'Untitled Garment',
     slug: raw.slug || `product-${Date.now()}`,
     description: raw.descriptionHtml || raw.description || '',
@@ -140,12 +140,17 @@ export class ProductService {
   }
 
   static async delete(id: string): Promise<void> {
-    this.localProducts = this.localProducts.filter((p) => p.id !== id);
+    const productToDelete = this.localProducts.find((p) => p.id === id || p.slug === id);
+    this.localProducts = this.localProducts.filter((p) => p.id !== id && p.slug !== id);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('products_updated', { detail: this.localProducts.length }));
     }
     try {
-      await ApiClient.delete(`/api/v1/products/${encodeURIComponent(id)}`);
+      const activeTenant = PlatformService.getActiveTenant();
+      const slug = activeTenant?.slug || 'jq-trends';
+      const targetIdentifier = productToDelete?.id || id;
+      const extraQuery = productToDelete?.slug ? `&slug=${encodeURIComponent(productToDelete.slug)}` : '';
+      await ApiClient.delete(`/api/v1/products/${encodeURIComponent(targetIdentifier)}?tenant=${encodeURIComponent(slug)}${extraQuery}`);
     } catch (err) {
       console.error('Failed to delete product from database:', err);
     }

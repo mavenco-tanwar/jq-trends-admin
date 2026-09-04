@@ -133,9 +133,7 @@ export class ApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Store-ID': `store_${currentTenantSlug}`,
-      'X-Tenant-Slug': currentTenantSlug,
       'x-tenant-slug': currentTenantSlug,
-      'x-store-slug': currentTenantSlug,
       'X-API-Key': 'sk_live_master_admin_key_9921',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...((options.headers as Record<string, string>) || {}),
