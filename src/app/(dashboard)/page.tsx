@@ -55,15 +55,15 @@ export default function DashboardOverviewPage() {
     loadData();
   }, []);
 
-  // Compute live sales metrics
+  // Compute live sales metrics strictly from database orders
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000;
   const monthStart = todayStart - 30 * 24 * 60 * 60 * 1000;
 
-  const todayOrders = orders.filter((o) => new Date(o.placedAt || o.updatedAt).getTime() >= todayStart);
-  const weekOrders = orders.filter((o) => new Date(o.placedAt || o.updatedAt).getTime() >= weekStart);
-  const monthOrders = orders.filter((o) => new Date(o.placedAt || o.updatedAt).getTime() >= monthStart);
+  const todayOrders = orders.filter((o) => new Date(o.placedAt || o.createdAt || o.updatedAt).getTime() >= todayStart);
+  const weekOrders = orders.filter((o) => new Date(o.placedAt || o.createdAt || o.updatedAt).getTime() >= weekStart);
+  const monthOrders = orders.filter((o) => new Date(o.placedAt || o.createdAt || o.updatedAt).getTime() >= monthStart);
 
   const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
   const weekRevenue = weekOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
@@ -74,38 +74,38 @@ export default function DashboardOverviewPage() {
     {
       label: "Today's Sales",
       value: `₹${todayRevenue.toLocaleString('en-IN')}`,
-      change: '+18.4%',
-      isPositive: true,
-      sub: `${todayOrders.length} order(s) today`,
+      change: todayOrders.length > 0 ? `${todayOrders.length} order(s)` : '0 orders',
+      isPositive: todayRevenue > 0,
+      sub: `${todayOrders.length} order(s) placed today`,
     },
     {
       label: "This Week's Sales",
-      value: `₹${(weekRevenue || 48900).toLocaleString('en-IN')}`,
-      change: '+14.2%',
-      isPositive: true,
-      sub: `${weekOrders.length || 12} orders this week`,
+      value: `₹${weekRevenue.toLocaleString('en-IN')}`,
+      change: weekOrders.length > 0 ? `${weekOrders.length} order(s)` : '0 orders',
+      isPositive: weekRevenue > 0,
+      sub: `${weekOrders.length} order(s) past 7 days`,
     },
     {
       label: "This Month's Sales",
-      value: `₹${(monthRevenue || 142850).toLocaleString('en-IN')}`,
-      change: '+22.0%',
-      isPositive: true,
-      sub: `${monthOrders.length || 28} orders this month`,
+      value: `₹${monthRevenue.toLocaleString('en-IN')}`,
+      change: monthOrders.length > 0 ? `${monthOrders.length} order(s)` : '0 orders',
+      isPositive: monthRevenue > 0,
+      sub: `${monthOrders.length} order(s) past 30 days`,
     },
     {
       label: 'Total Net Revenue',
-      value: `₹${(totalRevenue || 384200).toLocaleString('en-IN')}`,
-      change: '+35.8%',
-      isPositive: true,
-      sub: 'All-time verified sales',
+      value: `₹${totalRevenue.toLocaleString('en-IN')}`,
+      change: `${orders.length} total orders`,
+      isPositive: totalRevenue > 0,
+      sub: 'All-time verified database revenue',
     },
   ];
 
-  // Order status breakdown
+  // Order status breakdown strictly from database
   const orderStats = [
     {
       status: 'Processing',
-      count: orders.filter((o) => o.status === 'processing' || o.status === 'confirmed').length,
+      count: orders.filter((o) => o.status === 'processing' || (o as any).status === 'confirmed').length,
       color: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
     },
     {
@@ -120,7 +120,7 @@ export default function DashboardOverviewPage() {
     },
     {
       status: 'Delivered',
-      count: orders.filter((o) => o.status === 'delivered').length || 1,
+      count: orders.filter((o) => o.status === 'delivered').length,
       color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
     },
     {
@@ -130,11 +130,11 @@ export default function DashboardOverviewPage() {
     },
   ];
 
-  const lowStockProducts = products.filter((p) => (p.stock || 0) <= 30);
-  const outOfStockCount = products.filter((p) => (p.stock || 0) === 0).length;
+  const lowStockProducts = products.filter((p) => (p.stock || 0) > 0 && (p.stock || 0) <= 30);
+  const outOfStockProducts = products.filter((p) => (p.stock || 0) === 0);
 
   const productStats = [
-    { label: 'Total Products', value: products.length.toString(), sub: 'Catalog Items' },
+    { label: 'Total Products', value: products.length.toString(), sub: 'Catalog Items in DB' },
     {
       label: 'Active on Store',
       value: products.filter((p) => p.status === 'published' || (p.status as any) === 'active').length.toString(),
@@ -147,8 +147,8 @@ export default function DashboardOverviewPage() {
     },
     {
       label: 'Out of Stock',
-      value: outOfStockCount.toString(),
-      sub: outOfStockCount === 0 ? 'Optimal inventory' : 'Attention needed',
+      value: outOfStockProducts.length.toString(),
+      sub: outOfStockProducts.length === 0 ? 'Optimal inventory' : 'Attention needed',
     },
   ];
 
@@ -180,20 +180,6 @@ export default function DashboardOverviewPage() {
             <Sparkles className="w-3.5 h-3.5" />
             <span>Homepage Builder</span>
           </Link>
-
-          <a
-            href={getTenantStorefrontUrl(
-              PlatformService.getActiveTenant().slug !== 'lumina'
-                ? PlatformService.getActiveTenant().slug
-                : 'jq-trends'
-            )}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#10121A] hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 text-xs font-semibold transition-all"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-rose-400" />
-            <span>View Storefront</span>
-          </a>
         </div>
       </div>
 
@@ -289,12 +275,12 @@ export default function DashboardOverviewPage() {
                     <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-rose-400">
                       <ShoppingCart className="w-4 h-4" />
                     </div>
-                    <div>
-                      <Link href={`/orders/${o.id}`} className="font-bold text-white hover:text-rose-400">
+                    <div className="min-w-0">
+                      <Link href={`/orders/${o.id}`} className="font-bold text-white hover:text-rose-400 truncate block">
                         {o.orderNumber}
                       </Link>
-                      <div className="text-[11px] text-slate-400">
-                        {o.customer?.firstName || 'Customer'} • {o.items?.length || 1} Item(s)
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {o.customer?.firstName ? `${o.customer.firstName} ${o.customer.lastName || ''}`.trim() : (o as any).customerName || 'Customer'} • {o.items?.length || 1} Item(s)
                       </div>
                     </div>
                   </div>

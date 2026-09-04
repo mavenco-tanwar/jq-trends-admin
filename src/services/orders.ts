@@ -5,51 +5,68 @@ import type { Order, OrderStatus } from '@/types';
 function normalizeOrder(raw: any): Order {
   const fullName =
     raw.customer?.fullName ||
+    raw.customerName ||
     raw.shippingAddress?.fullName ||
     raw.billingAddress?.fullName ||
     'Valued Customer';
   const nameParts = fullName.split(' ');
   const firstName = raw.customer?.firstName || nameParts[0] || 'Valued';
   const lastName = raw.customer?.lastName || nameParts.slice(1).join(' ') || 'Customer';
-  const email = raw.customer?.email || raw.email || 'customer@example.com';
-  const phone = raw.customer?.phone || raw.shippingAddress?.phone || raw.phone || '+91 98765 43210';
+  const email = raw.customer?.email || raw.customerEmail || raw.email || 'customer@example.com';
+  const phone = raw.customer?.phone || raw.phone || raw.shippingAddress?.phone || '+91 98765 43210';
+
+  const subtotal = typeof raw.pricing?.subtotal === 'number' ? raw.pricing.subtotal : raw.subtotal || raw.grandTotal || 0;
+  const shippingTotal = typeof raw.pricing?.shippingFee === 'number' ? raw.pricing.shippingFee : raw.shippingTotal || 0;
+  const discountTotal = typeof raw.pricing?.discountTotal === 'number' ? raw.pricing.discountTotal : raw.discountTotal || 0;
+  const taxTotal = typeof raw.pricing?.taxTotal === 'number' ? raw.pricing.taxTotal : raw.taxTotal || 0;
+  const grandTotal = typeof raw.pricing?.grandTotal === 'number' ? raw.pricing.grandTotal : raw.grandTotal || raw.subtotal || 0;
+  const rawStatus = (raw.orderStatus || raw.status || 'processing').toLowerCase();
+  const status: OrderStatus =
+    rawStatus === 'delivered'
+      ? 'delivered'
+      : rawStatus === 'shipped'
+      ? 'shipped'
+      : rawStatus === 'packed'
+      ? 'packed'
+      : rawStatus === 'cancelled'
+      ? 'cancelled'
+      : 'processing';
 
   return {
-    id: raw.id || `ord_${Date.now()}`,
+    id: raw.id || raw._id || `ord_${Date.now()}`,
     orderNumber: raw.orderNumber || `JQT-${Math.floor(100000 + Math.random() * 900000)}`,
-    customerId: raw.customerId || `cust_${Date.now()}`,
+    customerId: raw.customerId || raw.customer?.id || `cust_${Date.now()}`,
     customer: {
-      id: raw.customerId || `cust_${Date.now()}`,
+      id: raw.customerId || raw.customer?.id || `cust_${Date.now()}`,
       firstName,
       lastName,
       email,
       phone,
     },
-    items: Array.isArray(raw.items)
+    items: Array.isArray(raw.items) && raw.items.length > 0
       ? raw.items.map((it: any) => ({
-          id: it.id || `item_${Date.now()}`,
-          productId: it.productId || 'prod_jq_01',
-          title: it.title || it.name || 'Boutique Garment',
-          sku: it.sku || 'JQT-SKU',
-          price: it.price || 999,
+          productId: it.productId || it.productSnapshot?.sku || 'prod_jq_01',
+          title: it.title || it.productSnapshot?.title || it.name || 'Boutique Garment',
+          sku: it.sku || it.productSnapshot?.sku || 'JQT-SKU',
+          price: it.price || it.unitPrice || 999,
           quantity: it.quantity || 1,
-          total: it.total || (it.price || 999) * (it.quantity || 1),
-          imageUrl: it.imageUrl || it.image || 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&auto=format&fit=crop',
+          total: it.total || (it.unitPrice || it.price || 999) * (it.quantity || 1),
+          imageUrl: it.imageUrl || it.productSnapshot?.image || it.image || 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&auto=format&fit=crop',
           options: it.options || {},
         }))
       : [],
-    subtotal: raw.subtotal || raw.grandTotal || 0,
-    shippingTotal: raw.shippingTotal || 0,
-    discountTotal: raw.discountTotal || 0,
-    taxTotal: raw.taxTotal || 0,
-    grandTotal: raw.grandTotal || raw.subtotal || 0,
+    subtotal,
+    shippingTotal,
+    discountTotal,
+    taxTotal,
+    grandTotal,
     currency: raw.currency || 'INR',
-    paymentStatus: raw.paymentStatus || 'paid',
+    paymentStatus: (raw.paymentStatus || 'paid').toLowerCase() as any,
     paymentMethod: raw.paymentMethod || 'UPI / Online',
-    status: raw.status || 'processing',
+    status,
     fulfillmentStatus:
       raw.fulfillmentStatus ||
-      (raw.status === 'shipped' || raw.status === 'delivered' ? 'fulfilled' : 'unfulfilled'),
+      (status === 'shipped' || status === 'delivered' ? 'fulfilled' : 'unfulfilled'),
     shippingAddress: raw.shippingAddress || {
       fullName,
       addressLine1: 'Indiranagar',
