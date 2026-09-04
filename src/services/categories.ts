@@ -1,27 +1,36 @@
 import { ApiClient } from './api';
+import { PlatformService } from './platform';
 import type { Category } from '@/types';
 
 function getActiveTenantSlug(): string {
-  if (typeof window === 'undefined') return 'jq-trends';
   try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const qTenant = urlParams.get('tenant');
-    if (qTenant && qTenant !== 'all' && qTenant !== 'lumina') {
-      return qTenant.replace(/^store_/, '').trim().toLowerCase();
+    const active = PlatformService.getActiveTenant();
+    if (active?.slug && active.slug !== 'all' && active.slug !== 'lumina') {
+      return active.slug.toLowerCase().trim();
     }
-    const storedSlug = localStorage.getItem('jq_saas_active_tenant_slug');
-    if (storedSlug && storedSlug !== 'all' && storedSlug !== 'lumina') {
-      return storedSlug.replace(/^store_/, '').trim().toLowerCase();
-    }
-    const storedId = localStorage.getItem('jq_saas_active_tenant_id');
-    if (storedId && storedId !== 'all' && storedId !== 'lumina') {
-      return storedId.replace(/^store_/, '').trim().toLowerCase();
-    }
-    const userRaw = localStorage.getItem('jq_admin_user');
-    if (userRaw) {
-      const u = JSON.parse(userRaw);
-      if (u.tenantSlug && u.tenantSlug !== 'all') {
-        return u.tenantSlug.replace(/^store_/, '').trim().toLowerCase();
+  } catch {}
+
+  try {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const qTenant = urlParams.get('tenant');
+      if (qTenant && qTenant !== 'all' && qTenant !== 'lumina') {
+        return qTenant.replace(/^store_/, '').trim().toLowerCase();
+      }
+      const storedId = localStorage.getItem('jq_saas_active_tenant_id');
+      if (storedId && storedId !== 'all' && storedId !== 'lumina') {
+        return storedId.replace(/^store_/, '').trim().toLowerCase();
+      }
+      const storedSlug = localStorage.getItem('jq_saas_active_tenant_slug');
+      if (storedSlug && storedSlug !== 'all' && storedSlug !== 'lumina') {
+        return storedSlug.replace(/^store_/, '').trim().toLowerCase();
+      }
+      const userRaw = localStorage.getItem('jq_admin_user');
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        if (u.tenantSlug && u.tenantSlug !== 'all') {
+          return u.tenantSlug.replace(/^store_/, '').trim().toLowerCase();
+        }
       }
     }
   } catch {}
@@ -47,6 +56,7 @@ function normalizeCategory(raw: any): Category {
 /**
  * Builds a hierarchical tree from a flat list of category documents.
  * Correctly nests subcategories (where parentId !== null) inside their matching parent's children array.
+ * If a parent was deleted or is missing, promotes orphaned subcategory to root so it is never hidden.
  */
 export function buildCategoryTree(flatList: Category[]): Category[] {
   const map = new Map<string, Category>();
@@ -63,6 +73,8 @@ export function buildCategoryTree(flatList: Category[]): Category[] {
     if (c.parentId && map.has(c.parentId)) {
       map.get(c.parentId)!.children!.push(node);
     } else {
+      // If parent does not exist, reset parentId so it renders cleanly as a top-level category
+      node.parentId = null;
       roots.push(node);
     }
   });
@@ -71,17 +83,20 @@ export function buildCategoryTree(flatList: Category[]): Category[] {
 }
 
 export class CategoryService {
-  private static localCategories: Category[] = [];
-
   /**
-   * Returns the flat list of all categories for the active tenant.
+   * Returns the flat list of all categories strictly for the active tenant.
    */
   static async getFlatList(): Promise<Category[]> {
     const tenantSlug = getActiveTenantSlug();
     try {
       const res = await ApiClient.get<any[]>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`);
       if (res && Array.isArray(res.data)) {
-        return res.data.map(normalizeCategory);
+        // Enforce strict client-side tenant isolation defense-in-depth
+        const filtered = res.data.filter((raw: any) => {
+          const rawSlug = (raw.tenantSlug || raw.storeSlug || raw.tenantId || '').replace(/^store_/, '').toLowerCase();
+          return !rawSlug || rawSlug === tenantSlug.toLowerCase();
+        });
+        return filtered.map(normalizeCategory);
       }
     } catch (err) {
       console.warn(`[CategoryService] Could not fetch categories for tenant '${tenantSlug}':`, err);
@@ -90,12 +105,11 @@ export class CategoryService {
   }
 
   /**
-   * Returns categories structured as a nested hierarchy tree (Departments with nested Subcategories).
+   * Returns categories structured as a nested hierarchy tree strictly for the active tenant.
    */
   static async getAll(): Promise<Category[]> {
     const flat = await this.getFlatList();
     const tree = buildCategoryTree(flat);
-    this.localCategories = tree;
     return tree;
   }
 
@@ -124,10 +138,9 @@ export class CategoryService {
     };
 
     try {
-      const res = await ApiClient.post<any>('/api/v1/categories', newCat);
+      const res = await ApiClient.post<any>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`, newCat);
       if (res && res.data) {
-        const persisted = normalizeCategory(res.data);
-        return persisted;
+        return normalizeCategory(res.data);
       }
     } catch (err) {
       console.error('[CategoryService] Failed to persist category to database:', err);
@@ -143,6 +156,7 @@ export class CategoryService {
         ...updates,
         tenantSlug,
         storeSlug: tenantSlug,
+        tenantId: `store_${tenantSlug}`,
       });
     } catch (err) {
       console.warn('[CategoryService] Failed to update category via API:', err);
@@ -152,6 +166,7 @@ export class CategoryService {
   }
 
   static async delete(id: string): Promise<void> {
+    if (!id || id === 'undefined' || id === 'null') return;
     const tenantSlug = getActiveTenantSlug();
     try {
       await ApiClient.delete(`/api/v1/categories/${encodeURIComponent(id)}?tenant=${encodeURIComponent(tenantSlug)}`);

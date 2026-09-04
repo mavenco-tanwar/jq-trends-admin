@@ -95,11 +95,12 @@ export class ApiClient {
           currentTenantSlug = qTenant.replace(/^store_/, '').trim().toLowerCase();
         }
         if (!currentTenantSlug) {
-          const storedTenantSlug = localStorage.getItem('jq_saas_active_tenant_slug');
           const storedTenantId = localStorage.getItem('jq_saas_active_tenant_id');
-          const effective = storedTenantSlug || storedTenantId || '';
+          const storedTenantSlug = localStorage.getItem('jq_saas_active_tenant_slug');
+          const effective = storedTenantId || storedTenantSlug || '';
           if (effective && effective !== 'all' && effective !== 'lumina') {
             currentTenantSlug = effective.replace(/^store_/, '').trim().toLowerCase();
+            localStorage.setItem('jq_saas_active_tenant_slug', currentTenantSlug);
           }
         }
         if (!currentTenantSlug) {
