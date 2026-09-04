@@ -381,7 +381,7 @@ export default function MediaLibraryPage() {
                   accept="image/*"
                   onChange={handleFileInputChange}
                   disabled={isProcessing}
-                  className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-1 h-1"
+                  className="sr-only"
                 />
 
                 {!filePreview ? (
