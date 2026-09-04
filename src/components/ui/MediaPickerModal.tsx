@@ -252,8 +252,8 @@ export function MediaPickerModal({
             {uploadMode === 'device' && (
               <div>
                 {!filePreview ? (
-                  <label
-                    htmlFor="media-picker-native-file-upload"
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOver(true);
@@ -266,7 +266,7 @@ export function MediaPickerModal({
                         : 'border-slate-700 bg-slate-900/60 hover:border-rose-500 hover:bg-slate-900'
                     }`}
                   >
-                    <div className="flex flex-col items-center justify-center gap-2.5 pointer-events-none">
+                    <div className="flex flex-col items-center justify-center gap-2.5">
                       <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
                         <Upload className="w-6 h-6" />
                       </div>
@@ -280,29 +280,27 @@ export function MediaPickerModal({
                         </p>
                       </div>
 
-                      <span className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs inline-flex items-center gap-1.5 transition-all mt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fileInputRef.current?.click();
+                        }}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md text-xs inline-flex items-center gap-1.5 transition-all mt-1 cursor-pointer"
+                      >
                         <Upload className="w-3.5 h-3.5" />
                         <span>Browse Device Files</span>
-                      </span>
+                      </button>
                     </div>
 
-                    {/* Native hidden file input linked directly to label */}
                     <input
-                      id="media-picker-native-file-upload"
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleFileInputChange}
-                      style={{
-                        position: 'fixed',
-                        top: '-1000px',
-                        left: '-1000px',
-                        opacity: 0,
-                        width: '1px',
-                        height: '1px',
-                        pointerEvents: 'none',
-                      }}
+                      className="hidden"
                     />
-                  </label>
+                  </div>
                 ) : (
                   <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl flex items-center gap-4">
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-black">
@@ -315,26 +313,19 @@ export function MediaPickerModal({
                       <p className="text-[11px] text-slate-400">
                         {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload'}
                       </p>
-                      <label
-                        htmlFor="media-picker-change-file-upload"
+                      <button
+                        type="button"
+                        onClick={() => changeFileInputRef.current?.click()}
                         className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer"
                       >
                         Change Image
-                      </label>
+                      </button>
                       <input
-                        id="media-picker-change-file-upload"
+                        ref={changeFileInputRef}
                         type="file"
                         accept="image/*"
                         onChange={handleFileInputChange}
-                        style={{
-                          position: 'fixed',
-                          top: '-1000px',
-                          left: '-1000px',
-                          opacity: 0,
-                          width: '1px',
-                          height: '1px',
-                          pointerEvents: 'none',
-                        }}
+                        className="hidden"
                       />
                     </div>
                     <button

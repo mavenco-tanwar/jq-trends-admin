@@ -22,6 +22,7 @@ import { ProductService } from '@/services/products';
 import { PlatformService } from '@/services/platform';
 import { useToast } from '@/lib/toast-context';
 import { MediaPickerModal } from '@/components/ui/MediaPickerModal';
+import { VariantMatrixEditor } from '@/components/ui/VariantMatrixEditor';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import type { Product, ProductVariant } from '@/types';
 
@@ -478,25 +479,12 @@ export default function NewProductPage() {
       {/* TAB 5: VARIANTS */}
       {activeTab === 'variants' && (
         <div className="bg-[#161822] p-6 rounded-xl border border-slate-800 space-y-4 text-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-white">Size &amp; Color Variants Matrix</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Customize individual pricing and warehouse allocations for each size.</p>
-            </div>
-          </div>
-
-          <div className="divide-y divide-slate-800/80 border border-slate-800 rounded-xl overflow-hidden">
-            {variants.map((v, idx) => (
-              <div key={v.id} className="p-3 bg-[#10121A] flex items-center justify-between gap-3">
-                <div className="font-bold text-white">{v.title}</div>
-                <div className="flex items-center gap-3 font-mono">
-                  <span>SKU: {v.sku}</span>
-                  <span className="text-rose-400 font-bold">₹{v.price}</span>
-                  <span className="text-emerald-400">{v.stock} in stock</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <VariantMatrixEditor
+            variants={variants}
+            onChange={setVariants}
+            basePrice={price}
+            baseSku={sku}
+          />
         </div>
       )}
 
