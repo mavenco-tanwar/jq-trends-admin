@@ -88,11 +88,24 @@ export class ApiClient {
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
     const token = this.getToken();
-    let currentTenantSlug = 'demo';
+    let currentTenantSlug = '';
     try {
-      const storedTenantId = localStorage.getItem('jq_saas_active_tenant_id') || '';
-      if (storedTenantId) {
-        currentTenantSlug = storedTenantId.startsWith('store_') ? storedTenantId.replace('store_', '') : storedTenantId;
+      if (typeof window !== 'undefined') {
+        const storedTenantId = localStorage.getItem('jq_saas_active_tenant_id') || '';
+        if (storedTenantId) {
+          currentTenantSlug = storedTenantId.replace(/^store_/, '').trim();
+        }
+        if (!currentTenantSlug) {
+          const userRaw = localStorage.getItem('jq_admin_user');
+          if (userRaw) {
+            const u = JSON.parse(userRaw);
+            if (u.tenantSlug && u.tenantSlug !== 'all') {
+              currentTenantSlug = u.tenantSlug.replace(/^store_/, '').trim();
+            } else if (u.tenantId) {
+              currentTenantSlug = u.tenantId.replace(/^store_/, '').trim();
+            }
+          }
+        }
       }
     } catch {}
 
@@ -100,7 +113,7 @@ export class ApiClient {
       'Content-Type': 'application/json',
       'X-Store-ID': STORE_ID,
       'X-API-Key': 'sk_live_master_admin_key_9921',
-      'x-tenant-slug': currentTenantSlug,
+      ...(currentTenantSlug ? { 'x-tenant-slug': currentTenantSlug } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...((options.headers as Record<string, string>) || {}),
     };
