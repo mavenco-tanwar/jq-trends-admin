@@ -35,39 +35,118 @@ export async function POST(request: NextRequest) {
 
     if (db) {
       if (cleanSlug) {
-        tenantDoc = await db.collection('tenants').findOne({ slug: cleanSlug });
+        tenantDoc = await db.collection('tenants').findOne({
+          $or: [
+            { slug: cleanSlug },
+            { id: cleanSlug },
+            { id: `store_${cleanSlug}` },
+          ],
+        });
       }
       if (!tenantDoc && cleanEmail) {
         tenantDoc = await db.collection('tenants').findOne({
           $or: [
             { ownerEmail: cleanEmail },
             { 'contact.email': cleanEmail },
+            { email: cleanEmail },
+          ],
+        });
+      }
+      if (!tenantDoc && cleanSlug) {
+        tenantDoc = await db.collection('platform_tenants_registry').findOne({
+          $or: [
+            { slug: cleanSlug },
+            { id: cleanSlug },
+            { tenantId: cleanSlug },
           ],
         });
       }
     }
 
     const targetSlug = tenantDoc?.slug || cleanSlug || 'store';
-    const targetEmail = tenantDoc?.ownerEmail || tenantDoc?.contact?.email || cleanEmail;
+    const targetEmail = (tenantDoc?.ownerEmail || tenantDoc?.contact?.email || cleanEmail).toLowerCase().trim();
     const storeName = tenantDoc?.name || targetSlug.toUpperCase();
+    const now = new Date().toISOString();
 
     // Generate or use custom password
     const newPassword =
       customPassword || `Mavenco@${new Date().getFullYear()}!${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // Save updated password in MongoDB Atlas
-    if (db && (tenantDoc?.slug || cleanSlug)) {
-      await db.collection('tenants').updateOne(
-        { slug: tenantDoc?.slug || cleanSlug },
-        {
-          $set: {
-            temporaryPassword: newPassword,
-            isTemporaryPassword: true,
-            passwordUpdatedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+    // Save updated password across MongoDB Atlas (tenants, platform_tenants_registry, users)
+    if (db) {
+      const tenantMatchConditions: any[] = [];
+      if (targetSlug) {
+        tenantMatchConditions.push({ slug: targetSlug });
+        tenantMatchConditions.push({ id: targetSlug });
+        tenantMatchConditions.push({ id: `store_${targetSlug}` });
+      }
+      if (targetEmail) {
+        tenantMatchConditions.push({ ownerEmail: targetEmail });
+        tenantMatchConditions.push({ 'contact.email': targetEmail });
+        tenantMatchConditions.push({ email: targetEmail });
+      }
+
+      const updateData = {
+        password: newPassword,
+        temporaryPassword: newPassword,
+        isTemporaryPassword: true,
+        passwordUpdatedAt: now,
+        updatedAt: now,
+      };
+
+      if (tenantMatchConditions.length > 0) {
+        // 1. Synchronize 'tenants' collection
+        await db.collection('tenants').updateMany(
+          { $or: tenantMatchConditions },
+          { $set: updateData }
+        );
+
+        // 2. Synchronize 'platform_tenants_registry'
+        await db.collection('platform_tenants_registry').updateMany(
+          { $or: tenantMatchConditions },
+          { $set: updateData }
+        );
+      }
+
+      // 3. Upsert into 'users' collection so merchant can immediately authenticate
+      if (targetEmail) {
+        await db.collection('users').updateOne(
+          { email: targetEmail },
+          {
+            $set: {
+              email: targetEmail,
+              name: tenantDoc?.ownerName || tenantDoc?.name || storeName || 'Store Owner',
+              password: newPassword,
+              temporaryPassword: newPassword,
+              isTemporaryPassword: true,
+              tenantSlug: targetSlug,
+              tenantId: tenantDoc?.id || `store_${targetSlug}`,
+              roleId: 'role_owner',
+              role: 'owner',
+              roleName: 'Store Owner & Administrator',
+              status: 'active',
+              passwordUpdatedAt: now,
+              updatedAt: now,
+            },
+            $setOnInsert: {
+              id: `user_${targetEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+              createdAt: now,
+            },
           },
-        }
-      );
+          { upsert: true }
+        );
+      }
+
+      // Record activity in MongoDB
+      await db.collection('platform_activities').insertOne({
+        event: `Merchant password reset & updated for store ${targetSlug} (${targetEmail})`,
+        actor: requestedBy,
+        tenantId: targetSlug,
+        tenantName: storeName,
+        severity: 'info',
+        ipAddress: '127.0.0.1',
+        createdAt: now,
+      });
     }
 
     const adminBaseUrl = process.env.NEXT_PUBLIC_ADMIN_URL || process.env.ADMIN_URL || 'https://mavenco-admin.vercel.app';
@@ -148,7 +227,7 @@ export async function POST(request: NextRequest) {
           email: targetEmail,
           temporaryPassword: newPassword,
           adminLoginUrl,
-          resetAt: new Date().toISOString(),
+          resetAt: now,
         },
       },
       { headers: corsHeaders() }
@@ -173,6 +252,7 @@ export async function PATCH(request: NextRequest) {
 
     const cleanSlug = slug ? slug.toLowerCase().trim() : '';
     const cleanEmail = email ? email.toLowerCase().trim() : '';
+    const now = new Date().toISOString();
 
     const db = await getDatabase();
     if (!db) {
@@ -182,47 +262,72 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const matchConditions: any[] = [];
-    if (cleanSlug) matchConditions.push({ slug: cleanSlug });
+    const matchConditions = [];
+    if (cleanSlug) {
+      matchConditions.push({ slug: cleanSlug });
+      matchConditions.push({ id: cleanSlug });
+      matchConditions.push({ id: `store_${cleanSlug}` });
+    }
     if (cleanEmail) {
       matchConditions.push({ ownerEmail: cleanEmail });
       matchConditions.push({ 'contact.email': cleanEmail });
       matchConditions.push({ email: cleanEmail });
     }
 
+    const updatePayload = {
+      password: newPassword,
+      temporaryPassword: newPassword,
+      isTemporaryPassword: false,
+      passwordUpdatedAt: now,
+      updatedAt: now,
+    };
+
     if (matchConditions.length > 0) {
       // 1. Update in tenants collection
       await db.collection('tenants').updateMany(
         { $or: matchConditions },
-        {
-          $set: {
-            password: newPassword,
-            temporaryPassword: newPassword,
-            isTemporaryPassword: false,
-            passwordUpdatedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        }
+        { $set: updatePayload }
       );
 
-      // 2. Update in users collection
-      await db.collection('users').updateMany(
-        {
-          $or: [
-            ...(cleanEmail ? [{ email: cleanEmail }] : []),
-            ...(cleanSlug ? [{ tenantSlug: cleanSlug }] : []),
-          ],
-        },
-        {
-          $set: {
-            password: newPassword,
-            temporaryPassword: newPassword,
-            isTemporaryPassword: false,
-            passwordUpdatedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        }
+      // 2. Update in platform_tenants_registry
+      await db.collection('platform_tenants_registry').updateMany(
+        { $or: matchConditions },
+        { $set: updatePayload }
       );
+
+      // 3. Update or upsert in users collection
+      const userConditions = [];
+      if (cleanEmail) userConditions.push({ email: cleanEmail });
+      if (cleanSlug) userConditions.push({ tenantSlug: cleanSlug });
+
+      if (userConditions.length > 0) {
+        await db.collection('users').updateMany(
+          { $or: userConditions },
+          { $set: updatePayload }
+        );
+      }
+
+      if (cleanEmail) {
+        await db.collection('users').updateOne(
+          { email: cleanEmail },
+          {
+            $set: {
+              ...updatePayload,
+              ...(cleanSlug ? { tenantSlug: cleanSlug, tenantId: `store_${cleanSlug}` } : {}),
+            },
+            $setOnInsert: {
+              id: `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+              name: 'Store Administrator',
+              roleId: 'role_owner',
+              role: 'owner',
+              roleName: 'Store Owner & Administrator',
+              status: 'active',
+              createdAt: now,
+            },
+          },
+          { upsert: true }
+        );
+      }
 
       // Record activity in MongoDB
       await db.collection('platform_activities').insertOne({
@@ -232,7 +337,7 @@ export async function PATCH(request: NextRequest) {
         tenantName: cleanSlug || cleanEmail,
         severity: 'info',
         ipAddress: '127.0.0.1',
-        createdAt: new Date().toISOString(),
+        createdAt: now,
       });
     }
 

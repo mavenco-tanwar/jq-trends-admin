@@ -1163,6 +1163,23 @@ function PlatformContent() {
     e.preventDefault();
     if (!editingTenant) return;
 
+    if (editTempPassword && editTempPassword.trim().length >= 6) {
+      try {
+        await fetch('/api/v1/platform/merchant-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug: editingTenant.slug,
+            email: editOwnerEmail || editingTenant.ownerEmail,
+            customPassword: editTempPassword.trim(),
+            requestedBy: 'Superadmin Edit Tenant',
+          }),
+        });
+      } catch (err) {
+        console.warn('Password update error:', err);
+      }
+    }
+
     await PlatformService.updateTenantDetails(editingTenant.id, {
       name: editName,
       tagline: editTagline,
@@ -1171,6 +1188,8 @@ function PlatformContent() {
       currency: editCurrency,
       planId: editPlanId,
       status: editStatus,
+      temporaryPassword: editTempPassword?.trim(),
+      password: editTempPassword?.trim(),
       theme: {
         ...editingTenant.theme,
         primaryColor: editPrimaryColor,

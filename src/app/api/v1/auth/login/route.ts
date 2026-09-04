@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
 
     const cleanEmail = email.toLowerCase().trim();
     const cleanPass = password.trim();
+    const now = new Date().toISOString();
 
     // Primary Superadmin Authentication Fast-Path
     if (
@@ -59,48 +60,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Check 'users' collection in MongoDB (Superadmins, Staff, Operators)
+    // 1. Check 'users' collection in MongoDB
     const userDoc = await db.collection('users').findOne({
       email: cleanEmail,
       status: { $ne: 'deleted' },
     });
 
-    if (userDoc) {
-      if (userDoc.status === 'suspended') {
-        return NextResponse.json(
-          { error: 'Your user account is suspended. Please contact platform administration.' },
-          { status: 403, headers: corsHeaders() }
-        );
-      }
-
-      // Verify password strictly against database record
-      const isValidPassword =
-        (userDoc.password && userDoc.password === cleanPass) ||
-        (userDoc.temporaryPassword && userDoc.temporaryPassword === cleanPass);
-
-      if (!isValidPassword) {
-        return NextResponse.json(
-          { error: 'Invalid password. Please check your credentials.' },
-          { status: 401, headers: corsHeaders() }
-        );
-      }
-
-      const { _id, password: _p, temporaryPassword: _tp, ...cleanUser } = userDoc;
-      return NextResponse.json(
-        {
-          token: `session_${userDoc.roleId || 'user'}_${Date.now()}`,
-          user: {
-            ...cleanUser,
-            id: cleanUser.id || `user_${cleanUser.email}`,
-          },
-          message: 'Signed in successfully via MongoDB',
-        },
-        { headers: corsHeaders() }
-      );
-    }
-
-    // 2. Check 'tenants' collection in MongoDB (Store Owners & Merchant Admins)
-    const tenantDoc = await db.collection('tenants').findOne({
+    // 2. Check 'tenants' collection in MongoDB
+    let tenantDoc = await db.collection('tenants').findOne({
       $or: [
         { ownerEmail: cleanEmail },
         { 'contact.email': cleanEmail },
@@ -110,56 +77,123 @@ export async function POST(request: NextRequest) {
       status: { $ne: 'deleted' },
     });
 
+    // 3. Fallback check 'platform_tenants_registry'
     if (!tenantDoc) {
+      tenantDoc = await db.collection('platform_tenants_registry').findOne({
+        $or: [
+          { ownerEmail: cleanEmail },
+          { 'contact.email': cleanEmail },
+          { slug: cleanEmail.split('@')[0] },
+          ...(tenantQuery ? [{ slug: tenantQuery.toLowerCase().trim() }] : []),
+        ],
+        status: { $ne: 'deleted' },
+      });
+    }
+
+    // If neither user nor tenant found in database
+    if (!userDoc && !tenantDoc) {
       return NextResponse.json(
         { error: `No registered account found in MongoDB for "${cleanEmail}". Please check your email or provision a store in Superadmin.` },
         { status: 401, headers: corsHeaders() }
       );
     }
 
-    // Check store lifecycle status in MongoDB
-    if (tenantDoc.status === 'suspended') {
+    // Check account status
+    if (userDoc?.status === 'suspended' || tenantDoc?.status === 'suspended') {
+      const storeName = tenantDoc?.name || 'Your account';
       return NextResponse.json(
-        { error: `Store "${tenantDoc.name}" is currently suspended in the database. Please contact platform administration.` },
+        { error: `${storeName} is currently suspended in the database. Please contact platform administration.` },
         { status: 403, headers: corsHeaders() }
       );
     }
 
-    // Strictly verify password against MongoDB tenant record
-    const permanentPass = tenantDoc.password;
-    const temporaryPass = tenantDoc.temporaryPassword;
+    // Password verification across users collection and tenants collection
+    const userMatches =
+      userDoc &&
+      ((userDoc.password && userDoc.password === cleanPass) ||
+        (userDoc.temporaryPassword && userDoc.temporaryPassword === cleanPass));
 
-    const isMatch =
-      (permanentPass && cleanPass === permanentPass) ||
-      (temporaryPass && cleanPass === temporaryPass);
+    const tenantMatches =
+      tenantDoc &&
+      ((tenantDoc.password && tenantDoc.password === cleanPass) ||
+        (tenantDoc.temporaryPassword && tenantDoc.temporaryPassword === cleanPass));
 
-    if (!isMatch) {
+    if (!userMatches && !tenantMatches) {
       return NextResponse.json(
-        {
-          error: `Incorrect password for ${tenantDoc.name}. Please enter your active password or request a reset.`,
-        },
+        { error: 'Invalid password. Please check your credentials.' },
         { status: 401, headers: corsHeaders() }
       );
     }
 
-    // Valid authenticated store owner from MongoDB
+    // Active store slug
+    const activeSlug = tenantDoc?.slug || userDoc?.tenantSlug || cleanEmail.split('@')[0];
+    const activeTenantId = tenantDoc?.id || userDoc?.tenantId || `store_${activeSlug}`;
+    const displayName = userDoc?.name || tenantDoc?.ownerName || tenantDoc?.name || 'Store Owner';
+
+    // Synchronize password across users, tenants, and platform_tenants_registry
+    try {
+      const syncFilter = {
+        $or: [
+          { slug: activeSlug },
+          { id: activeTenantId },
+          { ownerEmail: cleanEmail },
+        ],
+      };
+
+      const syncPayload = {
+        password: cleanPass,
+        temporaryPassword: cleanPass,
+        passwordUpdatedAt: now,
+        updatedAt: now,
+      };
+
+      await Promise.all([
+        db.collection('tenants').updateMany(syncFilter, { $set: syncPayload }),
+        db.collection('platform_tenants_registry').updateMany(syncFilter, { $set: syncPayload }),
+        db.collection('users').updateOne(
+          { email: cleanEmail },
+          {
+            $set: {
+              ...syncPayload,
+              tenantSlug: activeSlug,
+              tenantId: activeTenantId,
+              name: displayName,
+              roleId: userDoc?.roleId || 'role_owner',
+              role: userDoc?.role || 'owner',
+              roleName: userDoc?.roleName || 'Store Owner & Administrator',
+              status: 'active',
+            },
+            $setOnInsert: {
+              id: `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+              createdAt: now,
+            },
+          },
+          { upsert: true }
+        ),
+      ]);
+    } catch (syncErr) {
+      console.warn('Auth credentials auto-sync notice:', syncErr);
+    }
+
     const responseUser = {
-      id: tenantDoc.id || `user_${tenantDoc.slug}`,
-      name: tenantDoc.ownerName || tenantDoc.name,
-      email: tenantDoc.ownerEmail || cleanEmail,
-      roleId: 'role_owner',
-      roleName: 'Store Owner & Administrator',
-      tenantId: tenantDoc.id || `store_${tenantDoc.slug}`,
-      tenantSlug: tenantDoc.slug,
-      isTemporaryPassword: !!tenantDoc.isTemporaryPassword || !permanentPass,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop',
+      id: userDoc?.id || tenantDoc?.id || `user_${activeSlug}`,
+      name: displayName,
+      email: cleanEmail,
+      roleId: userDoc?.roleId || 'role_owner',
+      role: userDoc?.role || 'owner',
+      roleName: userDoc?.roleName || 'Store Owner & Administrator',
+      tenantId: activeTenantId,
+      tenantSlug: activeSlug,
+      storeSlug: activeSlug,
+      isTemporaryPassword: !!(tenantDoc?.isTemporaryPassword || userDoc?.isTemporaryPassword),
+      avatar: userDoc?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop',
     };
 
     return NextResponse.json(
       {
-        token: `merchant_jwt_${tenantDoc.slug}_${Date.now()}`,
+        token: `merchant_jwt_${activeSlug}_${Date.now()}`,
         user: responseUser,
-        message: 'Signed in successfully via MongoDB tenant partition',
+        message: 'Signed in successfully via MongoDB',
       },
       { headers: corsHeaders() }
     );

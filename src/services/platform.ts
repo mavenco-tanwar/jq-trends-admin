@@ -66,6 +66,10 @@ export interface TenantStore {
     monthlyRevenue: number;
     storageUsedMb: number;
   };
+  password?: string;
+  temporaryPassword?: string;
+  isTemporaryPassword?: boolean;
+  passwordUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -736,6 +740,16 @@ export class PlatformService {
       await ApiClient.post('/api/v1/platform/tenants', newStore);
     } catch {}
 
+    try {
+      if (typeof window !== 'undefined') {
+        await fetch('/api/v1/platform/tenants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newStore),
+        });
+      }
+    } catch {}
+
     // Real-time sync with storefront API
     try {
       fetch(`https://mavenco-storefront.vercel.app/api/v1/tenant-config?tenant=${newStore.slug}`, {
@@ -810,7 +824,7 @@ export class PlatformService {
 
   public static async updateTenantDetails(
     id: string,
-    updates: Partial<Pick<TenantStore, 'name' | 'slug' | 'tagline' | 'currency' | 'ownerEmail' | 'ownerName' | 'planId' | 'status' | 'theme' | 'features'>>
+    updates: Partial<Pick<TenantStore, 'name' | 'slug' | 'tagline' | 'currency' | 'ownerEmail' | 'ownerName' | 'planId' | 'status' | 'theme' | 'features' | 'password' | 'temporaryPassword' | 'isTemporaryPassword'>>
   ): Promise<TenantStore | null> {
     const list = this.loadTenants();
     const plan = updates.planId ? this.plans.find((p) => p.id === updates.planId) : null;
@@ -862,10 +876,41 @@ export class PlatformService {
           currency: (updatedStore as TenantStore).currency,
           theme: (updatedStore as TenantStore).theme,
           features: (updatedStore as TenantStore).features,
+          ownerName: (updatedStore as TenantStore).ownerName,
+          ownerEmail: (updatedStore as TenantStore).ownerEmail,
+          password: (updatedStore as any).password,
+          temporaryPassword: (updatedStore as any).temporaryPassword,
+          isTemporaryPassword: (updatedStore as any).isTemporaryPassword,
         });
       } catch (err) {
         console.error('Failed to sync tenant updates to MongoDB API:', err);
       }
+
+      try {
+        if (typeof window !== 'undefined') {
+          await fetch('/api/v1/platform/tenants', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: (updatedStore as TenantStore).id,
+              slug: (updatedStore as TenantStore).slug,
+              name: (updatedStore as TenantStore).name,
+              tagline: (updatedStore as TenantStore).tagline,
+              planId: (updatedStore as TenantStore).planId,
+              planName: (updatedStore as TenantStore).planName,
+              status: (updatedStore as TenantStore).status,
+              currency: (updatedStore as TenantStore).currency,
+              theme: (updatedStore as TenantStore).theme,
+              features: (updatedStore as TenantStore).features,
+              ownerName: (updatedStore as TenantStore).ownerName,
+              ownerEmail: (updatedStore as TenantStore).ownerEmail,
+              password: (updatedStore as any).password,
+              temporaryPassword: (updatedStore as any).temporaryPassword,
+              isTemporaryPassword: (updatedStore as any).isTemporaryPassword,
+            }),
+          });
+        }
+      } catch {}
     }
 
     return updatedStore;

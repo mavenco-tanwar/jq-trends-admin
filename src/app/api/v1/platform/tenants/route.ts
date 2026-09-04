@@ -17,11 +17,19 @@ export async function GET() {
   try {
     const db = await getDatabase();
     if (db) {
-      const tenants = await db
+      let tenants = await db
         .collection('tenants')
         .find({ status: { $ne: 'deleted' } })
         .sort({ createdAt: -1 })
         .toArray();
+
+      if (tenants.length === 0) {
+        tenants = await db
+          .collection('platform_tenants_registry')
+          .find({ status: { $ne: 'deleted' } })
+          .sort({ createdAt: -1 })
+          .toArray();
+      }
 
       if (tenants.length > 0) {
         const clean = tenants.map(({ _id, ...rest }) => rest);
@@ -41,27 +49,42 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
     if (db && body.slug) {
       const cleanSlug = body.slug.toLowerCase().trim();
-      const tempPassword = body.temporaryPassword || `Mavenco@2026!${cleanSlug}`;
+      const tempPassword = body.temporaryPassword || body.password || `Mavenco@2026!${cleanSlug}`;
       const ownerEmail = body.ownerEmail ? body.ownerEmail.toLowerCase().trim() : null;
+      const now = new Date().toISOString();
 
-      // 1. Upsert Tenant Record in MongoDB Atlas
-      await db.collection('tenants').updateOne(
-        { slug: cleanSlug },
-        {
-          $set: {
-            ...body,
-            slug: cleanSlug,
-            ownerEmail: ownerEmail || body.ownerEmail,
-            temporaryPassword: tempPassword,
-            password: tempPassword,
-            updatedAt: new Date().toISOString(),
+      const tenantRecord = {
+        ...body,
+        slug: cleanSlug,
+        ownerEmail: ownerEmail || body.ownerEmail,
+        temporaryPassword: tempPassword,
+        password: tempPassword,
+        isTemporaryPassword: body.isTemporaryPassword !== undefined ? body.isTemporaryPassword : true,
+        passwordUpdatedAt: now,
+        updatedAt: now,
+      };
+
+      const filter = { $or: [{ slug: cleanSlug }, { id: body.id || `store_${cleanSlug}` }] };
+
+      // 1. Upsert Tenant Record in both 'tenants' and 'platform_tenants_registry'
+      await Promise.all([
+        db.collection('tenants').updateOne(
+          filter,
+          {
+            $set: tenantRecord,
+            $setOnInsert: { createdAt: now },
           },
-          $setOnInsert: {
-            createdAt: new Date().toISOString(),
+          { upsert: true }
+        ),
+        db.collection('platform_tenants_registry').updateOne(
+          filter,
+          {
+            $set: tenantRecord,
+            $setOnInsert: { createdAt: now },
           },
-        },
-        { upsert: true }
-      );
+          { upsert: true }
+        ),
+      ]);
 
       // 2. Upsert Merchant Administrator Account in 'users' collection
       if (ownerEmail) {
@@ -80,13 +103,14 @@ export async function POST(request: NextRequest) {
               tenantSlug: cleanSlug,
               temporaryPassword: tempPassword,
               password: tempPassword,
-              isTemporaryPassword: true,
+              isTemporaryPassword: tenantRecord.isTemporaryPassword,
               status: body.status || 'active',
-              updatedAt: new Date().toISOString(),
+              passwordUpdatedAt: now,
+              updatedAt: now,
             },
             $setOnInsert: {
               id: `user_${ownerEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
-              createdAt: new Date().toISOString(),
+              createdAt: now,
             },
           },
           { upsert: true }
@@ -101,7 +125,7 @@ export async function POST(request: NextRequest) {
         tenantName: body.name || cleanSlug,
         severity: 'info',
         ipAddress: '127.0.0.1',
-        createdAt: new Date().toISOString(),
+        createdAt: now,
       });
     }
 
@@ -115,19 +139,61 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, slug, ...updates } = body;
-    const identifier = slug || id;
+    const identifier = (slug || id || '').toLowerCase().trim();
+    const safeSlug = identifier.replace(/^store_/, '');
+    const now = new Date().toISOString();
 
     const db = await getDatabase();
     if (db && identifier) {
-      await db.collection('tenants').updateOne(
-        { $or: [{ slug: identifier }, { id: identifier }] },
-        {
-          $set: {
-            ...updates,
-            updatedAt: new Date().toISOString(),
-          },
+      const filter = {
+        $or: [
+          { slug: identifier },
+          { id: identifier },
+          { slug: safeSlug },
+          { id: `store_${safeSlug}` },
+        ],
+      };
+
+      const setUpdates: any = {
+        ...updates,
+        updatedAt: now,
+      };
+
+      if (updates.password || updates.temporaryPassword) {
+        const pass = updates.password || updates.temporaryPassword;
+        setUpdates.password = pass;
+        setUpdates.temporaryPassword = pass;
+        setUpdates.isTemporaryPassword = updates.isTemporaryPassword !== undefined ? updates.isTemporaryPassword : false;
+        setUpdates.passwordUpdatedAt = now;
+      }
+
+      await Promise.all([
+        db.collection('tenants').updateMany(filter, { $set: setUpdates }),
+        db.collection('platform_tenants_registry').updateMany(filter, { $set: setUpdates }),
+      ]);
+
+      // If password or owner details updated, sync users collection
+      const cleanEmail = (updates.ownerEmail || updates.email || '').toLowerCase().trim();
+      if (setUpdates.password || cleanEmail || safeSlug) {
+        const userFilter: any[] = [];
+        if (cleanEmail) userFilter.push({ email: cleanEmail });
+        if (safeSlug) userFilter.push({ tenantSlug: safeSlug });
+
+        if (userFilter.length > 0) {
+          const userUpdates: any = { updatedAt: now };
+          if (setUpdates.password) {
+            userUpdates.password = setUpdates.password;
+            userUpdates.temporaryPassword = setUpdates.temporaryPassword;
+            userUpdates.isTemporaryPassword = setUpdates.isTemporaryPassword;
+            userUpdates.passwordUpdatedAt = now;
+          }
+          if (updates.ownerName) userUpdates.name = updates.ownerName;
+          if (cleanEmail) userUpdates.email = cleanEmail;
+          if (safeSlug) userUpdates.tenantSlug = safeSlug;
+
+          await db.collection('users').updateMany({ $or: userFilter }, { $set: userUpdates });
         }
-      );
+      }
 
       // Record activity in MongoDB
       if (updates.status) {
@@ -138,7 +204,7 @@ export async function PATCH(request: NextRequest) {
           tenantName: identifier,
           severity: updates.status === 'suspended' ? 'warning' : 'info',
           ipAddress: '127.0.0.1',
-          createdAt: new Date().toISOString(),
+          createdAt: now,
         });
       }
     }
@@ -152,23 +218,32 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const identifier = searchParams.get('id') || searchParams.get('slug');
+    const identifier = (searchParams.get('id') || searchParams.get('slug') || '').toLowerCase().trim();
     if (!identifier) {
       return NextResponse.json({ error: 'Missing tenant identifier' }, { status: 400, headers: corsHeaders() });
     }
 
+    const safeSlug = identifier.replace(/^store_/, '');
+    const now = new Date().toISOString();
     const db = await getDatabase();
     if (db) {
-      await db.collection('tenants').updateOne(
-        { $or: [{ slug: identifier }, { id: identifier }] },
-        {
-          $set: {
-            status: 'deleted',
-            deletedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        }
-      );
+      const filter = {
+        $or: [
+          { slug: identifier },
+          { id: identifier },
+          { slug: safeSlug },
+          { id: `store_${safeSlug}` },
+        ],
+      };
+
+      await Promise.all([
+        db.collection('tenants').updateMany(filter, {
+          $set: { status: 'deleted', deletedAt: now, updatedAt: now },
+        }),
+        db.collection('platform_tenants_registry').updateMany(filter, {
+          $set: { status: 'deleted', deletedAt: now, updatedAt: now },
+        }),
+      ]);
 
       // Record activity in MongoDB
       await db.collection('platform_activities').insertOne({
@@ -178,7 +253,7 @@ export async function DELETE(request: NextRequest) {
         tenantName: identifier,
         severity: 'critical',
         ipAddress: '127.0.0.1',
-        createdAt: new Date().toISOString(),
+        createdAt: now,
       });
     }
 
