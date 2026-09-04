@@ -33,16 +33,20 @@ export function getTenantStorefrontUrl(tenantSlug?: string, subPath: string = ''
   const base = getStorefrontBaseUrl();
   let cleanSlug = (tenantSlug || '').trim().toLowerCase();
 
-  // If missing or generic placeholder, retrieve the logged-in merchant's store slug
-  if (!cleanSlug || cleanSlug === 'demo' || cleanSlug === 'store_demo' || cleanSlug === 'all' || cleanSlug === 'jqtrends') {
+  // If missing, generic placeholder, or stale mock lumina, retrieve from logged-in user
+  if (!cleanSlug || cleanSlug === 'demo' || cleanSlug === 'store_demo' || cleanSlug === 'all' || cleanSlug === 'jqtrends' || cleanSlug === 'lumina' || cleanSlug === 'store_lumina') {
     if (typeof window !== 'undefined') {
       try {
         const raw = localStorage.getItem('jq_admin_user');
         if (raw) {
           const u = JSON.parse(raw);
-          if (u.tenantSlug && u.tenantSlug !== 'all') {
+          const isSuper =
+            u.role === 'superadmin' ||
+            u.roleId === 'role_superadmin' ||
+            (u.email && (u.email.toLowerCase().includes('superadmin') || u.email.toLowerCase() === 'admin@mavenco.com'));
+          if (!isSuper && u.tenantSlug && u.tenantSlug !== 'all' && u.tenantSlug !== 'lumina') {
             cleanSlug = u.tenantSlug.toLowerCase().trim();
-          } else if (u.storeSlug && u.storeSlug !== 'all') {
+          } else if (!isSuper && u.storeSlug && u.storeSlug !== 'all' && u.storeSlug !== 'lumina') {
             cleanSlug = u.storeSlug.toLowerCase().trim();
           }
         }
@@ -50,7 +54,7 @@ export function getTenantStorefrontUrl(tenantSlug?: string, subPath: string = ''
     }
   }
 
-  if (!cleanSlug || cleanSlug === 'demo' || cleanSlug === 'store_demo' || cleanSlug === 'all' || cleanSlug === 'jqtrends') {
+  if (!cleanSlug || cleanSlug === 'demo' || cleanSlug === 'store_demo' || cleanSlug === 'all' || cleanSlug === 'jqtrends' || cleanSlug === 'lumina' || cleanSlug === 'store_lumina') {
     cleanSlug = 'jq-trends';
   }
 

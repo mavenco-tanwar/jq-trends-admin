@@ -355,21 +355,23 @@ export class PlatformService {
   private static activities: PlatformActivityLog[] = INITIAL_ACTIVITY_LOGS;
 
     public static filterForClientUser(tenants: TenantStore[]): TenantStore[] {
-    if (typeof window === 'undefined') return tenants;
+    if (!Array.isArray(tenants)) return [];
+    // Purge any stale mock lumina store
+    const cleaned = tenants.filter(t => t.slug !== 'lumina' && t.id !== 'store_lumina');
+    if (typeof window === 'undefined') return cleaned;
     try {
       const userRaw = localStorage.getItem('jq_admin_user');
-      if (!userRaw) return tenants;
+      if (!userRaw) return cleaned;
       const u = JSON.parse(userRaw);
       const isSuper =
         u.role === 'superadmin' ||
         u.roleId === 'role_superadmin' ||
-        (u.email && u.email.toLowerCase().includes('superadmin')) ||
-        (u.email && u.email.toLowerCase() === 'admin@mavenco.com');
-      if (isSuper) return tenants;
+        (u.email && (u.email.toLowerCase().includes('superadmin') || u.email.toLowerCase() === 'admin@mavenco.com'));
+      if (isSuper) return cleaned;
 
       if (u.tenantSlug && u.tenantSlug !== 'all') {
         const clean = u.tenantSlug.toLowerCase().trim();
-        const matched = tenants.filter(
+        const matched = cleaned.filter(
           (t) =>
             t.slug.toLowerCase() === clean ||
             t.id.toLowerCase().includes(clean) ||
@@ -378,7 +380,7 @@ export class PlatformService {
         if (matched.length > 0) return matched;
       }
     } catch {}
-    return tenants;
+    return cleaned;
   }
 
   private static loadTenants(): TenantStore[] {
@@ -442,7 +444,7 @@ export class PlatformService {
 
   // Active Store Context (Tenant Switcher)
   public static getActiveTenantId(): string {
-    if (typeof window === 'undefined') return 'store_demo';
+    if (typeof window === 'undefined') return 'store_jq-trends';
 
     // 1. Check logged-in user tenant affiliation
     try {
@@ -453,13 +455,11 @@ export class PlatformService {
           u.role === 'superadmin' ||
           u.roleId === 'role_superadmin' ||
           (u.email && (u.email.toLowerCase().includes('superadmin') || u.email.toLowerCase() === 'admin@mavenco.com'));
-        if (!isSuper && u.tenantSlug && u.tenantSlug !== 'all') {
+        if (!isSuper && u.tenantSlug && u.tenantSlug !== 'all' && u.tenantSlug !== 'lumina') {
           const clean = u.tenantSlug.toLowerCase().trim();
-          const match = this.tenants.find(
-            (t) => t.slug.toLowerCase() === clean || t.id.toLowerCase() === clean
-          );
-          if (match) return match.id;
-          return u.tenantId || `store_${clean}`;
+          const targetId = u.tenantId || `store_${clean}`;
+          localStorage.setItem(CURRENT_STORE_KEY, targetId);
+          return targetId;
         }
       }
     } catch {}
@@ -468,17 +468,19 @@ export class PlatformService {
     const pathMatch = window.location.pathname.match(/^\/(stores|tenant)\/([a-zA-Z0-9_-]+)/);
     if (pathMatch) {
       const slug = pathMatch[2].toLowerCase();
-      const match = this.tenants.find((t) => t.slug.toLowerCase() === slug || t.id.toLowerCase() === slug);
-      if (match) {
-        localStorage.setItem(CURRENT_STORE_KEY, match.id);
-        return match.id;
+      if (slug !== 'lumina') {
+        const match = this.tenants.find((t) => t.slug.toLowerCase() === slug || t.id.toLowerCase() === slug);
+        if (match) {
+          localStorage.setItem(CURRENT_STORE_KEY, match.id);
+          return match.id;
+        }
       }
     }
 
     // 3. Check search params ?tenant=[slug]
     const params = new URLSearchParams(window.location.search);
     const tenantParam = params.get('tenant');
-    if (tenantParam) {
+    if (tenantParam && tenantParam.toLowerCase() !== 'lumina') {
       const match = this.tenants.find(
         (t) => t.slug.toLowerCase() === tenantParam.toLowerCase() || t.id.toLowerCase() === tenantParam.toLowerCase()
       );
@@ -488,7 +490,13 @@ export class PlatformService {
       }
     }
 
-    return localStorage.getItem(CURRENT_STORE_KEY) || 'store_demo';
+    const storedActive = localStorage.getItem(CURRENT_STORE_KEY);
+    if (!storedActive || storedActive === 'store_lumina' || storedActive === 'lumina' || storedActive === 'store_demo' || storedActive === 'demo') {
+      localStorage.setItem(CURRENT_STORE_KEY, 'store_jq-trends');
+      return 'store_jq-trends';
+    }
+
+    return storedActive;
   }
 
   public static setActiveTenantId(tenantId: string): void {
@@ -558,38 +566,40 @@ export class PlatformService {
     const found =
       list.find(
         (t) =>
-          t.id === activeId ||
-          t.slug === activeId ||
-          activeId.includes(t.slug) ||
-          t.id.includes(activeId) ||
-          (t.code && t.code.toLowerCase() === activeId.toLowerCase())
-      ) || list[0];
-    if (found) return found;
+          t.slug !== 'lumina' &&
+          t.id !== 'store_lumina' &&
+          (t.id === activeId ||
+            t.slug === activeId ||
+            activeId.includes(t.slug) ||
+            t.id.includes(activeId) ||
+            (t.code && t.code.toLowerCase() === activeId.toLowerCase()))
+      ) || list.find(t => t.slug !== 'lumina') || null;
+    if (found && found.slug !== 'lumina') return found;
 
     return {
-      id: 'store_lumina',
-      name: 'Lumina Atelier',
-      slug: 'lumina',
-      code: 'LUMINA',
-      tagline: 'Contemporary Artisanal Lighting & Objects',
+      id: 'store_jq-trends',
+      name: 'JQ Trends',
+      slug: 'jq-trends',
+      code: 'JQ',
+      tagline: 'Modern Headless Commerce Store',
       status: 'active',
-      planId: 'plan_starter',
-      planName: 'Starter Boutique Plan',
-      databaseName: 'mavenco_platform',
-      currency: 'USD',
-      ownerEmail: 'lumina@mavenco.com',
-      ownerName: 'Lumina Store Manager',
-      primaryDomain: 'lumina.mavenco.com',
+      planId: 'plan_enterprise',
+      planName: 'Enterprise Global',
+      databaseName: 'tenant_jq-trends',
+      currency: 'INR',
+      ownerEmail: 'owner@jqtrends.com',
+      ownerName: 'Store Owner',
+      primaryDomain: 'jq-trends.ourplatform.com',
       domains: [],
       theme: {
-        primaryColor: '#1E1B4B',
-        secondaryColor: '#FFFDFC',
-        accentColor: '#F59E0B',
+        primaryColor: '#12d9d6',
+        secondaryColor: '#FFFFFF',
+        accentColor: '#58587e',
         headingFont: 'Playfair Display',
         bodyFont: 'Plus Jakarta Sans',
         borderRadius: 'md',
       },
-      metrics: { products: 24, orders: 120, customers: 98, monthlyRevenue: 18500, storageUsedMb: 64 },
+      metrics: { products: 12, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

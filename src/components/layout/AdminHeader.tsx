@@ -46,6 +46,17 @@ export function AdminHeader({
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isStoreSwitcherOpen, setIsStoreSwitcherOpen] = useState(false);
 
+  // Auto-purge stale lumina session if present
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const activeId = localStorage.getItem('jq_saas_active_tenant_id');
+      if (activeId === 'store_lumina' || activeId === 'lumina') {
+        localStorage.setItem('jq_saas_active_tenant_id', 'store_jq-trends');
+        setActiveTenant(PlatformService.getActiveTenant());
+      }
+    }
+  }, []);
+
   // Dropdown click-outside refs
   const quickCreateRef = useRef<HTMLDivElement>(null);
   const storeSwitcherRef = useRef<HTMLDivElement>(null);
@@ -335,10 +346,11 @@ export function AdminHeader({
             <>
               {/* Storefront Link */}
               {(() => {
+                const userSlug = (user?.tenantSlug || (user as any)?.storeSlug);
                 const loggedInStoreSlug =
-                  (!isSuperadminUser && (user?.tenantSlug || (user as any)?.storeSlug))
-                    ? ((user?.tenantSlug || (user as any)?.storeSlug) as string).toLowerCase().trim()
-                    : activeTenant?.slug || 'jq-trends';
+                  (!isSuperadminUser && userSlug && userSlug !== 'all' && userSlug !== 'lumina')
+                    ? (userSlug as string).toLowerCase().trim()
+                    : (activeTenant?.slug && activeTenant.slug !== 'lumina' ? activeTenant.slug : 'jq-trends');
                 const viewStoreUrl = getTenantStorefrontUrl(loggedInStoreSlug);
 
                 return (

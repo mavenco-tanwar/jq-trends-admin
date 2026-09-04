@@ -22,6 +22,10 @@ export class AuthService {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jq_admin_token', data.token);
       localStorage.setItem('jq_admin_user', JSON.stringify(data.user));
+      const storeSlug = data.user.tenantSlug || (data.user as any).storeSlug;
+      if (storeSlug && storeSlug !== 'all' && storeSlug !== 'lumina') {
+        localStorage.setItem('jq_saas_active_tenant_id', data.user.tenantId || `store_${storeSlug}`);
+      }
     }
 
     return {

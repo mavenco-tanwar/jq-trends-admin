@@ -182,7 +182,11 @@ export default function DashboardOverviewPage() {
           </Link>
 
           <a
-            href={getTenantStorefrontUrl(PlatformService.getActiveTenant().slug)}
+            href={getTenantStorefrontUrl(
+              PlatformService.getActiveTenant().slug !== 'lumina'
+                ? PlatformService.getActiveTenant().slug
+                : 'jq-trends'
+            )}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#10121A] hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 text-xs font-semibold transition-all"
