@@ -38,7 +38,7 @@ export function AdminHeader({
 
   const { user } = useAuth();
   const isSuperadminUser =
-    user?.role === 'superadmin' ||
+    (user as any)?.role === 'superadmin' ||
     user?.roleId === 'role_superadmin' ||
     (user?.email ? user.email.toLowerCase().includes('superadmin') || user.email.toLowerCase() === 'admin@mavenco.com' : false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -352,7 +352,7 @@ export function AdminHeader({
             <>
               {/* Storefront Link */}
               {(() => {
-                const userSlug = (user?.tenantSlug || (user as any)?.storeSlug);
+                const userSlug = ((user as any)?.tenantSlug || (user as any)?.storeSlug);
                 const loggedInStoreSlug =
                   (!isSuperadminUser && userSlug && userSlug !== 'all' && userSlug !== 'lumina')
                     ? (userSlug as string).toLowerCase().trim()

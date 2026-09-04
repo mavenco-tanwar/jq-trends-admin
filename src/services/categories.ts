@@ -44,24 +44,59 @@ function normalizeCategory(raw: any): Category {
   };
 }
 
+/**
+ * Builds a hierarchical tree from a flat list of category documents.
+ * Correctly nests subcategories (where parentId !== null) inside their matching parent's children array.
+ */
+export function buildCategoryTree(flatList: Category[]): Category[] {
+  const map = new Map<string, Category>();
+  const roots: Category[] = [];
+
+  // Initialize all nodes with an empty children array
+  flatList.forEach((c) => {
+    map.set(c.id, { ...c, children: [] });
+  });
+
+  // Attach children to matching parents, or mark as root
+  flatList.forEach((c) => {
+    const node = map.get(c.id)!;
+    if (c.parentId && map.has(c.parentId)) {
+      map.get(c.parentId)!.children!.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots;
+}
+
 export class CategoryService {
   private static localCategories: Category[] = [];
 
-  static async getAll(): Promise<Category[]> {
+  /**
+   * Returns the flat list of all categories for the active tenant.
+   */
+  static async getFlatList(): Promise<Category[]> {
     const tenantSlug = getActiveTenantSlug();
     try {
       const res = await ApiClient.get<any[]>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`);
       if (res && Array.isArray(res.data)) {
-        const normalized = res.data.map(normalizeCategory);
-        this.localCategories = normalized;
-        return normalized;
+        return res.data.map(normalizeCategory);
       }
     } catch (err) {
       console.warn(`[CategoryService] Could not fetch categories for tenant '${tenantSlug}':`, err);
     }
-    // Strict zero-fallback rule: Return empty array when no categories are created yet
-    this.localCategories = [];
     return [];
+  }
+
+  /**
+   * Returns categories structured as a nested hierarchy tree (Departments with nested Subcategories).
+   */
+  static async getAll(): Promise<Category[]> {
+    const flat = await this.getFlatList();
+    const tree = buildCategoryTree(flat);
+    this.localCategories = tree;
+    return tree;
   }
 
   static async create(category: Partial<Category>): Promise<Category> {
@@ -78,7 +113,7 @@ export class CategoryService {
         description: category.description || '',
         imageUrl: category.imageUrl || '',
         parentId: category.parentId || null,
-        displayOrder: this.localCategories.length + 1,
+        displayOrder: 1,
         isVisible: category.isVisible ?? true,
         productCount: 0,
         seo: category.seo || { title: cleanName },
@@ -92,14 +127,12 @@ export class CategoryService {
       const res = await ApiClient.post<any>('/api/v1/categories', newCat);
       if (res && res.data) {
         const persisted = normalizeCategory(res.data);
-        this.localCategories.push(persisted);
         return persisted;
       }
     } catch (err) {
       console.error('[CategoryService] Failed to persist category to database:', err);
     }
 
-    this.localCategories.push(newCat);
     return newCat;
   }
 
@@ -115,22 +148,7 @@ export class CategoryService {
       console.warn('[CategoryService] Failed to update category via API:', err);
     }
 
-    this.localCategories = this.localCategories.map((c) => {
-      if (c.id === id) return { ...c, ...updates };
-      if (c.children) {
-        return {
-          ...c,
-          children: c.children.map((sub) => (sub.id === id ? { ...sub, ...updates } : sub)),
-        };
-      }
-      return c;
-    });
-
-    const updated = this.localCategories.find((c) => c.id === id);
-    if (!updated) {
-      return normalizeCategory({ id, ...updates });
-    }
-    return updated;
+    return normalizeCategory({ id, ...updates });
   }
 
   static async delete(id: string): Promise<void> {
@@ -140,6 +158,5 @@ export class CategoryService {
     } catch (err) {
       console.warn('[CategoryService] Failed to delete category via API:', err);
     }
-    this.localCategories = this.localCategories.filter((c) => c.id !== id);
   }
 }

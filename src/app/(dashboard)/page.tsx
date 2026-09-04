@@ -61,9 +61,9 @@ export default function DashboardOverviewPage() {
   const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000;
   const monthStart = todayStart - 30 * 24 * 60 * 60 * 1000;
 
-  const todayOrders = orders.filter((o) => new Date(o.placedAt || o.createdAt || o.updatedAt).getTime() >= todayStart);
-  const weekOrders = orders.filter((o) => new Date(o.placedAt || o.createdAt || o.updatedAt).getTime() >= weekStart);
-  const monthOrders = orders.filter((o) => new Date(o.placedAt || o.createdAt || o.updatedAt).getTime() >= monthStart);
+  const todayOrders = orders.filter((o) => new Date(o.placedAt || (o as any).createdAt || o.updatedAt).getTime() >= todayStart);
+  const weekOrders = orders.filter((o) => new Date(o.placedAt || (o as any).createdAt || o.updatedAt).getTime() >= weekStart);
+  const monthOrders = orders.filter((o) => new Date(o.placedAt || (o as any).createdAt || o.updatedAt).getTime() >= monthStart);
 
   const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
   const weekRevenue = weekOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);

@@ -104,6 +104,8 @@ export interface Product {
   sku: string;
   brand: string;
   categoryIds: string[];
+  department?: string;
+  category?: string;
   collectionIds: string[];
   price: number;
   compareAtPrice?: number;

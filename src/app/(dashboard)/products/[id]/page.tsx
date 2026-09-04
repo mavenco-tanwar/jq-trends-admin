@@ -47,6 +47,8 @@ export default function EditProductPage() {
   const [brand, setBrand] = useState('JQ Trends');
   const [category, setCategory] = useState('');
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [departmentId, setDepartmentId] = useState('');
+  const [subcategoryId, setSubcategoryId] = useState('');
 
   useEffect(() => {
     CategoryService.getAll().then((list) => {
@@ -81,7 +83,7 @@ export default function EditProductPage() {
         setTitle(p.title);
         setSlug(p.slug);
         setBrand(p.brand || 'JQ Trends');
-        setCategory(p.categoryIds[0] || 'cat_women');
+        setCategory(p.categoryIds?.[0] || '');
         setShortDesc(p.shortDescription || '');
         setDescription(p.description || '');
         setPrice(String(p.price));
@@ -205,7 +207,9 @@ export default function EditProductPage() {
         description,
         brand,
         sku,
-        categoryIds: [category],
+        categoryIds: subcategoryId ? [subcategoryId, departmentId] : departmentId ? [departmentId] : [category],
+        department: departmentId,
+        category: subcategoryId || departmentId || category,
         price: parseFloat(price) || 0,
         compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : undefined,
         costPrice: costPrice ? parseFloat(costPrice) : undefined,
@@ -329,39 +333,102 @@ export default function EditProductPage() {
             </div>
           </div>
 
+          {/* Department & Subcategory Selection */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-slate-300 font-bold mb-1">Department Category</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-300 font-bold">Primary Department Category *</label>
+                <span className="text-[10px] px-2 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded font-bold uppercase tracking-wider">
+                  Department
+                </span>
+              </div>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white text-xs"
+                value={departmentId}
+                onChange={(e) => {
+                  const newDeptId = e.target.value;
+                  setDepartmentId(newDeptId);
+                  setSubcategoryId('');
+                  setCategory(newDeptId);
+                }}
+                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white text-xs font-medium"
               >
                 {availableCategories.length === 0 ? (
                   <option value="">No categories created yet (Create one in Categories menu)</option>
                 ) : (
-                  availableCategories.map((c) => (
-                    <React.Fragment key={c.id}>
-                      <option value={c.id || c.slug}>{c.name}</option>
-                      {c.children && c.children.map((sub) => (
-                        <option key={sub.id} value={sub.id || sub.slug}>
-                          &nbsp;&nbsp;↳ {sub.name}
-                        </option>
-                      ))}
-                    </React.Fragment>
+                  availableCategories.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      📁 {dept.name}
+                    </option>
                   ))
                 )}
               </select>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Main department organizing this product on the storefront.
+              </p>
             </div>
+
             <div>
-              <label className="block text-slate-300 font-bold mb-1">Brand</label>
-              <input
-                type="text"
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-                className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-300 font-bold">Subcategory (Optional)</label>
+                <span className="text-[10px] px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded font-bold uppercase tracking-wider">
+                  Subcategory
+                </span>
+              </div>
+              {(() => {
+                const currentDept = availableCategories.find((d) => d.id === departmentId);
+                const subcategories = currentDept?.children || [];
+
+                if (subcategories.length === 0) {
+                  return (
+                    <div>
+                      <select
+                        disabled
+                        className="w-full px-3 py-2 bg-[#10121A]/50 border border-slate-800 rounded-lg text-slate-500 text-xs font-mono cursor-not-allowed"
+                      >
+                        <option>None (No subcategories in this department)</option>
+                      </select>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        To add a subcategory under &quot;{currentDept?.name || 'this department'}&quot;, go to Categories.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div>
+                    <select
+                      value={subcategoryId}
+                      onChange={(e) => {
+                        const newSubId = e.target.value;
+                        setSubcategoryId(newSubId);
+                        setCategory(newSubId || departmentId);
+                      }}
+                      className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white text-xs font-medium"
+                    >
+                      <option value="">-- No Specific Subcategory (Entire {currentDept?.name}) --</option>
+                      {subcategories.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          ↳ {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-purple-400/90 mt-1">
+                      {subcategories.length} subcategory option{subcategories.length > 1 ? 's' : ''} available under {currentDept?.name}.
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-bold mb-1">Brand</label>
+            <input
+              type="text"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              className="w-full px-3 py-2 bg-[#10121A] border border-slate-700/80 rounded-lg text-white"
+            />
           </div>
 
           <div>
