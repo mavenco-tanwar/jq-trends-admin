@@ -190,36 +190,25 @@ export function AdminHeader({
       )}
 
       <header className="sticky top-0 z-20 bg-[#12141D]/90 backdrop-blur-md border-b border-slate-800/90 h-16 flex items-center justify-between px-4 sm:px-6 select-none">
-        {/* Left: Mobile Hamburger, Store Switcher or Superadmin Brand Badge */}
-        <div className="flex items-center gap-3">
+        {/* Left: Mobile Hamburger, Store Switcher (superadmin only) & Lengthy Search */}
+        <div className="flex items-center gap-3 flex-1 max-w-2xl mr-4">
           <button
             onClick={onOpenMobileSidebar}
-            className="md:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+            className="md:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0"
           >
             <Menu className="w-5 h-5" />
           </button>
 
           {isSuperadminRoute ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161822] border border-rose-500/30 rounded-xl text-xs shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161822] border border-rose-500/30 rounded-xl text-xs shadow-sm shrink-0">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="font-bold text-white">Global Platform Control Plane</span>
               <span className="hidden sm:inline text-slate-500">•</span>
               <span className="hidden sm:inline text-rose-400 font-mono font-bold">{tenants.length} Tenant Partitions</span>
             </div>
-          ) : !isSuperadminUser ? (
-            /* Client Admin Panel: Clean Static Store Badge (NO DROPDOWN, NO OTHER STORES) */
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161822] border border-slate-700/80 rounded-lg text-xs font-bold text-white shadow-sm select-none">
-              <div
-                className="w-4 h-4 rounded flex items-center justify-center text-[10px] text-white shrink-0 font-bold"
-                style={{ backgroundColor: activeTenant.theme?.primaryColor || '#111111' }}
-              >
-                {activeTenant.code || activeTenant.name.substring(0, 1)}
-              </div>
-              <span className="max-w-[140px] sm:max-w-[200px] truncate">{activeTenant.name}</span>
-            </div>
-          ) : (
+          ) : isSuperadminUser ? (
             /* Store Switcher Dropdown (Superadmin only) */
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setIsStoreSwitcherOpen(!isStoreSwitcherOpen)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-[#161822] hover:bg-[#1C1F2C] border border-slate-700/80 rounded-lg text-xs font-bold text-white transition-all shadow-sm"
@@ -284,16 +273,16 @@ export function AdminHeader({
                 </div>
               )}
             </div>
-          )}
+          ) : null}
 
           {!isSuperadminRoute && (
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 bg-[#161822] hover:bg-[#1C1F2C] border border-slate-700/80 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition-all w-36 sm:w-56"
+              className="flex items-center gap-2.5 px-3.5 py-2 bg-[#161822] hover:bg-[#1C1F2C] border border-slate-700/80 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition-all w-full max-w-lg lg:max-w-xl shadow-inner"
             >
-              <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">Search catalog, orders...</span>
-              <kbd className="hidden sm:inline-block ml-auto text-[10px] font-mono bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 border border-slate-700">
+              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="truncate">Search catalog, orders, customers...</span>
+              <kbd className="hidden sm:inline-block ml-auto text-[10px] font-mono bg-slate-800/90 px-2 py-0.5 rounded text-slate-400 border border-slate-700 shrink-0">
                 ⌘K
               </kbd>
             </button>
