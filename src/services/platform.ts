@@ -454,20 +454,13 @@ export class PlatformService {
   public static getActiveTenantId(): string {
     if (typeof window === 'undefined') return 'store_jq-trends';
 
-    // 1. Check logged-in user tenant affiliation
+    // 1. Check active impersonation session
     try {
-      const userRaw = localStorage.getItem('jq_admin_user');
-      if (userRaw) {
-        const u = JSON.parse(userRaw);
-        const isSuper =
-          u.role === 'superadmin' ||
-          u.roleId === 'role_superadmin' ||
-          (u.email && (u.email.toLowerCase().includes('superadmin') || u.email.toLowerCase() === 'admin@mavenco.com'));
-        if (!isSuper && u.tenantSlug && u.tenantSlug !== 'all' && u.tenantSlug !== 'lumina') {
-          const clean = u.tenantSlug.toLowerCase().trim();
-          const targetId = u.tenantId || `store_${clean}`;
-          localStorage.setItem(CURRENT_STORE_KEY, targetId);
-          return targetId;
+      const impRaw = localStorage.getItem(IMPERSONATION_KEY);
+      if (impRaw) {
+        const imp = JSON.parse(impRaw);
+        if (imp && (imp.id || imp.slug)) {
+          return imp.id || `store_${imp.slug}`;
         }
       }
     } catch {}
@@ -480,8 +473,10 @@ export class PlatformService {
         const match = this.tenants.find((t) => t.slug.toLowerCase() === slug || t.id.toLowerCase() === slug);
         if (match) {
           localStorage.setItem(CURRENT_STORE_KEY, match.id);
+          localStorage.setItem('jq_saas_active_tenant_slug', match.slug);
           return match.id;
         }
+        return `store_${slug}`;
       }
     }
 
@@ -489,27 +484,52 @@ export class PlatformService {
     const params = new URLSearchParams(window.location.search);
     const tenantParam = params.get('tenant');
     if (tenantParam && tenantParam.toLowerCase() !== 'lumina') {
+      const clean = tenantParam.toLowerCase().trim();
       const match = this.tenants.find(
-        (t) => t.slug.toLowerCase() === tenantParam.toLowerCase() || t.id.toLowerCase() === tenantParam.toLowerCase()
+        (t) => t.slug.toLowerCase() === clean || t.id.toLowerCase() === clean
       );
       if (match) {
         localStorage.setItem(CURRENT_STORE_KEY, match.id);
+        localStorage.setItem('jq_saas_active_tenant_slug', match.slug);
         return match.id;
       }
+      return clean.startsWith('store_') ? clean : `store_${clean}`;
     }
 
+    // 4. Stored active tenant ID (highest priority for user who switched stores)
     const storedActive = localStorage.getItem(CURRENT_STORE_KEY);
-    if (!storedActive || storedActive === 'store_lumina' || storedActive === 'lumina' || storedActive === 'store_demo' || storedActive === 'demo') {
-      localStorage.setItem(CURRENT_STORE_KEY, 'store_jq-trends');
-      return 'store_jq-trends';
+    if (storedActive && storedActive !== 'store_lumina' && storedActive !== 'lumina' && storedActive !== 'store_demo' && storedActive !== 'demo') {
+      return storedActive;
     }
 
-    return storedActive;
+    const storedSlug = localStorage.getItem('jq_saas_active_tenant_slug');
+    if (storedSlug && storedSlug !== 'all' && storedSlug !== 'lumina') {
+      return storedSlug.startsWith('store_') ? storedSlug : `store_${storedSlug}`;
+    }
+
+    // 5. Check logged-in user tenant affiliation
+    try {
+      const userRaw = localStorage.getItem('jq_admin_user');
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        if (u.tenantSlug && u.tenantSlug !== 'all' && u.tenantSlug !== 'lumina') {
+          const clean = u.tenantSlug.toLowerCase().trim();
+          const targetId = u.tenantId || `store_${clean}`;
+          return targetId;
+        }
+      }
+    } catch {}
+
+    return 'store_jq-trends';
   }
 
   public static setActiveTenantId(tenantId: string): void {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(CURRENT_STORE_KEY, tenantId);
+      const cleanSlug = tenantId.replace(/^store_/, '').toLowerCase().trim();
+      const normalizedId = tenantId.startsWith('store_') ? tenantId : `store_${tenantId}`;
+      localStorage.setItem(CURRENT_STORE_KEY, normalizedId);
+      localStorage.setItem('jq_saas_active_tenant_slug', cleanSlug);
+      window.dispatchEvent(new Event('tenant_updated'));
     }
   }
 
@@ -546,62 +566,9 @@ export class PlatformService {
   public static getActiveTenant(): TenantStore {
     const list = this.loadTenants();
     const activeId = this.getActiveTenantId();
-
-    // Client user check
-    if (typeof window !== 'undefined') {
-      const userRaw = localStorage.getItem('jq_admin_user');
-      if (userRaw) {
-        try {
-          const u = JSON.parse(userRaw);
-          const isSuper =
-            u.role === 'superadmin' ||
-            u.roleId === 'role_superadmin' ||
-            (u.email && u.email.toLowerCase().includes('superadmin')) ||
-            (u.email && u.email.toLowerCase() === 'admin@mavenco.com');
-
-          if (!isSuper && u.tenantSlug && u.tenantSlug !== 'all') {
-            const clean = u.tenantSlug.toLowerCase().trim();
-            const clientStore = list.find(
-              (t) =>
-                t.slug.toLowerCase() === clean ||
-                t.id.toLowerCase().includes(clean) ||
-                (t.ownerEmail && t.ownerEmail.toLowerCase() === (u.email || '').toLowerCase())
-            );
-            if (clientStore) return clientStore;
-            // Fallback: construct store from user credentials
-            return {
-              id: `store_${clean}`,
-              name: clean.split(/[-_]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-              slug: clean,
-              code: clean.substring(0, 2).toUpperCase(),
-              tagline: 'Modern Headless Commerce Store',
-              status: 'active',
-              planId: 'plan_enterprise',
-              planName: 'Enterprise Global',
-              databaseName: `tenant_${clean}`,
-              currency: 'INR',
-              ownerEmail: u.email || '',
-              ownerName: u.name || 'Store Owner',
-              primaryDomain: `${clean}.ourplatform.com`,
-              domains: [],
-              theme: {
-                primaryColor: '#12d9d6',
-                secondaryColor: '#FFFFFF',
-                accentColor: '#58587e',
-                headingFont: 'Playfair Display',
-                bodyFont: 'Plus Jakarta Sans',
-                borderRadius: 'md',
-              },
-              metrics: { products: 2, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-          }
-        } catch {}
-      }
-    }
-
     const cleanSlug = activeId.replace(/^store_/, '').toLowerCase().trim();
+
+    // 1. Primary check: Locate the store matching the actively selected tenant ID / slug
     const found =
       list.find(
         (t) =>
@@ -613,6 +580,37 @@ export class PlatformService {
             (t.code && t.code.toLowerCase() === cleanSlug))
       );
     if (found) return found;
+
+    // 2. Check active impersonation session
+    if (typeof window !== 'undefined') {
+      try {
+        const impRaw = localStorage.getItem(IMPERSONATION_KEY);
+        if (impRaw) {
+          const imp = JSON.parse(impRaw);
+          if (imp && (imp.id || imp.slug)) return imp;
+        }
+      } catch {}
+    }
+
+    // 3. Fallback: check logged-in user credentials if activeId was not found in registered list
+    if (typeof window !== 'undefined') {
+      const userRaw = localStorage.getItem('jq_admin_user');
+      if (userRaw) {
+        try {
+          const u = JSON.parse(userRaw);
+          if (u.tenantSlug && u.tenantSlug !== 'all' && u.tenantSlug !== 'lumina') {
+            const clean = u.tenantSlug.toLowerCase().trim();
+            const clientStore = list.find(
+              (t) =>
+                t.slug.toLowerCase() === clean ||
+                t.id.toLowerCase().includes(clean) ||
+                (t.ownerEmail && t.ownerEmail.toLowerCase() === (u.email || '').toLowerCase())
+            );
+            if (clientStore) return clientStore;
+          }
+        } catch {}
+      }
+    }
 
     if (cleanSlug === 'muskan-clothing-store' || cleanSlug === 'muskan-clothing') {
       return {
