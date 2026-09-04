@@ -50,6 +50,7 @@ import { useToast } from '@/lib/toast-context';
 import { ApiClient } from '@/services/api';
 import { PlatformService } from '@/services/platform';
 import { ImageUploadInput } from '@/components/ui/ImageUploadInput';
+import { CategoryService } from '@/services/categories';
 
 interface HomepageSection {
   id: string;
@@ -1322,6 +1323,192 @@ export default function HomepageBuilderStudio() {
                       folder="Homepage"
                     />
                   )}
+                </div>
+              )}
+
+              {/* Department & Category Cards Editor */}
+              {(editingSection.type === 'categories' || editingSection.data?.categoriesList !== undefined) && (
+                <div className="space-y-4 pt-4 border-t border-slate-800/80">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-xs font-bold text-slate-200">Department / Category Showcase Cards</span>
+                      <p className="text-[11px] text-slate-400">
+                        Customize cards shown on the storefront homepage or sync them dynamically from your store catalog.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const storeCats = await CategoryService.getAll();
+                          if (storeCats.length === 0) {
+                            showToast('No categories created in this store yet. Create categories in Catalog > Categories first!', 'info');
+                            return;
+                          }
+                          const syncedList = storeCats.map((c) => ({
+                            id: c.id || c.slug,
+                            label: c.name,
+                            image: c.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop',
+                            href: `/collections?category=${c.slug || c.id}`,
+                            count: c.description || 'Explore Collection',
+                            badge: c.seo?.title || 'Collection',
+                          }));
+                          handleUpdateEditingSection({
+                            data: {
+                              ...editingSection.data,
+                              categoriesList: syncedList,
+                            },
+                          });
+                          showToast(`✨ Synced ${syncedList.length} store categories to homepage!`, 'success');
+                        } catch (err: any) {
+                          showToast('Failed to sync categories: ' + err.message, 'error');
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition-colors shrink-0"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Sync from Store Categories</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {((editingSection.data?.categoriesList as any[]) || []).map((catItem, idx) => (
+                      <div key={idx} className="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-white flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] flex items-center justify-center font-mono">
+                              {idx + 1}
+                            </span>
+                            {catItem.label || `Card #${idx + 1}`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const list = [...(editingSection.data?.categoriesList || [])];
+                              list.splice(idx, 1);
+                              handleUpdateEditingSection({
+                                data: {
+                                  ...editingSection.data,
+                                  categoriesList: list,
+                                },
+                              });
+                            }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1 font-medium">Department Label</label>
+                            <input
+                              type="text"
+                              value={catItem.label || ''}
+                              onChange={(e) => {
+                                const list = [...(editingSection.data?.categoriesList || [])];
+                                list[idx] = { ...list[idx], label: e.target.value };
+                                handleUpdateEditingSection({
+                                  data: { ...editingSection.data, categoriesList: list },
+                                });
+                              }}
+                              className="w-full px-3 py-1.5 bg-[#0B0D14] border border-slate-800 rounded-lg text-white text-xs"
+                              placeholder="e.g. Dresses, Luxury Sets"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1 font-medium">Tagline / Subtext</label>
+                            <input
+                              type="text"
+                              value={catItem.count || catItem.tagline || ''}
+                              onChange={(e) => {
+                                const list = [...(editingSection.data?.categoriesList || [])];
+                                list[idx] = { ...list[idx], count: e.target.value, tagline: e.target.value };
+                                handleUpdateEditingSection({
+                                  data: { ...editingSection.data, categoriesList: list },
+                                });
+                              }}
+                              className="w-full px-3 py-1.5 bg-[#0B0D14] border border-slate-800 rounded-lg text-white text-xs"
+                              placeholder="e.g. Handcrafted couture"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1 font-medium">Link URL</label>
+                            <input
+                              type="text"
+                              value={catItem.href || ''}
+                              onChange={(e) => {
+                                const list = [...(editingSection.data?.categoriesList || [])];
+                                list[idx] = { ...list[idx], href: e.target.value };
+                                handleUpdateEditingSection({
+                                  data: { ...editingSection.data, categoriesList: list },
+                                });
+                              }}
+                              className="w-full px-3 py-1.5 bg-[#0B0D14] border border-slate-800 rounded-lg text-white text-xs font-mono"
+                              placeholder="/collections?category=dresses"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1 font-medium">Badge Callout</label>
+                            <input
+                              type="text"
+                              value={catItem.badge || ''}
+                              onChange={(e) => {
+                                const list = [...(editingSection.data?.categoriesList || [])];
+                                list[idx] = { ...list[idx], badge: e.target.value };
+                                handleUpdateEditingSection({
+                                  data: { ...editingSection.data, categoriesList: list },
+                                });
+                              }}
+                              className="w-full px-3 py-1.5 bg-[#0B0D14] border border-slate-800 rounded-lg text-white text-xs"
+                              placeholder="e.g. Bestselling, New"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <ImageUploadInput
+                            label="Card Background Image"
+                            description="High-resolution visual portrait for this category"
+                            value={catItem.image || catItem.imageUrl || ''}
+                            onChange={(url) => {
+                              const list = [...(editingSection.data?.categoriesList || [])];
+                              list[idx] = { ...list[idx], image: url, imageUrl: url };
+                              handleUpdateEditingSection({
+                                data: { ...editingSection.data, categoriesList: list },
+                              });
+                            }}
+                            aspectRatio="3/4"
+                            folder="Categories"
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const list = [...(editingSection.data?.categoriesList || [])];
+                        list.push({
+                          label: 'New Department',
+                          image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop',
+                          href: '/collections',
+                          count: 'Explore Collection',
+                          badge: 'Trending',
+                        });
+                        handleUpdateEditingSection({
+                          data: { ...editingSection.data, categoriesList: list },
+                        });
+                      }}
+                      className="w-full py-2.5 rounded-xl border border-dashed border-slate-700 hover:border-rose-500/50 bg-slate-900/40 hover:bg-rose-500/5 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4 text-rose-400" />
+                      <span>+ Add Department Card</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
