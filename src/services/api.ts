@@ -29,10 +29,33 @@ export function getStorefrontBaseUrl(): string {
   return raw;
 }
 
-export function getTenantStorefrontUrl(tenantSlug: string = 'jqtrends', subPath: string = ''): string {
+export function getTenantStorefrontUrl(tenantSlug?: string, subPath: string = ''): string {
   const base = getStorefrontBaseUrl();
+  let cleanSlug = (tenantSlug || '').trim().toLowerCase();
+
+  // If missing or generic placeholder, retrieve the logged-in merchant's store slug
+  if (!cleanSlug || cleanSlug === 'demo' || cleanSlug === 'store_demo' || cleanSlug === 'all' || cleanSlug === 'jqtrends') {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('jq_admin_user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u.tenantSlug && u.tenantSlug !== 'all') {
+            cleanSlug = u.tenantSlug.toLowerCase().trim();
+          } else if (u.storeSlug && u.storeSlug !== 'all') {
+            cleanSlug = u.storeSlug.toLowerCase().trim();
+          }
+        }
+      } catch {}
+    }
+  }
+
+  if (!cleanSlug || cleanSlug === 'demo' || cleanSlug === 'store_demo' || cleanSlug === 'all' || cleanSlug === 'jqtrends') {
+    cleanSlug = 'jq-trends';
+  }
+
   const cleanPath = subPath ? (subPath.startsWith('/') ? subPath : `/${subPath}`) : '';
-  return `${base}/stores/${tenantSlug}${cleanPath}`;
+  return `${base}/stores/${cleanSlug}${cleanPath}`;
 }
 
 const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID || 'store_jq_trends';

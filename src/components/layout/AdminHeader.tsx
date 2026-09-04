@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -45,6 +45,35 @@ export function AdminHeader({
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isStoreSwitcherOpen, setIsStoreSwitcherOpen] = useState(false);
+
+  // Dropdown click-outside refs
+  const quickCreateRef = useRef<HTMLDivElement>(null);
+  const storeSwitcherRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (quickCreateRef.current && !quickCreateRef.current.contains(event.target as Node)) {
+        setIsQuickCreateOpen(false);
+      }
+      if (storeSwitcherRef.current && !storeSwitcherRef.current.contains(event.target as Node)) {
+        setIsStoreSwitcherOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsQuickCreateOpen(false);
+        setIsStoreSwitcherOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Multi-Tenant Context
   const [tenants, setTenants] = useState<TenantStore[]>([]);
@@ -208,7 +237,7 @@ export function AdminHeader({
             </div>
           ) : isSuperadminUser ? (
             /* Store Switcher Dropdown (Superadmin only) */
-            <div className="relative shrink-0">
+            <div ref={storeSwitcherRef} className="relative shrink-0">
               <button
                 onClick={() => setIsStoreSwitcherOpen(!isStoreSwitcherOpen)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-[#161822] hover:bg-[#1C1F2C] border border-slate-700/80 rounded-lg text-xs font-bold text-white transition-all shadow-sm"
@@ -305,22 +334,33 @@ export function AdminHeader({
           ) : (
             <>
               {/* Storefront Link */}
-              <a
-                href={getTenantStorefrontUrl(activeTenant.slug)}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161822] hover:bg-[#1C1F2C] border border-slate-700/80 text-slate-300 hover:text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
-                title="Open Live Customer Storefront"
-              >
-                <Store className="w-3.5 h-3.5 text-rose-400" />
-                <span className="hidden sm:inline">View Store</span>
-                <ExternalLink className="w-3 h-3 text-slate-400" />
-              </a>
+              {(() => {
+                const loggedInStoreSlug =
+                  (!isSuperadminUser && (user?.tenantSlug || (user as any)?.storeSlug))
+                    ? ((user?.tenantSlug || (user as any)?.storeSlug) as string).toLowerCase().trim()
+                    : activeTenant?.slug || 'jq-trends';
+                const viewStoreUrl = getTenantStorefrontUrl(loggedInStoreSlug);
+
+                return (
+                  <a
+                    href={viewStoreUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161822] hover:bg-[#1C1F2C] border border-slate-700/80 text-slate-300 hover:text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+                    title={`Open Live Storefront (${loggedInStoreSlug})`}
+                  >
+                    <Store className="w-3.5 h-3.5 text-rose-400" />
+                    <span className="hidden sm:inline">View Store</span>
+                    <ExternalLink className="w-3 h-3 text-slate-400" />
+                  </a>
+                );
+              })()}
 
               {/* Quick Create Dropdown */}
-              <div className="relative">
+              <div ref={quickCreateRef} className="relative">
                 <button
-                  onClick={() => setIsQuickCreateOpen(!isQuickCreateOpen)}
+                  type="button"
+                  onClick={() => setIsQuickCreateOpen((prev) => !prev)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow-md shadow-rose-950/40 transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" />

@@ -449,11 +449,17 @@ export class PlatformService {
       const userRaw = localStorage.getItem('jq_admin_user');
       if (userRaw) {
         const u = JSON.parse(userRaw);
-        if (u.tenantSlug && u.tenantSlug !== 'all') {
+        const isSuper =
+          u.role === 'superadmin' ||
+          u.roleId === 'role_superadmin' ||
+          (u.email && (u.email.toLowerCase().includes('superadmin') || u.email.toLowerCase() === 'admin@mavenco.com'));
+        if (!isSuper && u.tenantSlug && u.tenantSlug !== 'all') {
+          const clean = u.tenantSlug.toLowerCase().trim();
           const match = this.tenants.find(
-            (t) => t.slug.toLowerCase() === u.tenantSlug.toLowerCase() || t.id.toLowerCase() === u.tenantSlug.toLowerCase()
+            (t) => t.slug.toLowerCase() === clean || t.id.toLowerCase() === clean
           );
           if (match) return match.id;
+          return u.tenantId || `store_${clean}`;
         }
       }
     } catch {}
