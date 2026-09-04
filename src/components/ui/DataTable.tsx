@@ -24,6 +24,7 @@ export interface Column<T> {
 interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
+  isLoading?: boolean;
   searchPlaceholder?: string;
   searchKey?: (item: T) => string;
   filterOptions?: { label: string; value: string; filterFn: (item: T) => boolean }[];
@@ -41,6 +42,7 @@ interface DataTableProps<T> {
 export function DataTable<T extends Record<string, any>>({
   data,
   columns,
+  isLoading = false,
   searchPlaceholder = 'Search...',
   searchKey,
   filterOptions,
@@ -258,7 +260,26 @@ export function DataTable<T extends Record<string, any>>({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {paginated.length > 0 ? (
+              {isLoading ? (
+                Array.from({ length: Math.min(pageSize, 6) }).map((_, idx) => (
+                  <tr key={`skeleton-${idx}`} className="animate-pulse">
+                    {bulkActions && (
+                      <td className="p-3 w-8">
+                        <div className="w-4 h-4 bg-slate-800/80 rounded" />
+                      </td>
+                    )}
+                    {columns.map((col, cIdx) => (
+                      <td key={col.key || cIdx} className="p-3">
+                        <div
+                          className={`h-4 bg-slate-800/80 rounded ${
+                            cIdx === 0 ? "w-36" : cIdx === 1 ? "w-24" : "w-16"
+                          }`}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : paginated.length > 0 ? (
                 paginated.map((item, idx) => {
                   const id = String(item[idKey] || idx);
                   const isSelected = selectedIds.includes(id);

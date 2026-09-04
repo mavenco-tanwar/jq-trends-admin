@@ -357,6 +357,7 @@ export default function ProductsListPage() {
 
       {/* Data Table */}
       <DataTable
+        isLoading={isLoading}
         data={products}
         columns={columns}
         searchPlaceholder="Search by title, SKU, tags..."

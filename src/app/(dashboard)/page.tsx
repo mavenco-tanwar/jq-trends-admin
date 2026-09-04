@@ -210,22 +210,36 @@ export default function DashboardOverviewPage() {
 
       {/* 4 Sales Metrics KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {salesMetrics.map((card, i) => (
-          <div
-            key={i}
-            className="bg-[#161822] p-4 rounded-xl border border-slate-800 space-y-2 shadow-xs hover:border-slate-700 transition-colors"
-          >
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-              <span>{card.label}</span>
-              <span className="text-emerald-400 font-bold flex items-center text-[11px]">
-                <TrendingUp className="w-3 h-3 mr-0.5" />
-                {card.change}
-              </span>
-            </div>
-            <div className="text-2xl font-bold text-white font-mono">{card.value}</div>
-            <div className="text-[11px] text-slate-500">{card.sub}</div>
-          </div>
-        ))}
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={`kpi-skel-${i}`}
+                className="bg-[#161822] p-4 rounded-xl border border-slate-800 space-y-3 animate-pulse"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-24 bg-slate-800 rounded" />
+                  <div className="h-3 w-12 bg-slate-800 rounded" />
+                </div>
+                <div className="h-7 w-32 bg-slate-800 rounded" />
+                <div className="h-2.5 w-36 bg-slate-800/60 rounded" />
+              </div>
+            ))
+          : salesMetrics.map((card, i) => (
+              <div
+                key={i}
+                className="bg-[#161822] p-4 rounded-xl border border-slate-800 space-y-2 shadow-xs hover:border-slate-700 transition-colors"
+              >
+                <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+                  <span>{card.label}</span>
+                  <span className="text-emerald-400 font-bold flex items-center text-[11px]">
+                    <TrendingUp className="w-3 h-3 mr-0.5" />
+                    {card.change}
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-white font-mono">{card.value}</div>
+                <div className="text-[11px] text-slate-500">{card.sub}</div>
+              </div>
+            ))}
       </div>
 
       {/* 2-Column Section: Fulfillment Pipeline & Product Intelligence */}
@@ -248,12 +262,19 @@ export default function DashboardOverviewPage() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              {orderStats.map((st, i) => (
-                <div key={i} className={`p-3 rounded-lg border text-center space-y-1 ${st.color}`}>
-                  <div className="text-xl font-bold font-mono">{st.count}</div>
-                  <div className="text-[11px] font-semibold">{st.status}</div>
-                </div>
-              ))}
+              {isLoading
+                ? Array.from({ length: 5 }).map((_, i) => (
+                    <div key={`matrix-skel-${i}`} className="p-3 rounded-lg border border-slate-800 bg-[#10121A] text-center space-y-2 animate-pulse">
+                      <div className="h-6 w-10 mx-auto bg-slate-800 rounded" />
+                      <div className="h-3 w-14 mx-auto bg-slate-800/60 rounded" />
+                    </div>
+                  ))
+                : orderStats.map((st, i) => (
+                    <div key={i} className={`p-3 rounded-lg border text-center space-y-1 ${st.color}`}>
+                      <div className="text-xl font-bold font-mono">{st.count}</div>
+                      <div className="text-[11px] font-semibold">{st.status}</div>
+                    </div>
+                  ))}
             </div>
           </div>
 
@@ -269,7 +290,28 @@ export default function DashboardOverviewPage() {
             </div>
 
             <div className="divide-y divide-slate-800/80">
-              {orders.slice(0, 5).map((o) => (
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={`order-skel-${i}`} className="py-3 flex items-center justify-between gap-4 animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-slate-800" />
+                      <div className="space-y-1.5">
+                        <div className="h-3.5 w-28 bg-slate-800 rounded" />
+                        <div className="h-2.5 w-40 bg-slate-800/60 rounded" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-4 w-16 bg-slate-800 rounded" />
+                      <div className="h-4 w-14 bg-slate-800 rounded" />
+                    </div>
+                  </div>
+                ))
+              ) : orders.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-500">
+                  No orders recorded yet. Live orders will populate automatically.
+                </div>
+              ) : (
+                orders.slice(0, 5).map((o) => (
                 <div key={o.id} className="py-3 flex items-center justify-between gap-4 text-xs">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-rose-400">
@@ -302,7 +344,8 @@ export default function DashboardOverviewPage() {
                     </span>
                   </div>
                 </div>
-              ))}
+              )))
+            }
             </div>
           </div>
         </div>
@@ -315,13 +358,21 @@ export default function DashboardOverviewPage() {
               Catalog Health
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              {productStats.map((p, i) => (
-                <div key={i} className="p-3 bg-[#10121A] rounded-lg border border-slate-800 space-y-1">
-                  <div className="text-lg font-bold text-white font-mono">{p.value}</div>
-                  <div className="text-[11px] font-semibold text-slate-300">{p.label}</div>
-                  <div className="text-[10px] text-slate-500">{p.sub}</div>
-                </div>
-              ))}
+              {isLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={`prod-skel-${i}`} className="p-3 bg-[#10121A] rounded-lg border border-slate-800 space-y-2 animate-pulse">
+                      <div className="h-5 w-12 bg-slate-800 rounded" />
+                      <div className="h-3 w-20 bg-slate-800/70 rounded" />
+                      <div className="h-2.5 w-24 bg-slate-800/40 rounded" />
+                    </div>
+                  ))
+                : productStats.map((p, i) => (
+                    <div key={i} className="p-3 bg-[#10121A] rounded-lg border border-slate-800 space-y-1">
+                      <div className="text-lg font-bold text-white font-mono">{p.value}</div>
+                      <div className="text-[11px] font-semibold text-slate-300">{p.label}</div>
+                      <div className="text-[10px] text-slate-500">{p.sub}</div>
+                    </div>
+                  ))}
             </div>
           </div>
 

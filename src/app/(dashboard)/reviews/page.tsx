@@ -245,7 +245,22 @@ export default function ReviewsPage() {
           </div>
 
           <div className="space-y-3">
-            {publishedReviews.map((rev) => (
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={`rev-skel-${i}`} className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-4 w-32 bg-slate-800 rounded" />
+                      <div className="h-4 w-20 bg-slate-800/80 rounded" />
+                    </div>
+                    <div className="h-3 w-28 bg-slate-800/60 rounded" />
+                  </div>
+                  <div className="h-3.5 w-48 bg-slate-800 rounded" />
+                  <div className="h-3 w-full bg-slate-800/50 rounded" />
+                  <div className="h-3 w-3/4 bg-slate-800/40 rounded" />
+                </div>
+              ))
+            ) : publishedReviews.map((rev) => (
               <div
                 key={rev.id}
                 className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3"

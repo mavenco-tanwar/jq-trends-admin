@@ -340,7 +340,25 @@ export default function PromotionsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredPromotions.map((p) => (
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={`promo-skel-${i}`}
+                  className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 animate-pulse"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="h-6 w-24 bg-slate-800 rounded-lg" />
+                    <div className="h-4 w-16 bg-slate-800 rounded" />
+                  </div>
+                  <div className="h-5 w-40 bg-slate-800 rounded" />
+                  <div className="h-3 w-52 bg-slate-800/60 rounded" />
+                  <div className="pt-3 border-t border-slate-800 flex justify-between">
+                    <div className="h-3 w-20 bg-slate-800/40 rounded" />
+                    <div className="h-3 w-16 bg-slate-800/40 rounded" />
+                  </div>
+                </div>
+              ))
+            ) : filteredPromotions.map((p) => (
               <div
                 key={p.id}
                 className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 flex flex-col justify-between"

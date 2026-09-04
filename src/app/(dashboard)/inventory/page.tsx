@@ -90,24 +90,17 @@ export default function InventoryPlatformPage() {
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch Inventory
-      const invRes = await ApiClient.get<any>(`/api/v1/inventory?tenant=${tenantSlug}`);
+      const [invRes, whRes, trRes, movRes, fulRes] = await Promise.all([
+        ApiClient.get<any>(`/api/v1/inventory?tenant=${tenantSlug}`),
+        ApiClient.get<any>(`/api/v1/inventory/warehouses?tenant=${tenantSlug}`),
+        ApiClient.get<any>(`/api/v1/inventory/transfers?tenant=${tenantSlug}`),
+        ApiClient.get<any>(`/api/v1/inventory/movements?tenant=${tenantSlug}`),
+        ApiClient.get<any>(`/api/v1/inventory/fulfillments?tenant=${tenantSlug}`),
+      ]);
       if (invRes.data) setInventory(invRes.data);
-
-      // 2. Fetch Warehouses
-      const whRes = await ApiClient.get<any>(`/api/v1/inventory/warehouses?tenant=${tenantSlug}`);
       if (whRes.data) setWarehouses(whRes.data);
-
-      // 3. Fetch Transfers
-      const trRes = await ApiClient.get<any>(`/api/v1/inventory/transfers?tenant=${tenantSlug}`);
       if (trRes.data) setTransfers(trRes.data);
-
-      // 4. Fetch Movements
-      const movRes = await ApiClient.get<any>(`/api/v1/inventory/movements?tenant=${tenantSlug}`);
       if (movRes.data) setMovements(movRes.data);
-
-      // 5. Fetch Fulfillments
-      const fulRes = await ApiClient.get<any>(`/api/v1/inventory/fulfillments?tenant=${tenantSlug}`);
       if (fulRes.data) setFulfillments(fulRes.data);
     } catch (err) {
       console.warn('Using initial seed inventory:', err);
@@ -501,7 +494,20 @@ export default function InventoryPlatformPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-sans">
-                {filteredInventory.map((item) => (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={`inv-skel-${i}`} className="animate-pulse">
+                      <td className="p-3.5"><div className="h-4 w-40 bg-slate-800 rounded" /></td>
+                      <td className="p-3.5"><div className="h-4 w-20 bg-slate-800 rounded" /></td>
+                      <td className="p-3.5"><div className="h-4 w-24 bg-slate-800 rounded" /></td>
+                      <td className="p-3.5"><div className="h-4 w-12 mx-auto bg-slate-800 rounded" /></td>
+                      <td className="p-3.5"><div className="h-4 w-12 mx-auto bg-slate-800 rounded" /></td>
+                      <td className="p-3.5"><div className="h-4 w-12 mx-auto bg-slate-800 rounded" /></td>
+                      <td className="p-3.5"><div className="h-4 w-16 mx-auto bg-slate-800 rounded" /></td>
+                      <td className="p-3.5"><div className="h-4 w-16 ml-auto bg-slate-800 rounded" /></td>
+                    </tr>
+                  ))
+                ) : filteredInventory.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="p-3.5">
                       <strong className="block font-bold text-white text-xs">{item.productTitle}</strong>

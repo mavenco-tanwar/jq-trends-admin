@@ -154,6 +154,7 @@ export default function OrdersPage() {
 
       {/* Data Table */}
       <DataTable
+        isLoading={isLoading}
         data={orders}
         columns={columns}
         searchPlaceholder="Search order #, customer name, email..."

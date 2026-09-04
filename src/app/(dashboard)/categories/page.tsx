@@ -182,9 +182,28 @@ export default function CategoriesPage() {
       {/* Category Hierarchy List */}
       <div className="space-y-4">
         {isLoading ? (
-          <div className="bg-[#161822] border border-slate-800 rounded-xl p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-3">
-            <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-            <span>Loading store categories...</span>
+          <div className="space-y-4 animate-pulse">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={`cat-skel-${i}`} className="bg-[#161822] border border-slate-800 rounded-xl overflow-hidden p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-800" />
+                    <div className="space-y-1.5">
+                      <div className="h-4 w-36 bg-slate-800 rounded" />
+                      <div className="h-2.5 w-20 bg-slate-800/60 rounded" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-20 bg-slate-800 rounded-lg" />
+                    <div className="h-6 w-16 bg-slate-800 rounded-lg" />
+                  </div>
+                </div>
+                <div className="pl-11 pr-4 py-2 border-t border-slate-800/60 flex items-center justify-between">
+                  <div className="h-3 w-32 bg-slate-800/60 rounded" />
+                  <div className="h-3 w-16 bg-slate-800/40 rounded" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : rootDepartments.length === 0 ? (
           <div className="bg-[#161822] border border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-sm">

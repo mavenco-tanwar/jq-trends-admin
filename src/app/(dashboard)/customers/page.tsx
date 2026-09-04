@@ -178,6 +178,7 @@ export default function CustomersPage() {
 
       {/* Data Table */}
       <DataTable
+        isLoading={isLoading}
         data={customers}
         columns={columns}
         searchPlaceholder="Search by name, email, phone..."
