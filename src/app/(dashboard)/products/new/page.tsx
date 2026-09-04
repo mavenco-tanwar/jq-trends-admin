@@ -405,31 +405,32 @@ export default function NewProductPage() {
       {/* TAB 2: MEDIA GALLERY */}
       {activeTab === 'media' && (
         <div className="bg-[#161822] p-6 rounded-xl border border-slate-800 space-y-4 text-xs">
-          {/* Dedicated hidden file input for gallery */}
-          <input
-            id="new-product-gallery-file-input"
-            type="file"
-            accept="image/*"
-            onChange={handleDirectPhotoUpload}
-            disabled={isUploadingDirect}
-            className="sr-only"
-          />
-
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-white">Product Photo Gallery</h3>
               <p className="text-xs text-slate-400 mt-0.5">Upload high-res imagery and designate the primary storefront card thumbnail.</p>
             </div>
             <div className="flex items-center gap-2">
-              <label
-                htmlFor="new-product-gallery-file-input"
-                className={`flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md cursor-pointer transition-all text-xs select-none ${
-                  isUploadingDirect ? 'opacity-50 pointer-events-none' : ''
-                }`}
-              >
-                {isUploadingDirect ? <Sparkles className="w-4 h-4 animate-spin pointer-events-none" /> : <Upload className="w-4 h-4 pointer-events-none" />}
-                <span className="pointer-events-none">{isUploadingDirect ? 'Uploading...' : 'Upload From Device'}</span>
-              </label>
+              <div className="relative inline-flex overflow-hidden rounded-lg">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleDirectPhotoUpload}
+                  disabled={isUploadingDirect}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  title="Upload from computer or phone"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-md transition-all text-xs select-none pointer-events-none ${
+                    isUploadingDirect ? 'opacity-50' : ''
+                  }`}
+                >
+                  {isUploadingDirect ? <Sparkles className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  <span>{isUploadingDirect ? 'Uploading...' : 'Upload From Device'}</span>
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsMediaPickerOpen(true)}
@@ -475,8 +476,7 @@ export default function NewProductPage() {
             ))}
 
             {/* Direct Device Upload Card in the Grid */}
-            <label
-              htmlFor="new-product-gallery-file-input"
+            <div
               onDragOver={(e) => { e.preventDefault(); }}
               onDrop={(e) => {
                 e.preventDefault();
@@ -484,10 +484,18 @@ export default function NewProductPage() {
                   handleDirectPhotoUpload({ target: { files: e.dataTransfer.files } } as any);
                 }
               }}
-              className={`relative aspect-3/4 rounded-xl border-2 border-dashed border-slate-700 hover:border-rose-500 bg-[#10121A] hover:bg-slate-900/70 transition-all flex flex-col items-center justify-center gap-2.5 text-center p-4 cursor-pointer group select-none ${
+              className={`relative aspect-3/4 rounded-xl border-2 border-dashed border-slate-700 hover:border-rose-500 bg-[#10121A] hover:bg-slate-900/70 transition-all flex flex-col items-center justify-center gap-2.5 text-center p-4 cursor-pointer group select-none overflow-hidden ${
                 isUploadingDirect ? 'opacity-50 pointer-events-none' : ''
               }`}
             >
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleDirectPhotoUpload}
+                disabled={isUploadingDirect}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                title="Click to upload photo from computer or phone"
+              />
               <div className="w-11 h-11 rounded-full bg-slate-800 group-hover:bg-rose-600/20 text-slate-400 group-hover:text-rose-400 flex items-center justify-center transition-colors shadow-inner pointer-events-none">
                 {isUploadingDirect ? <Sparkles className="w-5 h-5 animate-spin text-rose-400" /> : <Upload className="w-5 h-5" />}
               </div>
@@ -497,7 +505,7 @@ export default function NewProductPage() {
                 </span>
                 <span className="text-[10px] text-slate-400 block">From Computer / Phone</span>
               </div>
-            </label>
+            </div>
           </div>
         </div>
       )}

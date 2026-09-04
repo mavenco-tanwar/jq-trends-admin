@@ -266,15 +266,7 @@ export function ImageUploadInput({
             handleFileUpload(e.target.files[0]);
           }
         }}
-        style={{
-          position: 'fixed',
-          top: '-1000px',
-          left: '-1000px',
-          opacity: 0,
-          width: '1px',
-          height: '1px',
-          pointerEvents: 'none',
-        }}
+        className="sr-only" 
       />
 
       {/* Media Picker Modal */}

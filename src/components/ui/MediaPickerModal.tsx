@@ -287,30 +287,30 @@ export function MediaPickerModal({
             {/* Mode A: Device File Upload */}
             {uploadMode === 'device' && (
               <div>
-                <input
-                  id="media-picker-modal-file-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileInputChange}
-                  disabled={isProcessing}
-                  className="sr-only"
-                />
-
                 {!filePreview ? (
-                  <label
-                    htmlFor="media-picker-modal-file-input"
+                  <div
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOver(true);
                     }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
-                    className={`block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all select-none ${
+                    className={`relative block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all select-none overflow-hidden ${
                       dragOver
                         ? 'border-rose-500 bg-rose-500/10 scale-[1.01]'
                         : 'border-slate-700 bg-slate-900/60 hover:border-rose-500 hover:bg-slate-900'
                     }`}
                   >
+                    {/* Native Invisible Full-Cover File Input: Zero redirection, Native OS Dialog on Click/Drop */}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileInputChange}
+                      disabled={isProcessing}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                      title="Click to browse from Computer / Phone or drag & drop"
+                    />
+
                     <div className="flex flex-col items-center justify-center gap-2.5 pointer-events-none">
                       <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
                         {isProcessing ? <Sparkles className="w-6 h-6 animate-spin text-rose-400" /> : <Upload className="w-6 h-6" />}
@@ -330,7 +330,7 @@ export function MediaPickerModal({
                         <span>Browse Device Files</span>
                       </span>
                     </div>
-                  </label>
+                  </div>
                 ) : (
                   <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl flex items-center gap-4">
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-black">
@@ -343,12 +343,18 @@ export function MediaPickerModal({
                       <p className="text-[11px] text-slate-400">
                         {optimizedData ? `${(optimizedData.sizeBytes / 1024).toFixed(1)} KB (Optimized)` : (selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Ready to upload')}
                       </p>
-                      <label
-                        htmlFor="media-picker-modal-file-input"
-                        className="text-[11px] text-rose-400 hover:underline mt-0.5 font-semibold inline-block cursor-pointer select-none"
-                      >
-                        Change Image
-                      </label>
+                      <div className="relative inline-block mt-0.5">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileInputChange}
+                          disabled={isProcessing}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <span className="text-[11px] text-rose-400 hover:underline font-semibold cursor-pointer select-none">
+                          Change Image
+                        </span>
+                      </div>
                     </div>
                     <button
                       type="button"
