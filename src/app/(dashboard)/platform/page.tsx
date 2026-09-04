@@ -1094,6 +1094,7 @@ function PlatformContent() {
 
   const resetWizard = () => {
     setIsProvisionModalOpen(false);
+    loadPlatformData();
     setWizardStep(1);
     setIsProvisioning(false);
     setProvisionProgress(0);

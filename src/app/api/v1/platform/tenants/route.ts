@@ -17,22 +17,22 @@ export async function GET() {
   try {
     const db = await getDatabase();
     if (db) {
-      let tenants = await db
-        .collection('tenants')
-        .find({ status: { $ne: 'deleted' } })
-        .sort({ createdAt: -1 })
-        .toArray();
+      const [tDocs, rDocs] = await Promise.all([
+        db.collection('tenants').find({ status: { $ne: 'deleted' } }).sort({ createdAt: -1 }).toArray(),
+        db.collection('platform_tenants_registry').find({ status: { $ne: 'deleted' } }).sort({ createdAt: -1 }).toArray(),
+      ]);
 
-      if (tenants.length === 0) {
-        tenants = await db
-          .collection('platform_tenants_registry')
-          .find({ status: { $ne: 'deleted' } })
-          .sort({ createdAt: -1 })
-          .toArray();
+      const mergedMap = new Map<string, any>();
+      for (const t of [...rDocs, ...tDocs]) {
+        const slug = (t.slug || t.id || '').toLowerCase().trim();
+        if (slug && !mergedMap.has(slug)) {
+          const { _id, ...clean } = t;
+          mergedMap.set(slug, clean);
+        }
       }
 
-      if (tenants.length > 0) {
-        const clean = tenants.map(({ _id, ...rest }) => rest);
+      const clean = Array.from(mergedMap.values());
+      if (clean.length > 0) {
         return NextResponse.json({ data: clean, count: clean.length, source: 'mongodb' }, { headers: corsHeaders() });
       }
     }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       const ownerEmail = body.ownerEmail ? body.ownerEmail.toLowerCase().trim() : null;
       const now = new Date().toISOString();
 
-      const tenantRecord = {
+      const tenantRecord: any = {
         ...body,
         slug: cleanSlug,
         ownerEmail: ownerEmail || body.ownerEmail,
@@ -64,6 +64,10 @@ export async function POST(request: NextRequest) {
         updatedAt: now,
       };
 
+      const createdAtVal = tenantRecord.createdAt || now;
+      delete tenantRecord.createdAt;
+      delete tenantRecord._id;
+
       const filter = { $or: [{ slug: cleanSlug }, { id: body.id || `store_${cleanSlug}` }] };
 
       // 1. Upsert Tenant Record in both 'tenants' and 'platform_tenants_registry'
@@ -72,7 +76,7 @@ export async function POST(request: NextRequest) {
           filter,
           {
             $set: tenantRecord,
-            $setOnInsert: { createdAt: now },
+            $setOnInsert: { createdAt: createdAtVal },
           },
           { upsert: true }
         ),
@@ -80,7 +84,7 @@ export async function POST(request: NextRequest) {
           filter,
           {
             $set: tenantRecord,
-            $setOnInsert: { createdAt: now },
+            $setOnInsert: { createdAt: createdAtVal },
           },
           { upsert: true }
         ),

@@ -360,6 +360,9 @@ export class PlatformService {
     const cleaned = tenants.filter(t => t.slug !== 'lumina' && t.id !== 'store_lumina');
     if (typeof window === 'undefined') return cleaned;
     try {
+      if (window.location.pathname.startsWith('/platform')) {
+        return cleaned;
+      }
       const userRaw = localStorage.getItem('jq_admin_user');
       if (!userRaw) return cleaned;
       const u = JSON.parse(userRaw);
@@ -390,7 +393,11 @@ export class PlatformService {
       const stored = localStorage.getItem(PLATFORM_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return this.filterForClientUser(parsed);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(t => t.slug !== "lumina" && t.id !== "store_lumina");
+          if (window.location.pathname.startsWith("/platform")) return cleaned;
+          return cleaned;
+        }
       }
     } catch {}
     return [];
@@ -402,7 +409,8 @@ export class PlatformService {
       const list = res?.data || [];
       if (Array.isArray(list)) {
         this.saveTenants(list);
-        return this.filterForClientUser(list);
+        const cleaned = list.filter(t => t.slug !== "lumina" && t.id !== "store_lumina");
+        return cleaned;
       }
     } catch (err) {
       console.warn('Failed to fetch tenants from MongoDB Atlas:', err);
@@ -789,7 +797,11 @@ export class PlatformService {
           updatedAt: t.updatedAt || new Date().toISOString(),
         }));
         this.saveTenants(dbTenants);
-        return this.filterForClientUser(dbTenants);
+        const cleaned = dbTenants.filter(t => t.slug !== "lumina" && t.id !== "store_lumina");
+        if (typeof window !== "undefined" && window.location.pathname.startsWith("/platform")) {
+          return cleaned;
+        }
+        return cleaned;
       }
     } catch (err) {
       console.error('Failed to fetch platform tenants from DB:', err);
