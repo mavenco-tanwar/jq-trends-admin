@@ -114,9 +114,9 @@ export class ProductService {
   static async update(id: string, updates: Partial<Product>): Promise<Product> {
     this.localProducts = this.localProducts.map((p) => (p.id === id ? normalizeProduct({ ...p, ...updates }) : p));
     try {
-      await ApiClient.patch(`/api/v1/products/${id}`, updates);
-    } catch {
-      // Mock Fallback
+      await ApiClient.patch(`/api/v1/products/${encodeURIComponent(id)}`, updates);
+    } catch (err) {
+      console.error('Failed to update product in database:', err);
     }
     const updated = this.localProducts.find((p) => p.id === id);
     if (!updated) throw new Error('Product not found');
@@ -149,5 +149,10 @@ export class ProductService {
 
   static async bulkUpdateStatus(ids: string[], status: 'draft' | 'published' | 'archived'): Promise<void> {
     this.localProducts = this.localProducts.map((p) => (ids.includes(p.id) ? { ...p, status } : p));
+    try {
+      await ApiClient.patch('/api/v1/products', { ids, status });
+    } catch (err) {
+      console.error('Failed to bulk update status in database:', err);
+    }
   }
 }
