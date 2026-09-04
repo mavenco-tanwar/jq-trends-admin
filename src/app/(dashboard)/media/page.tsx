@@ -316,7 +316,7 @@ export default function MediaLibraryPage() {
                   type="file"
                   accept="image/*"
                   onChange={handleFileInputChange}
-                  className="hidden"
+                  className="sr-only"
                 />
 
                 {!filePreview ? (

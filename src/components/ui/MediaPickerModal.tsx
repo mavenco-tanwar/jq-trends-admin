@@ -298,7 +298,7 @@ export function MediaPickerModal({
                       type="file"
                       accept="image/*"
                       onChange={handleFileInputChange}
-                      className="hidden"
+                      className="sr-only"
                     />
                   </div>
                 ) : (
@@ -325,7 +325,7 @@ export function MediaPickerModal({
                         type="file"
                         accept="image/*"
                         onChange={handleFileInputChange}
-                        className="hidden"
+                        className="sr-only"
                       />
                     </div>
                     <button

@@ -62,7 +62,7 @@ export class MediaService {
       id: `med_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       filename: asset.filename || `image-${Date.now()}.jpg`,
       url: asset.url || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&auto=format&fit=crop',
-      altText: asset.altText || asset.filename?.replace(/\.[^/.]+$/, '') || '',
+      altText: asset.altText || asset.filename?.replace(/.[^/.]+$/, '') || '',
       folder: asset.folder || 'Products',
       mimeType: asset.mimeType || 'image/jpeg',
       sizeBytes: asset.sizeBytes || 320000,
@@ -76,6 +76,15 @@ export class MediaService {
     const currentCustom = getStoredCustomMedia();
     const updated = [newMedia, ...currentCustom];
     saveCustomMedia(updated);
+
+    try {
+      const res = await ApiClient.post('/api/v1/media', newMedia);
+      if (res.data) {
+        return normalizeMedia(res.data);
+      }
+    } catch (err) {
+      console.warn('Media upload to backend failed, using local copy:', err);
+    }
 
     return newMedia;
   }
