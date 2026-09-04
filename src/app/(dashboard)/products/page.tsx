@@ -64,11 +64,13 @@ export default function ProductsListPage() {
   }, []);
 
   const handleDuplicate = async (p: Product) => {
+    const { id, _id, ...rest } = p as any;
     const duplicated: Partial<Product> = {
-      ...p,
+      ...rest,
+      id: `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       title: `${p.title} (Copy)`,
       slug: `${p.slug}-copy-${Date.now()}`,
-      sku: `${p.sku}-CPY`,
+      sku: `${p.sku}-CPY-${Date.now().toString().slice(-4)}`,
       status: 'draft',
     };
     const created = await ProductService.create(duplicated);

@@ -1,5 +1,7 @@
 'use client';
 
+import { ProductService } from '@/services/products';
+
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -94,6 +96,28 @@ function AdminSidebarInner({
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getActiveTenant());
+  const [productCount, setProductCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const fetchCount = async () => {
+      try {
+        const prods = await ProductService.getAll();
+        if (active && Array.isArray(prods)) {
+          setProductCount(prods.length);
+        }
+      } catch {}
+    };
+
+    fetchCount();
+    window.addEventListener('products_updated', fetchCount);
+    window.addEventListener('tenant_updated', fetchCount);
+    return () => {
+      active = false;
+      window.removeEventListener('products_updated', fetchCount);
+      window.removeEventListener('tenant_updated', fetchCount);
+    };
+  }, [pathname, activeTenant?.id, activeTenant?.slug]);
   const [allTenants, setAllTenants] = useState<TenantStore[]>([]);
   const [impersonationState, setImpersonationState] = useState(PlatformService.getImpersonationState());
   const [isClusterModalOpen, setIsClusterModalOpen] = useState(false);
@@ -221,7 +245,7 @@ function AdminSidebarInner({
           featureKey: 'products',
           href: '/products',
           icon: Package,
-          badge: mounted ? `${activeTenant.metrics?.products || 16}` : undefined,
+          badge: mounted ? `${productCount !== null ? productCount : (activeTenant.metrics?.products ?? 0)}` : undefined,
           badgeColor: 'bg-emerald-500/20 text-emerald-300',
         },
         { label: 'Categories & Taxonomy', featureKey: 'categories', href: '/categories', icon: FolderTree },
@@ -231,7 +255,7 @@ function AdminSidebarInner({
           featureKey: 'inventory',
           href: '/inventory',
           icon: Boxes,
-          badge: '1 Low',
+          // badge: '1 Low',
           badgeColor: 'bg-amber-500/20 text-amber-300',
         },
       ],

@@ -554,7 +554,7 @@ export class PlatformService {
                 bodyFont: 'Plus Jakarta Sans',
                 borderRadius: 'md',
               },
-              metrics: { products: 12, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
+              metrics: { products: 2, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
@@ -599,7 +599,7 @@ export class PlatformService {
         bodyFont: 'Plus Jakarta Sans',
         borderRadius: 'md',
       },
-      metrics: { products: 12, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
+      metrics: { products: 2, orders: 0, customers: 0, monthlyRevenue: 0, storageUsedMb: 12 },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

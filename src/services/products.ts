@@ -60,9 +60,12 @@ export class ProductService {
   static async getAll(): Promise<Product[]> {
     try {
       const res = await ApiClient.get<any[]>('/api/v1/products');
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.data && Array.isArray(res.data)) {
         const normalized = res.data.map(normalizeProduct);
         this.localProducts = normalized;
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('products_updated', { detail: normalized.length }));
+        }
         return normalized;
       }
     } catch {
@@ -93,12 +96,18 @@ export class ProductService {
       if (res.data && !Array.isArray(res.data) && (res.data.id || res.data.title)) {
         const norm = normalizeProduct(res.data);
         this.localProducts = [norm, ...this.localProducts];
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('products_updated', { detail: this.localProducts.length }));
+        }
         return norm;
       }
     } catch {
       // Mock Fallback
     }
     this.localProducts = [newProd, ...this.localProducts];
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('products_updated', { detail: this.localProducts.length }));
+    }
     return newProd;
   }
 
@@ -116,6 +125,9 @@ export class ProductService {
 
   static async delete(id: string): Promise<void> {
     this.localProducts = this.localProducts.filter((p) => p.id !== id);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('products_updated', { detail: this.localProducts.length }));
+    }
     try {
       await ApiClient.delete(`/api/v1/products/${id}`);
     } catch {
