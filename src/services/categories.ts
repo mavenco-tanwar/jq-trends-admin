@@ -89,7 +89,7 @@ export class CategoryService {
   static async getFlatList(): Promise<Category[]> {
     const tenantSlug = getActiveTenantSlug();
     try {
-      const res = await ApiClient.get<any[]>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`);
+      const res = await ApiClient.get<any[]>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`, { bypassCache: true });
       if (res && Array.isArray(res.data)) {
         // Enforce strict client-side tenant isolation defense-in-depth
         const filtered = res.data.filter((raw: any) => {
@@ -138,8 +138,11 @@ export class CategoryService {
     };
 
     try {
-      const res = await ApiClient.post<any>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`, newCat);
+      ApiClient.clearCache('/api/v1/categories');
+    const res = await ApiClient.post<any>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`, newCat);
+    ApiClient.clearCache('/api/v1/categories');
       if (res && res.data) {
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('categories_updated'));
         return normalizeCategory(res.data);
       }
     } catch (err) {
@@ -152,6 +155,7 @@ export class CategoryService {
   static async update(id: string, updates: Partial<Category>): Promise<Category> {
     const tenantSlug = getActiveTenantSlug();
     try {
+      ApiClient.clearCache('/api/v1/categories');
       await ApiClient.patch(`/api/v1/categories/${encodeURIComponent(id)}?tenant=${encodeURIComponent(tenantSlug)}`, {
         ...updates,
         tenantSlug,
@@ -169,7 +173,10 @@ export class CategoryService {
     if (!id || id === 'undefined' || id === 'null') return;
     const tenantSlug = getActiveTenantSlug();
     try {
+      ApiClient.clearCache('/api/v1/categories');
       await ApiClient.delete(`/api/v1/categories/${encodeURIComponent(id)}?tenant=${encodeURIComponent(tenantSlug)}`);
+      ApiClient.clearCache('/api/v1/categories');
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('categories_updated'));
     } catch (err) {
       console.warn('[CategoryService] Failed to delete category via API:', err);
     }

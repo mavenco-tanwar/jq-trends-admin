@@ -53,6 +53,10 @@ export default function EditProductPage() {
   useEffect(() => {
     CategoryService.getAll().then((list) => {
       setAvailableCategories(list);
+      if (list.length > 0 && (!departmentId || !list.some((c) => c.id === departmentId))) {
+        setDepartmentId(list[0].id);
+        setCategory(list[0].id);
+      }
     });
   }, []);
   const [shortDesc, setShortDesc] = useState('');
@@ -207,6 +211,11 @@ export default function EditProductPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const selectedDept = availableCategories.find((c) => c.id === departmentId);
+      const selectedSub = selectedDept?.children?.find((c) => c.id === subcategoryId);
+      const catName = selectedSub ? selectedSub.name : selectedDept ? selectedDept.name : 'Collection';
+      const catSlug = selectedSub ? selectedSub.slug : selectedDept ? selectedDept.slug : (departmentId || 'all');
+
       const updates: Partial<Product> = {
         title,
         slug,
@@ -216,7 +225,9 @@ export default function EditProductPage() {
         sku,
         categoryIds: subcategoryId ? [subcategoryId, departmentId] : departmentId ? [departmentId] : [category],
         department: departmentId,
-        category: subcategoryId || departmentId || category,
+        category: catSlug,
+        categoryName: catName,
+        categorySlug: catSlug,
         price: parseFloat(price) || 0,
         compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : undefined,
         costPrice: costPrice ? parseFloat(costPrice) : undefined,
@@ -230,6 +241,10 @@ export default function EditProductPage() {
         seo: { title: seoTitle || title, description: seoDesc || shortDesc },
         shipping: { weightKg: parseFloat(weightKg) || 0.4, isExpressAvailable },
         badges: { isFeatured, isNewArrival, isBestSeller },
+        flags: { isFeatured, isNew: isNewArrival, isBestSeller },
+        isFeatured,
+        isNewArrival,
+        isBestSeller,
       };
 
       await ProductService.update(id, updates);

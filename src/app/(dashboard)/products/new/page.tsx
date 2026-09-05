@@ -224,6 +224,11 @@ export default function NewProductPage() {
     try {
       const activeTenant = PlatformService.getActiveTenant();
       const targetSlug = activeTenant?.slug || 'jq-trends';
+      const selectedDept = availableCategories.find((c) => c.id === departmentId);
+      const selectedSub = selectedDept?.children?.find((c) => c.id === subcategoryId);
+      const catName = selectedSub ? selectedSub.name : selectedDept ? selectedDept.name : 'Collection';
+      const catSlug = selectedSub ? selectedSub.slug : selectedDept ? selectedDept.slug : (departmentId || 'all');
+
       const newProduct: any = {
         tenantId: `store_${targetSlug}`,
         tenantSlug: targetSlug,
@@ -236,7 +241,9 @@ export default function NewProductPage() {
         sku,
         categoryIds: subcategoryId ? [subcategoryId, departmentId] : departmentId ? [departmentId] : [category],
         department: departmentId,
-        category: subcategoryId || departmentId || category,
+        category: catSlug,
+        categoryName: catName,
+        categorySlug: catSlug,
         price: parseFloat(price) || 0,
         compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : undefined,
         costPrice: costPrice ? parseFloat(costPrice) : undefined,
@@ -251,6 +258,10 @@ export default function NewProductPage() {
         seo: { title: seoTitle || title, description: seoDesc || shortDesc },
         shipping: { weightKg: parseFloat(weightKg) || 0.4, isExpressAvailable },
         badges: { isFeatured, isNewArrival, isBestSeller },
+        flags: { isFeatured, isNew: isNewArrival, isBestSeller },
+        isFeatured,
+        isNewArrival,
+        isBestSeller,
       };
 
       await ProductService.create(newProduct);

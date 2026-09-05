@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Copy, Sparkles, RefreshCw, Layers } from 'lucide-react';
+import { Plus, Trash2, Copy, Sparkles, RefreshCw, Layers, X } from 'lucide-react';
 import type { ProductVariant } from '@/types';
 
 interface VariantMatrixEditorProps {
@@ -29,12 +29,46 @@ export function VariantMatrixEditor({
   basePrice = 1499,
   baseSku = 'JQT-SKU',
 }: VariantMatrixEditorProps) {
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(['S', 'M', 'L']);
-  const [selectedColors, setSelectedColors] = useState<string[]>(['Default']);
+  // Extract any sizes & colors already present on existing variants
+  const existingSizes = Array.from(
+    new Set(variants.map((v) => v.options?.size).filter(Boolean))
+  ) as string[];
+  const existingColors = Array.from(
+    new Set(variants.map((v) => v.options?.color).filter(Boolean))
+  ) as string[];
+
+  // User-added custom sizes and colors list
+  const [customSizes, setCustomSizes] = useState<string[]>(() => {
+    return existingSizes.filter((s) => !PRESET_SIZES.includes(s) && s !== 'Default');
+  });
+
+  const [customColors, setCustomColors] = useState<{ name: string; hex: string }[]>(() => {
+    return existingColors
+      .filter(
+        (c) =>
+          !PRESET_COLORS.some((pc) => pc.name.toLowerCase() === c.toLowerCase()) &&
+          c !== 'Default'
+      )
+      .map((c) => ({ name: c, hex: '#8B5CF6' }));
+  });
+
+  // Selected sizes in generator
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(() => {
+    if (existingSizes.length > 0) return existingSizes.filter((s) => s !== 'Default');
+    return ['S', 'M', 'L'];
+  });
+
+  // Selected colors in generator
+  const [selectedColors, setSelectedColors] = useState<string[]>(() => {
+    if (existingColors.length > 0) return existingColors.filter((c) => c !== 'Default');
+    return [];
+  });
+
   const [customSizeInput, setCustomSizeInput] = useState('');
   const [customColorInput, setCustomColorInput] = useState('');
 
-  const numericBasePrice = typeof basePrice === 'number' ? basePrice : parseFloat(basePrice) || 1499;
+  const numericBasePrice =
+    typeof basePrice === 'number' ? basePrice : parseFloat(basePrice) || 1499;
 
   // Toggle size in builder
   const toggleSize = (size: string) => {
@@ -46,10 +80,20 @@ export function VariantMatrixEditor({
   // Add custom size
   const addCustomSize = () => {
     const trimmed = customSizeInput.trim().toUpperCase();
-    if (trimmed && !selectedSizes.includes(trimmed)) {
-      setSelectedSizes([...selectedSizes, trimmed]);
-      setCustomSizeInput('');
+    if (!trimmed) return;
+
+    if (!PRESET_SIZES.includes(trimmed) && !customSizes.includes(trimmed)) {
+      setCustomSizes((prev) => [...prev, trimmed]);
     }
+    if (!selectedSizes.includes(trimmed)) {
+      setSelectedSizes((prev) => [...prev, trimmed]);
+    }
+    setCustomSizeInput('');
+  };
+
+  const removeCustomSize = (sizeToRemove: string) => {
+    setCustomSizes((prev) => prev.filter((s) => s !== sizeToRemove));
+    setSelectedSizes((prev) => prev.filter((s) => s !== sizeToRemove));
   };
 
   // Toggle color in builder
@@ -62,10 +106,32 @@ export function VariantMatrixEditor({
   // Add custom color
   const addCustomColor = () => {
     const trimmed = customColorInput.trim();
-    if (trimmed && !selectedColors.includes(trimmed)) {
-      setSelectedColors([...selectedColors, trimmed]);
-      setCustomColorInput('');
+    if (!trimmed) return;
+
+    const formatted = trimmed
+      .split(' ')
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+
+    if (
+      !PRESET_COLORS.some((c) => c.name.toLowerCase() === formatted.toLowerCase()) &&
+      !customColors.some((c) => c.name.toLowerCase() === formatted.toLowerCase())
+    ) {
+      const colorPalettes = ['#8B5CF6', '#EC4899', '#3B82F6', '#10B981', '#F59E0B', '#06B6D4'];
+      const chosenHex = colorPalettes[customColors.length % colorPalettes.length];
+      setCustomColors((prev) => [...prev, { name: formatted, hex: chosenHex }]);
     }
+
+    if (!selectedColors.includes(formatted)) {
+      setSelectedColors((prev) => [...prev, formatted]);
+    }
+    setCustomColorInput('');
+  };
+
+  const removeCustomColor = (colorName: string) => {
+    setCustomColors((prev) => prev.filter((c) => c.name !== colorName));
+    setSelectedColors((prev) => prev.filter((c) => c !== colorName));
   };
 
   // Generate Matrix from Selected Sizes x Colors
@@ -77,7 +143,10 @@ export function VariantMatrixEditor({
     sizes.forEach((s) => {
       colors.forEach((c) => {
         const sizeSlug = s === 'Default' ? '' : `-${s.replace(/[^a-zA-Z0-9]/g, '')}`;
-        const colorSlug = c === 'Default' ? '' : `-${c.slice(0, 3).toUpperCase().replace(/[^a-zA-Z0-9]/g, '')}`;
+        const colorSlug =
+          c === 'Default'
+            ? ''
+            : `-${c.slice(0, 3).toUpperCase().replace(/[^a-zA-Z0-9]/g, '')}`;
         const title =
           c === 'Default' && s === 'Default'
             ? 'Standard'
@@ -141,7 +210,11 @@ export function VariantMatrixEditor({
   };
 
   // Update a single field in a variant
-  const handleUpdateField = (id: string, field: keyof ProductVariant | 'size' | 'color', value: any) => {
+  const handleUpdateField = (
+    id: string,
+    field: keyof ProductVariant | 'size' | 'color',
+    value: any
+  ) => {
     const updated = variants.map((v) => {
       if (v.id !== id) return v;
 
@@ -198,14 +271,31 @@ export function VariantMatrixEditor({
             className="px-4 py-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold rounded-lg shadow-md flex items-center gap-2 text-xs transition-all shrink-0 cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Generate Combinations ({selectedSizes.length} × {selectedColors.length})</span>
+            <span>
+              Generate Combinations ({selectedSizes.length || 1} × {selectedColors.length || 1})
+            </span>
           </button>
         </div>
 
         {/* Sizes Selector */}
         <div className="space-y-2">
-          <span className="text-xs font-bold text-slate-300">Select Sizes:</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-300">
+              Select Sizes ({selectedSizes.length} selected):
+            </span>
+            {selectedSizes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedSizes([])}
+                className="text-[11px] text-slate-400 hover:text-rose-400 cursor-pointer"
+              >
+                Clear all sizes
+              </button>
+            )}
+          </div>
+
           <div className="flex flex-wrap items-center gap-2">
+            {/* Preset Sizes */}
             {PRESET_SIZES.map((sz) => {
               const isSelected = selectedSizes.includes(sz);
               return (
@@ -215,7 +305,7 @@ export function VariantMatrixEditor({
                   onClick={() => toggleSize(sz)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-rose-500/20 text-rose-300 border-rose-500 shadow-sm'
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500 shadow-sm ring-1 ring-rose-500/30'
                       : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'
                   }`}
                 >
@@ -225,27 +315,69 @@ export function VariantMatrixEditor({
               );
             })}
 
-            {/* Custom Size Input */}
-            <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5">
+            {/* User Custom Added Sizes */}
+            {customSizes.map((sz) => {
+              const isSelected = selectedSizes.includes(sz);
+              return (
+                <div
+                  key={sz}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    isSelected
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500 shadow-sm ring-1 ring-amber-500/30'
+                      : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSize(sz)}
+                    className="cursor-pointer font-bold"
+                  >
+                    {isSelected && '✓ '}
+                    {sz}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeCustomSize(sz);
+                    }}
+                    title={`Remove custom size ${sz}`}
+                    className="text-slate-400 hover:text-rose-400 text-xs ml-0.5 cursor-pointer leading-none p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* Custom Size Input Field */}
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 focus-within:border-rose-500 rounded-lg px-2.5 py-1 transition-all">
               <input
                 type="text"
-                placeholder="Custom size..."
+                placeholder="Custom size (e.g. 3XL, UK 10)..."
                 value={customSizeInput}
                 onChange={(e) => setCustomSizeInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
+                    e.stopPropagation();
                     addCustomSize();
                   }
                 }}
-                className="bg-transparent text-white text-xs w-24 focus:outline-none placeholder-slate-500"
+                className="bg-transparent text-white text-xs w-48 focus:outline-none placeholder-slate-500"
               />
               <button
                 type="button"
-                onClick={addCustomSize}
-                className="text-rose-400 hover:text-rose-300 font-bold text-xs cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addCustomSize();
+                }}
+                className="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold text-xs cursor-pointer transition-all flex items-center gap-0.5 shrink-0"
+                title="Add custom size"
               >
-                +
+                <span>Add</span>
+                <Plus className="w-3 h-3" />
               </button>
             </div>
           </div>
@@ -253,8 +385,23 @@ export function VariantMatrixEditor({
 
         {/* Colors Selector */}
         <div className="space-y-2">
-          <span className="text-xs font-bold text-slate-300">Select Colors:</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-300">
+              Select Colors ({selectedColors.length} selected):
+            </span>
+            {selectedColors.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedColors([])}
+                className="text-[11px] text-slate-400 hover:text-rose-400 cursor-pointer"
+              >
+                Clear all colors
+              </button>
+            )}
+          </div>
+
           <div className="flex flex-wrap items-center gap-2">
+            {/* Preset Colors */}
             {PRESET_COLORS.map((col) => {
               const isSelected = selectedColors.includes(col.name);
               return (
@@ -264,7 +411,7 @@ export function VariantMatrixEditor({
                   onClick={() => toggleColor(col.name)}
                   className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
                     isSelected
-                      ? 'bg-rose-500/20 text-rose-300 border-rose-500 shadow-sm'
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500 shadow-sm ring-1 ring-rose-500/30'
                       : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'
                   }`}
                 >
@@ -278,27 +425,73 @@ export function VariantMatrixEditor({
               );
             })}
 
-            {/* Custom Color Input */}
-            <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5">
+            {/* User Custom Added Colors */}
+            {customColors.map((col) => {
+              const isSelected = selectedColors.includes(col.name);
+              return (
+                <div
+                  key={col.name}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    isSelected
+                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500 shadow-sm ring-1 ring-indigo-500/30'
+                      : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'
+                  }`}
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full border border-black/40 shadow-xs shrink-0"
+                    style={{ backgroundColor: col.hex }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleColor(col.name)}
+                    className="cursor-pointer font-bold"
+                  >
+                    {isSelected && '✓ '}
+                    <span>{col.name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeCustomColor(col.name);
+                    }}
+                    title={`Remove custom color ${col.name}`}
+                    className="text-slate-400 hover:text-rose-400 text-xs ml-0.5 cursor-pointer leading-none p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* Custom Color Input Field */}
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-slate-500 focus-within:border-rose-500 rounded-lg px-2.5 py-1 transition-all">
               <input
                 type="text"
-                placeholder="Custom color..."
+                placeholder="Custom color (e.g. Sage Green, Maroon)..."
                 value={customColorInput}
                 onChange={(e) => setCustomColorInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
+                    e.stopPropagation();
                     addCustomColor();
                   }
                 }}
-                className="bg-transparent text-white text-xs w-24 focus:outline-none placeholder-slate-500"
+                className="bg-transparent text-white text-xs w-52 focus:outline-none placeholder-slate-500"
               />
               <button
                 type="button"
-                onClick={addCustomColor}
-                className="text-rose-400 hover:text-rose-300 font-bold text-xs cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addCustomColor();
+                }}
+                className="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold text-xs cursor-pointer transition-all flex items-center gap-0.5 shrink-0"
+                title="Add custom color"
               >
-                +
+                <span>Add</span>
+                <Plus className="w-3 h-3" />
               </button>
             </div>
           </div>
@@ -428,7 +621,9 @@ export function VariantMatrixEditor({
                       <input
                         type="number"
                         value={v.price ?? ''}
-                        onChange={(e) => handleUpdateField(v.id, 'price', parseFloat(e.target.value) || 0)}
+                        onChange={(e) =>
+                          handleUpdateField(v.id, 'price', parseFloat(e.target.value) || 0)
+                        }
                         className="w-full pl-6 pr-2 py-1.5 bg-[#161822] border border-slate-700 rounded-lg text-rose-300 font-bold font-mono focus:border-rose-500 focus:outline-none text-right"
                       />
                     </div>
@@ -439,7 +634,9 @@ export function VariantMatrixEditor({
                     <input
                       type="number"
                       value={v.stock ?? ''}
-                      onChange={(e) => handleUpdateField(v.id, 'stock', parseInt(e.target.value, 10) || 0)}
+                      onChange={(e) =>
+                        handleUpdateField(v.id, 'stock', parseInt(e.target.value, 10) || 0)
+                      }
                       className="w-full px-2.5 py-1.5 bg-[#161822] border border-slate-700 rounded-lg text-emerald-400 font-bold font-mono focus:border-emerald-500 focus:outline-none text-right"
                     />
                   </td>

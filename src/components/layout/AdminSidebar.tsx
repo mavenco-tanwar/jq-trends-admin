@@ -1,6 +1,8 @@
 'use client';
 
 import { ProductService } from '@/services/products';
+import { CategoryService } from '@/services/categories';
+import { CollectionService } from '@/services/collections';
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
@@ -97,25 +99,45 @@ function AdminSidebarInner({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTenant, setActiveTenant] = useState<TenantStore>(PlatformService.getDefaultTenant());
   const [productCount, setProductCount] = useState<number | null>(null);
+  const [categoryCount, setCategoryCount] = useState<number | null>(null);
+  const [collectionCount, setCollectionCount] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
-    const fetchCount = async () => {
+    const fetchCounts = async () => {
       try {
         const prods = await ProductService.getAll();
         if (active && Array.isArray(prods)) {
           setProductCount(prods.length);
         }
       } catch {}
+
+      try {
+        const cats = await CategoryService.getFlatList();
+        if (active && Array.isArray(cats)) {
+          setCategoryCount(cats.length);
+        }
+      } catch {}
+
+      try {
+        const cols = await CollectionService.getAll();
+        if (active && Array.isArray(cols)) {
+          setCollectionCount(cols.length);
+        }
+      } catch {}
     };
 
-    fetchCount();
-    window.addEventListener('products_updated', fetchCount);
-    window.addEventListener('tenant_updated', fetchCount);
+    fetchCounts();
+    window.addEventListener('products_updated', fetchCounts);
+    window.addEventListener('categories_updated', fetchCounts);
+    window.addEventListener('collections_updated', fetchCounts);
+    window.addEventListener('tenant_updated', fetchCounts);
     return () => {
       active = false;
-      window.removeEventListener('products_updated', fetchCount);
-      window.removeEventListener('tenant_updated', fetchCount);
+      window.removeEventListener('products_updated', fetchCounts);
+      window.removeEventListener('categories_updated', fetchCounts);
+      window.removeEventListener('collections_updated', fetchCounts);
+      window.removeEventListener('tenant_updated', fetchCounts);
     };
   }, [pathname, activeTenant?.id, activeTenant?.slug]);
   const [allTenants, setAllTenants] = useState<TenantStore[]>([]);
@@ -248,8 +270,22 @@ function AdminSidebarInner({
           badge: mounted ? `${productCount !== null ? productCount : (activeTenant.metrics?.products ?? 0)}` : undefined,
           badgeColor: 'bg-emerald-500/20 text-emerald-300',
         },
-        { label: 'Categories & Taxonomy', featureKey: 'categories', href: '/categories', icon: FolderTree },
-        { label: 'Collections & Lookbooks', featureKey: 'collections', href: '/collections', icon: Layers },
+        {
+          label: 'Categories & Taxonomy',
+          featureKey: 'categories',
+          href: '/categories',
+          icon: FolderTree,
+          badge: mounted ? `${categoryCount !== null ? categoryCount : (activeTenant.metrics?.categories ?? 0)}` : undefined,
+          badgeColor: 'bg-emerald-500/20 text-emerald-300',
+        },
+        {
+          label: 'Collections & Lookbooks',
+          featureKey: 'collections',
+          href: '/collections',
+          icon: Layers,
+          badge: mounted ? `${collectionCount !== null ? collectionCount : (activeTenant.metrics?.collections ?? 0)}` : undefined,
+          badgeColor: 'bg-emerald-500/20 text-emerald-300',
+        },
         {
           label: 'Inventory & Warehouses',
           featureKey: 'inventory',
