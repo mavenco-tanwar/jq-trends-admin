@@ -76,9 +76,7 @@ export class ProductService {
         });
         const normalized = filtered.map(normalizeProduct);
         this.localProducts = normalized;
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('products_updated', { detail: normalized.length }));
-        }
+
         return normalized;
       }
     } catch {

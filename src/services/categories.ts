@@ -89,7 +89,7 @@ export class CategoryService {
   static async getFlatList(): Promise<Category[]> {
     const tenantSlug = getActiveTenantSlug();
     try {
-      const res = await ApiClient.get<any[]>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`, { bypassCache: true });
+      const res = await ApiClient.get<any[]>(`/api/v1/categories?tenant=${encodeURIComponent(tenantSlug)}`);
       if (res && Array.isArray(res.data)) {
         // Enforce strict client-side tenant isolation defense-in-depth
         const filtered = res.data.filter((raw: any) => {

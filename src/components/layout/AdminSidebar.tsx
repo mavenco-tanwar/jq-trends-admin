@@ -104,7 +104,12 @@ function AdminSidebarInner({
 
   useEffect(() => {
     let active = true;
+    let isFetching = false;
+    let timer: any = null;
+
     const fetchCounts = async () => {
+      if (isFetching || !active) return;
+      isFetching = true;
       try {
         const prods = await ProductService.getAll();
         if (active && Array.isArray(prods)) {
@@ -125,19 +130,26 @@ function AdminSidebarInner({
           setCollectionCount(cols.length);
         }
       } catch {}
+      isFetching = false;
+    };
+
+    const debouncedFetchCounts = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(fetchCounts, 300);
     };
 
     fetchCounts();
-    window.addEventListener('products_updated', fetchCounts);
-    window.addEventListener('categories_updated', fetchCounts);
-    window.addEventListener('collections_updated', fetchCounts);
-    window.addEventListener('tenant_updated', fetchCounts);
+    window.addEventListener('products_updated', debouncedFetchCounts);
+    window.addEventListener('categories_updated', debouncedFetchCounts);
+    window.addEventListener('collections_updated', debouncedFetchCounts);
+    window.addEventListener('tenant_updated', debouncedFetchCounts);
     return () => {
       active = false;
-      window.removeEventListener('products_updated', fetchCounts);
-      window.removeEventListener('categories_updated', fetchCounts);
-      window.removeEventListener('collections_updated', fetchCounts);
-      window.removeEventListener('tenant_updated', fetchCounts);
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('products_updated', debouncedFetchCounts);
+      window.removeEventListener('categories_updated', debouncedFetchCounts);
+      window.removeEventListener('collections_updated', debouncedFetchCounts);
+      window.removeEventListener('tenant_updated', debouncedFetchCounts);
     };
   }, [pathname, activeTenant?.id, activeTenant?.slug]);
   const [allTenants, setAllTenants] = useState<TenantStore[]>([]);
