@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       req.headers.get('x-store-slug') ||
       '';
 
-    const cleanSlug = tenantParam.replace(/^store_/, '').toLowerCase().trim();
+    const cleanSlug = tenantParam.replace(/^(store_|_)/, '').toLowerCase().trim();
     const db = await getDatabase();
     if (!db) {
       return NextResponse.json({ success: true, data: [] }, { headers: corsHeaders() });
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       req.headers.get('X-Tenant-Slug') ||
       '';
 
-    const cleanSlug = (tenantParam || 'jq-trends').replace(/^store_/, '').toLowerCase().trim();
+    const cleanSlug = (tenantParam || 'jq-trends').replace(/^(store_|_)/, '').toLowerCase().trim();
     const db = await getDatabase();
     const now = new Date().toISOString();
 
@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       createdAt: body.createdAt || now,
       updatedAt: now,
     };
+    delete (newProduct as any)._id;
 
     if (db) {
       await db.collection('products').updateOne(
@@ -115,5 +116,36 @@ export async function POST(req: NextRequest) {
       { success: false, error: error.message || 'Failed to create product' },
       { status: 500, headers: corsHeaders() }
     );
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const db = await getDatabase();
+    if (!db) {
+      return NextResponse.json({ success: false, error: 'Database unavailable' }, { status: 500, headers: corsHeaders() });
+    }
+
+    const { ids, status } = body;
+    if (Array.isArray(ids) && ids.length > 0 && status) {
+      const updateData = { status, updatedAt: new Date().toISOString() };
+      await db.collection('products').updateMany(
+        { $or: [{ id: { $in: ids } }, { slug: { $in: ids } }] },
+        { $set: updateData }
+      );
+      try {
+        await db.collection('pim_products').updateMany(
+          { $or: [{ id: { $in: ids } }, { slug: { $in: ids } }] },
+          { $set: updateData }
+        );
+      } catch {}
+
+      return NextResponse.json({ success: true, message: `Updated status for ${ids.length} products` }, { headers: corsHeaders() });
+    }
+
+    return NextResponse.json({ success: false, error: 'Invalid payload' }, { status: 400, headers: corsHeaders() });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: corsHeaders() });
   }
 }
