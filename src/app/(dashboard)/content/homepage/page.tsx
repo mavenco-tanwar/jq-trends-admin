@@ -1349,7 +1349,7 @@ export default function HomepageBuilderStudio() {
                             id: c.id || c.slug,
                             label: c.name,
                             image: c.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop',
-                            href: `/collections?category=${c.slug || c.id}`,
+                            href: `/${(c.slug || c.id || '').replace(/^cat_/, '').replace(/_[a-z0-9-]+$/, '')}`,
                             count: c.description || 'Explore Collection',
                             badge: c.seo?.title || 'Collection',
                           }));
@@ -1447,7 +1447,7 @@ export default function HomepageBuilderStudio() {
                                 });
                               }}
                               className="w-full px-3 py-1.5 bg-[#0B0D14] border border-slate-800 rounded-lg text-white text-xs font-mono"
-                              placeholder="/collections?category=dresses"
+                              placeholder="/dresses"
                             />
                           </div>
 
