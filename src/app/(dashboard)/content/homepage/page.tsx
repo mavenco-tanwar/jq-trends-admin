@@ -1345,7 +1345,10 @@ export default function HomepageBuilderStudio() {
                             showToast('No categories created in this store yet. Create categories in Catalog > Categories first!', 'info');
                             return;
                           }
-                          const syncedList = storeCats.map((c) => ({
+                          // Only sync root departments (not subcategories) to Shop By Department
+                          const storeDepartments = storeCats.filter((c) => !c.parentId || c.parentId === '' || c.parentId === 'none');
+                          const targetList = storeDepartments.length > 0 ? storeDepartments : storeCats;
+                          const syncedList = targetList.map((c) => ({
                             id: c.id || c.slug,
                             label: c.name,
                             image: c.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop',
