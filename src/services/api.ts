@@ -188,7 +188,20 @@ export class ApiClient {
       finalEndpoint = `${finalEndpoint}${sep}tenant=${encodeURIComponent(currentTenantSlug)}`;
     }
 
-    const url = `${baseUrl}${finalEndpoint.startsWith("/") ? finalEndpoint : `/${finalEndpoint}`}`;
+    let effectiveBaseUrl = baseUrl;
+    if (typeof window !== "undefined") {
+      const isInternalRoute =
+        finalEndpoint.startsWith("/api/v1/products") ||
+        finalEndpoint.startsWith("/api/v1/categories") ||
+        finalEndpoint.startsWith("/api/v1/platform") ||
+        finalEndpoint.startsWith("/api/v1/marketing") ||
+        finalEndpoint.startsWith("/api/v1/reviews");
+      if (isInternalRoute) {
+        effectiveBaseUrl = window.location.origin;
+      }
+    }
+
+    const url = `${effectiveBaseUrl}${finalEndpoint.startsWith("/") ? finalEndpoint : `/${finalEndpoint}`}`;
     const method = (options.method || "GET").toUpperCase();
     const isGet = method === "GET";
     const cacheKey = `${method}:${url}`;

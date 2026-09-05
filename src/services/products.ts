@@ -21,9 +21,13 @@ function normalizeProduct(raw: any): Product {
     ? raw.categoryIds
     : raw.categoryId
     ? [raw.categoryId]
+    : raw.department
+    ? [raw.department]
     : raw.category?.name
     ? [raw.category.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')]
-    : ['cat_women'];
+    : raw.category && typeof raw.category === 'string'
+    ? [raw.category]
+    : [];
 
   return {
     id: raw.id || (raw._id ? (typeof raw._id === "object" ? raw._id.toString() : String(raw._id)) : undefined) || raw.slug || `prod_${Date.now()}`,

@@ -50,15 +50,6 @@ export default function EditProductPage() {
   const [departmentId, setDepartmentId] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
 
-  useEffect(() => {
-    CategoryService.getAll().then((list) => {
-      setAvailableCategories(list);
-      if (list.length > 0 && (!departmentId || !list.some((c) => c.id === departmentId))) {
-        setDepartmentId(list[0].id);
-        setCategory(list[0].id);
-      }
-    });
-  }, []);
   const [shortDesc, setShortDesc] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('1499');
@@ -81,7 +72,8 @@ export default function EditProductPage() {
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('published');
 
   useEffect(() => {
-    ProductService.getById(id).then((p) => {
+    Promise.all([CategoryService.getAll(), ProductService.getById(id)]).then(([catList, p]) => {
+      setAvailableCategories(catList);
       if (p) {
         setProduct(p);
         setTitle(p.title);
@@ -92,8 +84,19 @@ export default function EditProductPage() {
         if (p.categoryIds && p.categoryIds.length > 1) {
           setSubcategoryId(p.categoryIds[0]);
           setDepartmentId(p.categoryIds[1]);
-        } else {
-          setDepartmentId(primaryCat);
+        } else if (primaryCat) {
+          const isSub = catList.some((d) => d.children?.some((s) => s.id === primaryCat || s.slug === primaryCat));
+          if (isSub) {
+            const parent = catList.find((d) => d.children?.some((s) => s.id === primaryCat || s.slug === primaryCat));
+            setDepartmentId(parent?.id || '');
+            setSubcategoryId(primaryCat);
+          } else {
+            const matchingDept = catList.find((d) => d.id === primaryCat || d.slug === primaryCat);
+            setDepartmentId(matchingDept?.id || primaryCat);
+          }
+        } else if (catList.length > 0) {
+          setDepartmentId(catList[0].id);
+          setCategory(catList[0].id);
         }
         setShortDesc(p.shortDescription || '');
         setDescription(p.description || '');
