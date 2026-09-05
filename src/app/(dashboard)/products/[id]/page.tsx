@@ -83,7 +83,14 @@ export default function EditProductPage() {
         setTitle(p.title);
         setSlug(p.slug);
         setBrand(p.brand || 'JQ Trends');
-        setCategory(p.categoryIds?.[0] || '');
+        const primaryCat = p.categoryIds?.[0] || (p as any).department || (p as any).category || '';
+        setCategory(primaryCat);
+        if (p.categoryIds && p.categoryIds.length > 1) {
+          setSubcategoryId(p.categoryIds[0]);
+          setDepartmentId(p.categoryIds[1]);
+        } else {
+          setDepartmentId(primaryCat);
+        }
         setShortDesc(p.shortDescription || '');
         setDescription(p.description || '');
         setPrice(String(p.price));

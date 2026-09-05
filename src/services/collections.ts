@@ -12,7 +12,7 @@ function normalizeCollection(raw: any): Collection {
     type: raw.type || 'manual',
     rules: Array.isArray(raw.rules) ? raw.rules : [],
     productIds: Array.isArray(raw.productIds) ? raw.productIds : [],
-    productCount: raw.productCount || (Array.isArray(raw.productIds) ? raw.productIds.length : 0),
+    productCount: Array.isArray(raw.productIds) ? raw.productIds.length : (typeof raw.productCount === 'number' ? raw.productCount : 0),
     isVisible: raw.isVisible !== false,
     displayOrder: raw.displayOrder || 1,
     createdAt: raw.createdAt || new Date().toISOString(),
